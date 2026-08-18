@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-connection-editor"
+description = "Enables the get_connection_editor command without any pre-configured scope."
+commands.allow = ["get_connection_editor"]
+
+[[permission]]
+identifier = "deny-get-connection-editor"
+description = "Denies the get_connection_editor command without any pre-configured scope."
+commands.deny = ["get_connection_editor"]

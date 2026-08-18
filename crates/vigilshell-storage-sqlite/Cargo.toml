@@ -1,0 +1,12 @@
+[package]
+name = "vigilshell-storage-sqlite"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+rusqlite = { version = "0.40.1", features = ["bundled"] }
+vigilshell-core = { path = "../vigilshell-core" }

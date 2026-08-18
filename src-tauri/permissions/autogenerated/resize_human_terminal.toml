@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-resize-human-terminal"
+description = "Enables the resize_human_terminal command without any pre-configured scope."
+commands.allow = ["resize_human_terminal"]
+
+[[permission]]
+identifier = "deny-resize-human-terminal"
+description = "Denies the resize_human_terminal command without any pre-configured scope."
+commands.deny = ["resize_human_terminal"]

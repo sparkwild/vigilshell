@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "enables the default permissions",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "allow-load-human-workbench",
+    "allow-get-connection-editor",
+    "allow-create-connection-profile",
+    "allow-update-connection-profile",
+    "allow-delete-connection-profile",
+    "allow-get-human-password-status",
+    "allow-configure-human-password",
+    "allow-remove-human-password",
+    "allow-probe-host-key",
+    "allow-confirm-host-trust",
+    "allow-discard-host-trust",
+    "allow-open-human-terminal",
+    "allow-send-human-terminal-input",
+    "allow-resize-human-terminal",
+    "allow-grant-human-terminal-output-credit",
+    "allow-close-human-terminal"
+  ]
+}

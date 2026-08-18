@@ -1,0 +1,11 @@
+[package]
+name = "vigilshell-core"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+zeroize = "1.9.0"

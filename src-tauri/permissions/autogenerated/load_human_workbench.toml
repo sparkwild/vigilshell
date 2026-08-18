@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-load-human-workbench"
+description = "Enables the load_human_workbench command without any pre-configured scope."
+commands.allow = ["load_human_workbench"]
+
+[[permission]]
+identifier = "deny-load-human-workbench"
+description = "Denies the load_human_workbench command without any pre-configured scope."
+commands.deny = ["load_human_workbench"]

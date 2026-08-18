@@ -1,0 +1,35 @@
+[package]
+name = "vigilshell-credentials-macos"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+vigilshell-core = { path = "../vigilshell-core" }
+zeroize = "1.9.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6.4", default-features = false, features = ["std"] }
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "NSAlert",
+    "NSApplication",
+    "NSButton",
+    "NSControl",
+    "NSResponder",
+    "NSSecureTextField",
+    "NSTextField",
+    "NSView",
+    "NSWindow",
+] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "NSGeometry",
+    "NSObject",
+    "NSString",
+] }
+security-framework = { version = "3.7.0", default-features = false, features = ["OSX_10_15"] }
+security-framework-sys = { version = "2.17.0", default-features = false }

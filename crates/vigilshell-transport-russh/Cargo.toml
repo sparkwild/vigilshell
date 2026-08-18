@@ -1,0 +1,17 @@
+[package]
+name = "vigilshell-transport-russh"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+russh = { version = "=0.62.6", default-features = false, features = ["ring", "rsa"] }
+tokio = { version = "1.17.0", features = ["net", "sync", "time"] }
+vigilshell-core = { path = "../vigilshell-core" }
+zeroize = "1.9.0"
+
+[dev-dependencies]
+tokio = { version = "1.17.0", features = ["io-util", "macros", "rt-multi-thread", "sync"] }

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-send-human-terminal-input"
+description = "Enables the send_human_terminal_input command without any pre-configured scope."
+commands.allow = ["send_human_terminal_input"]
+
+[[permission]]
+identifier = "deny-send-human-terminal-input"
+description = "Denies the send_human_terminal_input command without any pre-configured scope."
+commands.deny = ["send_human_terminal_input"]
