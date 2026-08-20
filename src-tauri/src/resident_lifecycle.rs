@@ -18,6 +18,8 @@ pub(crate) const RESIDENT_TRAY_ID: &str = "resident";
 pub(crate) const OPEN_VIGILSHELL_MENU_ID: &str = "resident.open_vigilshell";
 pub(crate) const APPLICATION_QUIT_VIGILSHELL_MENU_ID: &str = "application.quit_vigilshell";
 pub(crate) const TRAY_QUIT_VIGILSHELL_MENU_ID: &str = "resident.quit_vigilshell";
+const RESIDENT_TRAY_ICON: tauri::image::Image<'static> =
+    tauri::include_image!("./icons/tray-icon.png");
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ResidentLifecyclePhase {
@@ -372,14 +374,13 @@ pub(crate) fn install_resident_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Re
         .separator()
         .text(TRAY_QUIT_VIGILSHELL_MENU_ID, "Quit VigilShell")
         .build()?;
-    let mut tray = TrayIconBuilder::with_id(RESIDENT_TRAY_ID)
+    TrayIconBuilder::with_id(RESIDENT_TRAY_ID)
         .menu(&tray_menu)
+        .icon(RESIDENT_TRAY_ICON)
+        .icon_as_template(true)
         .tooltip("VigilShell")
-        .show_menu_on_left_click(false);
-    if let Some(icon) = app.default_window_icon().cloned() {
-        tray = tray.icon(icon);
-    }
-    tray.build(app)
+        .show_menu_on_left_click(false)
+        .build(app)
 }
 
 pub(crate) fn handle_resident_menu_event<R: Runtime>(
