@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-delete-managed-server"
+description = "Enables the delete_managed_server command without any pre-configured scope."
+commands.allow = ["delete_managed_server"]
+
+[[permission]]
+identifier = "deny-delete-managed-server"
+description = "Denies the delete_managed_server command without any pre-configured scope."
+commands.deny = ["delete_managed_server"]

@@ -23,20 +23,23 @@ It is not an unrestricted automation shell attached to a terminal.
   controlled changes through the Human Lane.
 - An **Agent** operates only through a short-lived Agent Session that is bound to
   an explicit Agent Scope and typed capabilities.
-- A **Connection** owns endpoint routing and authentication mechanics. It is not
-  an authorization grant for an Agent.
-- A **Project** is a Human-facing grouping of connection records with no Agent
-  authorization meaning.
+- A **Managed Server** is a stable Human-facing server identity that can own one
+  or more Connection Profiles.
+- A **Connection Profile** owns endpoint routing and authentication mechanics. It
+  is not an authorization grant for an Agent.
+- A **Project** is a Human-facing grouping of Managed Servers. Connection
+  Profiles inherit that navigation placement, which has no Agent authorization
+  meaning.
 - An **Agent Scope** is a reusable local authorization boundary for resources,
   capabilities, and policy constraints.
 
 ## Durable Scope
 
-VigilShell supports professional SSH operations: connection management, terminal
-work, SFTP, transfers, tunnels, server and service inspection, logs, and
-controlled server changes. The Agent Lane enables bounded diagnosis and
-operations through capability-specific contracts rather than through a raw
-session.
+VigilShell's durable product scope includes professional SSH operations:
+connection management, terminal work, SFTP, transfers, tunnels, server and
+service inspection, logs, and controlled server changes. The Agent Lane is
+defined for bounded diagnosis and operations through capability-specific
+contracts rather than through a raw session.
 
 ## Non-Goals
 

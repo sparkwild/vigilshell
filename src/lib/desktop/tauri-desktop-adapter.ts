@@ -7,6 +7,16 @@ import {
 	type ConfirmHostTrustRequest,
 	type ConfirmHostTrustSettlement,
 	type CreateConnectionProfileRequest,
+	type CreateProjectRequest,
+	type ProjectSummary,
+	type UpdateProjectRequest,
+	type DeleteProjectRequest,
+	type DeleteProjectSettlement,
+	type ManagedServerSummary,
+	type UpdateManagedServerRequest,
+	type DeleteManagedServerRequest,
+	type DeleteManagedServerSettlement,
+	type AddConnectionProfileToServerRequest,
 	type DeleteConnectionProfileRequest,
 	type DeleteConnectionProfileSettlement,
 	type DiscardHostTrustRequest,
@@ -35,7 +45,7 @@ export class DesktopAdapterError extends Error {
 	readonly code: DesktopErrorCode;
 
 	constructor(code: DesktopErrorCode) {
-		super("The desktop operation could not be completed.");
+		super("The operation could not be completed.");
 		this.name = "DesktopAdapterError";
 		this.code = code;
 	}
@@ -77,6 +87,36 @@ export function createConnectionProfile(
 	request: CreateConnectionProfileRequest,
 ): Promise<ConnectionEditorView> {
 	return invokeDesktop<ConnectionEditorView>("create_connection_profile", { request });
+}
+
+export function createProject(request: CreateProjectRequest): Promise<ProjectSummary> {
+	return invokeDesktop<ProjectSummary>("create_project", { request });
+}
+
+export function updateProject(request: UpdateProjectRequest): Promise<ProjectSummary> {
+	return invokeDesktop<ProjectSummary>("update_project", { request });
+}
+
+export function deleteProject(request: DeleteProjectRequest): Promise<DeleteProjectSettlement> {
+	return invokeDesktop<DeleteProjectSettlement>("delete_project", { request });
+}
+
+export function updateManagedServer(
+	request: UpdateManagedServerRequest,
+): Promise<ManagedServerSummary> {
+	return invokeDesktop<ManagedServerSummary>("update_managed_server", { request });
+}
+
+export function deleteManagedServer(
+	request: DeleteManagedServerRequest,
+): Promise<DeleteManagedServerSettlement> {
+	return invokeDesktop<DeleteManagedServerSettlement>("delete_managed_server", { request });
+}
+
+export function addConnectionProfileToServer(
+	request: AddConnectionProfileToServerRequest,
+): Promise<ConnectionEditorView> {
+	return invokeDesktop<ConnectionEditorView>("add_connection_profile_to_server", { request });
 }
 
 export function updateConnectionProfile(

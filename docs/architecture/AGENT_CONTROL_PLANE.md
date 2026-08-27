@@ -17,8 +17,9 @@ evidence.
 
 Its contracts include an Agent request context, resolved authority, normalized
 invocation, authorization decision, single-use dispatch ticket, execution
-evidence, and protected capability result. A changed normalized Plan invalidates
-its confirmation grant.
+evidence, and protected capability result. A Plan-required ConfirmationGrant
+binds the normalized Plan, target Scope, Plan Hash, Human actor, expiry, and
+single-use dispatch context. A changed normalized Plan invalidates the grant.
 
 ## Authorization And Enforcement
 

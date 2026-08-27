@@ -1,5 +1,29 @@
 # Engineering Standards
 
+## Local Development Entry Points
+
+The executable command sources are [package.json](../../package.json),
+[Cargo.toml](../../Cargo.toml), and the committed lockfiles. Do not copy concrete
+dependency versions from those files into setup instructions unless the project
+has deliberately frozen the value as an architectural constraint.
+
+Use Node.js with Corepack, the repository-declared pnpm release, and a Rust
+toolchain that supports the workspace edition. The canonical commands are:
+
+| Command | Purpose |
+| --- | --- |
+| `corepack enable` | Make the repository-declared pnpm available. |
+| `pnpm install` | Install the locked frontend and Tauri CLI dependencies. |
+| `pnpm tauri dev` | Run the real desktop application in development mode. |
+| `pnpm check` | Run Svelte and TypeScript checks. |
+| `pnpm test:frontend` | Run the frontend unit suite. |
+| `pnpm build` | Build the renderer production bundle. |
+| `cargo test --workspace` | Run the Rust workspace test suite. |
+
+[`script/build_and_run.sh`](../../script/build_and_run.sh) is a macOS debug
+convenience wrapper, not a portable build contract or a substitute for the
+focused commands above.
+
 ## Delivery And Code Organization
 
 Freeze product, architecture, and security decisions in their owning documents

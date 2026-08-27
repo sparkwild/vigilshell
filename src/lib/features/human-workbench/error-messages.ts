@@ -3,13 +3,18 @@ import { DesktopAdapterError } from "$lib/desktop/tauri-desktop-adapter";
 
 const errorMessages: Record<DesktopErrorCode, string> = {
 	storage_unavailable: "Local connection data is unavailable.",
-	invalid_request: "The desktop request was rejected. Review the connection fields and try again.",
+	invalid_request: "The request was rejected. Review the fields and try again.",
 	connection_not_found: "The selected connection is no longer available.",
-	connection_record_mismatch: "The selected connection changed. Reload the catalog and try again.",
+	connection_record_mismatch: "The selected connection changed. Reload the connections and try again.",
 	connection_conflict: "This connection changed elsewhere. Reload it before saving or deleting.",
 	connection_delete_incomplete:
 		"The password was removed, but the connection remains. Configure its password again before use.",
-	version_exhausted: "This connection reached its version limit and can no longer be changed.",
+	version_exhausted: "This item can no longer be changed.",
+	workspace_conflict: "This item changed elsewhere. Reload it before trying again.",
+	workspace_record_mismatch: "The selected item changed. Reload the connections and try again.",
+	project_not_found: "The selected project is no longer available.",
+	managed_server_not_found: "The selected server is no longer available.",
+	managed_server_not_empty: "Remove this server's connections before deleting it.",
 	connection_disabled: "The selected connection is disabled.",
 	connection_in_use: "Close this connection's active or opening terminals before deleting it.",
 	connection_delete_in_progress: "This connection is being deleted. Wait for it to finish.",
@@ -28,7 +33,7 @@ const errorMessages: Record<DesktopErrorCode, string> = {
 	host_trust_state_unavailable: "Host Trust state is unavailable. Reload and try again.",
 	credential_unavailable: "Credentials are unavailable for the selected connection.",
 	credential_provider_unavailable:
-		"The desktop credential provider is unavailable. Check system sign-in and app permissions.",
+		"Secure password storage is unavailable. Check system sign-in and app permissions.",
 	credential_access_denied:
 		"The system denied access to secure credential storage. Update OS credential access settings.",
 	credential_invalid_secret: "The stored credential is invalid and could not be used.",
@@ -49,8 +54,8 @@ const errorMessages: Record<DesktopErrorCode, string> = {
 	terminal_control_queue_full: "The terminal is busy. Input and resize controls have been paused.",
 	terminal_session_closed: "The terminal session is already closed.",
 	terminal_close_timeout: "The terminal did not finish closing in time.",
-	application_shutting_down: "VigilShell is closing. Reopen it before starting another operation.",
-	unexpected_failure: "The desktop operation could not be completed.",
+	application_shutting_down: "The app is closing. Reopen it before starting another operation.",
+	unexpected_failure: "The operation could not be completed.",
 };
 
 export function desktopErrorMessage(error: unknown): string {

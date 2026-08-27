@@ -1,15 +1,28 @@
 [package]
-name = "vigilshell-credentials-macos"
+name = "vigilshell-credentials"
 version.workspace = true
 edition.workspace = true
 publish = false
 
-[lints]
-workspace = true
+[lints.rust]
+unsafe_code = "allow"
+unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
 vigilshell-core = { path = "../vigilshell-core" }
 zeroize = "1.9.0"
+
+[target.'cfg(windows)'.dependencies]
+getrandom = "0.4.3"
+sha2 = "0.10.9"
+windows-sys = { version = "0.61.2", default-features = false, features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security_Credentials",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_UI_WindowsAndMessaging",
+] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = { version = "0.6.4", default-features = false, features = ["std"] }

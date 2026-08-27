@@ -1,4 +1,4 @@
-use std::{error::Error, fmt, sync::Arc};
+use std::{error::Error, fmt, path::PathBuf, sync::Arc};
 
 use vigilshell_core::{
     connection::CredentialRef,
@@ -7,7 +7,12 @@ use vigilshell_core::{
 use zeroize::Zeroizing;
 
 #[cfg(target_os = "macos")]
-mod platform;
+mod macos;
+#[cfg(windows)]
+mod windows;
+
+/// 单个 Human SSH 密码允许进入平台秘密存储的最大字节数。
+pub const MAX_PASSWORD_BYTES: usize = 64 * 1024;
 
 /// VigilShell 密码条目的固定 Keychain service。
 pub const KEYCHAIN_SERVICE: &str = "com.sparkwild.vigilshell.credentials";
@@ -34,7 +39,7 @@ pub enum RemovePasswordSettlement {
     Cancelled,
 }
 
-/// macOS 凭据边界可公开的稳定错误。
+/// 平台凭据边界可公开的稳定错误。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CredentialProviderError {
     Missing,
@@ -118,33 +123,51 @@ trait NativePasswordPrompt: Send + Sync {
     fn confirm_removal_on_main_thread(&self) -> Result<bool, CredentialProviderError>;
 }
 
-/// Security.framework 与 AppKit 组成的 macOS Human 密码提供器。
+/// 由当前平台安全存储与原生输入界面组成的 Human 密码提供器。
 #[derive(Clone)]
-pub struct MacOsHumanPasswordCredentialProvider {
+pub struct PlatformHumanPasswordCredentialProvider {
     store: Arc<dyn PasswordStore>,
     prompt: Arc<dyn NativePasswordPrompt>,
 }
 
-impl MacOsHumanPasswordCredentialProvider {
-    /// 创建使用系统 data-protection Keychain 与原生安全输入框的提供器。
-    pub fn new() -> Self {
-        Self::from_system_drivers()
+impl PlatformHumanPasswordCredentialProvider {
+    /// 创建当前平台的生产凭据提供器。
+    ///
+    /// macOS 忽略文件根并使用现有 Keychain；Windows 要求传入已经验证的
+    /// Current-User DPAPI 密文目录。
+    pub fn new(secure_credentials_root: Option<PathBuf>) -> Result<Self, CredentialProviderError> {
+        Self::from_system_drivers(secure_credentials_root)
     }
 
     #[cfg(target_os = "macos")]
-    fn from_system_drivers() -> Self {
-        Self {
-            store: Arc::new(platform::SystemKeychainStore),
-            prompt: Arc::new(platform::AppKitPasswordPrompt),
-        }
+    fn from_system_drivers(
+        _secure_credentials_root: Option<PathBuf>,
+    ) -> Result<Self, CredentialProviderError> {
+        Ok(Self {
+            store: Arc::new(macos::SystemKeychainStore),
+            prompt: Arc::new(macos::AppKitPasswordPrompt),
+        })
     }
 
-    #[cfg(not(target_os = "macos"))]
-    fn from_system_drivers() -> Self {
-        Self {
+    #[cfg(windows)]
+    fn from_system_drivers(
+        secure_credentials_root: Option<PathBuf>,
+    ) -> Result<Self, CredentialProviderError> {
+        let root = secure_credentials_root.ok_or(CredentialProviderError::Unavailable)?;
+        Ok(Self {
+            store: Arc::new(windows::WindowsDpapiPasswordStore::new(root)?),
+            prompt: Arc::new(windows::WindowsPasswordPrompt),
+        })
+    }
+
+    #[cfg(not(any(target_os = "macos", windows)))]
+    fn from_system_drivers(
+        _secure_credentials_root: Option<PathBuf>,
+    ) -> Result<Self, CredentialProviderError> {
+        Ok(Self {
             store: Arc::new(UnsupportedStore),
             prompt: Arc::new(UnsupportedPrompt),
-        }
+        })
     }
 
     #[cfg(test)]
@@ -153,21 +176,15 @@ impl MacOsHumanPasswordCredentialProvider {
     }
 }
 
-impl Default for MacOsHumanPasswordCredentialProvider {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl fmt::Debug for MacOsHumanPasswordCredentialProvider {
+impl fmt::Debug for PlatformHumanPasswordCredentialProvider {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
-            .debug_struct("MacOsHumanPasswordCredentialProvider")
+            .debug_struct("PlatformHumanPasswordCredentialProvider")
             .finish_non_exhaustive()
     }
 }
 
-impl HumanPasswordCredentialProvider for MacOsHumanPasswordCredentialProvider {
+impl HumanPasswordCredentialProvider for PlatformHumanPasswordCredentialProvider {
     fn password_configuration_status(
         &self,
         credential_ref: &CredentialRef,
@@ -188,7 +205,7 @@ impl HumanPasswordCredentialProvider for MacOsHumanPasswordCredentialProvider {
                 return Ok(ConfigurePasswordSettlement::Cancelled);
             }
         };
-        if password.is_empty() {
+        if password.is_empty() || password.len() > MAX_PASSWORD_BYTES {
             return Err(CredentialProviderError::InvalidSecret);
         }
 
@@ -223,7 +240,7 @@ impl HumanPasswordCredentialProvider for MacOsHumanPasswordCredentialProvider {
     }
 }
 
-impl CredentialBroker for MacOsHumanPasswordCredentialProvider {
+impl CredentialBroker for PlatformHumanPasswordCredentialProvider {
     fn lease_for_human_terminal(
         &self,
         credential_ref: &CredentialRef,
@@ -237,10 +254,10 @@ impl CredentialBroker for MacOsHumanPasswordCredentialProvider {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", windows)))]
 struct UnsupportedStore;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", windows)))]
 impl PasswordStore for UnsupportedStore {
     fn password_configuration_status(
         &self,
@@ -272,10 +289,10 @@ impl PasswordStore for UnsupportedStore {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", windows)))]
 struct UnsupportedPrompt;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", windows)))]
 impl NativePasswordPrompt for UnsupportedPrompt {
     fn capture_password_on_main_thread(
         &self,

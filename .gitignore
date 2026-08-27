@@ -1,4 +1,5 @@
 .DS_Store
+.idea/
 .specs/
 /dist/
 /node_modules/

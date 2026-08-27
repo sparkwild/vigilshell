@@ -18,17 +18,17 @@ use tauri::{
     AppHandle, Manager, State, Webview, WindowEvent,
     ipc::{Channel, InvokeResponseBody},
 };
+use ts_rs::TS;
 use uuid::Uuid;
 use uuid::{Variant, Version};
 use vigilshell_core::{
     connection::{
         ConnectionProfile, ConnectionProfileId, ConnectionRecordVersion, CredentialRef,
-        ManagedServerId, SshRoute,
+        ManagedServerId, SshRoute, StoredHostTrust,
     },
     connection_mutation::{
-        ConnectionProfileMutationService, CreateConnectionProfileRequest,
-        DeleteConnectionProfileRequest, MutateConnectionProfileError,
-        UpdateConnectionProfileRequest,
+        ConnectionProfileMutationService, DeleteConnectionProfileRequest,
+        MutateConnectionProfileError, UpdateConnectionProfileRequest,
     },
     host_trust::{
         ConfirmHostTrustError, ConfirmHostTrustService, HostTrustMutationRepository,
@@ -41,14 +41,21 @@ use vigilshell_core::{
         HumanTerminalSessionId, OpenHumanTerminalError, OpenHumanTerminalRequest,
         PreparedHumanTerminalOpen, TerminalSize,
     },
+    server_workspace::{
+        AddConnectionToServerRequest, CreateProjectRequest, CreateServerWithConnectionRequest,
+        DeleteManagedServerRequest, DeleteProjectRequest, ManagedServer,
+        ManagedServerRecordVersion, MutateServerWorkspaceError, Project, ProjectId,
+        ProjectRecordVersion, ServerWorkspaceService, UpdateManagedServerRequest,
+        UpdateProjectRequest,
+    },
 };
-use vigilshell_credentials_macos::{
+use vigilshell_credentials::{
     ConfigurePasswordSettlement, CredentialProviderError, PasswordConfigurationStatus,
     RemovePasswordSettlement,
 };
 
 #[cfg(all(test, debug_assertions))]
-use vigilshell_credentials_macos::HumanPasswordCredentialProvider;
+use vigilshell_credentials::HumanPasswordCredentialProvider;
 use vigilshell_lifecycle_macos::{
     TerminationDecision, install_native_termination_hook, request_native_termination,
     schedule_native_termination,
@@ -61,6 +68,7 @@ use vigilshell_transport_russh::{
     RusshTerminalOutputSink,
 };
 
+mod desktop_data_layout;
 mod human_credential_runtime;
 mod human_terminal_runtime;
 mod resident_lifecycle;
@@ -68,6 +76,9 @@ mod resident_lifecycle;
 #[cfg(debug_assertions)]
 mod debug_human_terminal_fixture;
 
+use desktop_data_layout::{
+    DESKTOP_DATA_DIR_ENV, DesktopDataLayout, SINGLE_INSTANCE_LOCK_FILE_NAME,
+};
 use human_credential_runtime::{CredentialRoute, HumanCredentialRuntime};
 use human_terminal_runtime::{
     DisplayContextId, HumanTerminalRuntime, LiveTerminalControl, TERMINAL_CLOSE_SETTLEMENT_TIMEOUT,
@@ -91,18 +102,9 @@ use resident_lifecycle::{
 use std::error::Error;
 #[cfg(debug_assertions)]
 use vigilshell_core::connection::{
-    ConnectionDisplayName, ConnectionSecurityRevision, HostFingerprint, StoredHostTrust,
+    ConnectionDisplayName, ConnectionSecurityRevision, HostFingerprint,
 };
 
-#[cfg(debug_assertions)]
-const ACTIVE_DATABASE_FILE_NAME: &str = "vigilshell-debug.sqlite3";
-#[cfg(debug_assertions)]
-const DEBUG_DATABASE_PATH_ENV: &str = "VIGILSHELL_DEBUG_DATABASE_PATH";
-#[cfg(not(debug_assertions))]
-const ACTIVE_DATABASE_FILE_NAME: &str = "vigilshell.sqlite3";
-
-#[cfg(target_os = "macos")]
-const SINGLE_INSTANCE_LOCK_FILE_NAME: &str = "vigilshell-single-instance.lock";
 #[cfg(target_os = "macos")]
 const SINGLE_INSTANCE_STARTUP_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg(target_os = "macos")]
@@ -370,15 +372,38 @@ impl HostTrustRuntime {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export_to = "HumanWorkbenchDto.ts")]
 struct HumanWorkbenchDto {
+    projects: Vec<ProjectDto>,
+    servers: Vec<ManagedServerDto>,
     connections: Vec<ConnectionDto>,
     terminal_available: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export_to = "ProjectDto.ts")]
+struct ProjectDto {
+    project_id: String,
+    display_name: String,
+    record_version: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "ManagedServerDto.ts")]
+struct ManagedServerDto {
+    server_id: String,
+    project_id: Option<String>,
+    display_name: String,
+    record_version: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "ConnectionDto.ts")]
 struct ConnectionDto {
     profile_id: String,
     server_id: String,
@@ -388,8 +413,9 @@ struct ConnectionDto {
     trust_state: TrustStateDto,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export_to = "ConnectionEditorDto.ts")]
 struct ConnectionEditorDto {
     profile_id: String,
     server_id: String,
@@ -402,8 +428,9 @@ struct ConnectionEditorDto {
     trust_state: TrustStateDto,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export_to = "TrustStateDto.ts")]
 enum TrustStateDto {
     Ready,
     Required,
@@ -418,8 +445,9 @@ struct HumanTerminalSessionDto {
     profile_id: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export_to = "IpcErrorCode.ts")]
 enum IpcErrorCode {
     StorageUnavailable,
     InvalidRequest,
@@ -428,6 +456,11 @@ enum IpcErrorCode {
     ConnectionConflict,
     ConnectionDeleteIncomplete,
     VersionExhausted,
+    WorkspaceConflict,
+    WorkspaceRecordMismatch,
+    ProjectNotFound,
+    ManagedServerNotFound,
+    ManagedServerNotEmpty,
     CredentialProviderUnavailable,
     CredentialAccessDenied,
     CredentialInvalidSecret,
@@ -511,6 +544,21 @@ impl From<MutateConnectionProfileError> for IpcErrorDto {
     }
 }
 
+impl From<MutateServerWorkspaceError> for IpcErrorDto {
+    fn from(error: MutateServerWorkspaceError) -> Self {
+        let code = match error {
+            MutateServerWorkspaceError::RepositoryUnavailable => IpcErrorCode::StorageUnavailable,
+            MutateServerWorkspaceError::Conflict => IpcErrorCode::WorkspaceConflict,
+            MutateServerWorkspaceError::ProjectNotFound => IpcErrorCode::ProjectNotFound,
+            MutateServerWorkspaceError::ServerNotFound => IpcErrorCode::ManagedServerNotFound,
+            MutateServerWorkspaceError::RecordMismatch => IpcErrorCode::WorkspaceRecordMismatch,
+            MutateServerWorkspaceError::VersionExhausted => IpcErrorCode::VersionExhausted,
+            MutateServerWorkspaceError::ServerNotEmpty => IpcErrorCode::ManagedServerNotEmpty,
+        };
+        Self { code }
+    }
+}
+
 fn admit_effectful_operation(
     lifecycle: &ResidentLifecycleRuntime,
 ) -> Result<ResidentOperationGuard, IpcErrorDto> {
@@ -535,9 +583,64 @@ struct GetConnectionEditorRequestDto {
     profile_id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "CreateConnectionProfileRequestDto.ts")]
 struct CreateConnectionProfileRequestDto {
+    display_name: String,
+    host: String,
+    port: i64,
+    username: String,
+    enabled: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "CreateProjectRequestDto.ts")]
+struct CreateProjectRequestDto {
+    display_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "UpdateProjectRequestDto.ts")]
+struct UpdateProjectRequestDto {
+    project_id: String,
+    expected_record_version: u64,
+    display_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "DeleteProjectRequestDto.ts")]
+struct DeleteProjectRequestDto {
+    project_id: String,
+    expected_record_version: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "UpdateManagedServerRequestDto.ts")]
+struct UpdateManagedServerRequestDto {
+    server_id: String,
+    expected_record_version: u64,
+    project_id: Option<String>,
+    display_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "DeleteManagedServerRequestDto.ts")]
+struct DeleteManagedServerRequestDto {
+    server_id: String,
+    expected_record_version: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export_to = "AddConnectionProfileToServerRequestDto.ts")]
+struct AddConnectionProfileToServerRequestDto {
+    server_id: String,
     display_name: String,
     host: String,
     port: i64,
@@ -649,6 +752,35 @@ struct DeleteConnectionProfileSettlementDto {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum DeleteConnectionProfileStatusDto {
+    Deleted,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "DeleteProjectSettlementDto.ts")]
+struct DeleteProjectSettlementDto {
+    status: DeleteProjectStatusDto,
+    unassigned_servers: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export_to = "DeleteProjectStatusDto.ts")]
+enum DeleteProjectStatusDto {
+    Deleted,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "DeleteManagedServerSettlementDto.ts")]
+struct DeleteManagedServerSettlementDto {
+    status: DeleteManagedServerStatusDto,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export_to = "DeleteManagedServerStatusDto.ts")]
+enum DeleteManagedServerStatusDto {
     Deleted,
 }
 
@@ -803,48 +935,67 @@ fn load_human_workbench(
 }
 
 fn load_human_workbench_from(storage: &SqliteStorage) -> Result<HumanWorkbenchDto, IpcErrorDto> {
-    let profiles = storage
-        .list_connection_profiles()
+    let snapshot = storage
+        .load_human_workbench_snapshot()
         .map_err(|_| IpcErrorDto::storage_unavailable())?;
-    let mut connections = Vec::with_capacity(profiles.len());
-
-    for profile in profiles {
-        let trust_state = trust_state_for(storage, &profile)?;
-
-        connections.push(ConnectionDto {
-            profile_id: profile.id().as_str().to_owned(),
-            server_id: profile.server_id().as_str().to_owned(),
-            display_name: profile.display_name().as_str().to_owned(),
-            record_version: profile.record_version().get(),
-            enabled: profile.is_enabled(),
-            trust_state,
-        });
-    }
+    let (projects, servers, connections) = snapshot.into_parts();
+    let projects = projects.iter().map(project_dto).collect();
+    let servers = servers.iter().map(managed_server_dto).collect();
+    let connections = connections
+        .into_iter()
+        .map(|snapshot| {
+            let (profile, trust) = snapshot.into_parts();
+            ConnectionDto {
+                profile_id: profile.id().as_str().to_owned(),
+                server_id: profile.server_id().as_str().to_owned(),
+                display_name: profile.display_name().as_str().to_owned(),
+                record_version: profile.record_version().get(),
+                enabled: profile.is_enabled(),
+                trust_state: trust_state_for(&profile, trust.as_ref()),
+            }
+        })
+        .collect();
 
     Ok(HumanWorkbenchDto {
+        projects,
+        servers,
         connections,
         terminal_available: true,
     })
 }
 
-fn trust_state_for(
-    storage: &SqliteStorage,
-    profile: &ConnectionProfile,
-) -> Result<TrustStateDto, IpcErrorDto> {
-    let trust = HostTrustRepository::find(storage, profile.id())
-        .map_err(|_| IpcErrorDto::storage_unavailable())?;
-    Ok(match trust {
+fn project_dto(project: &Project) -> ProjectDto {
+    ProjectDto {
+        project_id: project.id().as_str().to_owned(),
+        display_name: project.display_name().as_str().to_owned(),
+        record_version: project.record_version().get(),
+    }
+}
+
+fn managed_server_dto(server: &ManagedServer) -> ManagedServerDto {
+    ManagedServerDto {
+        server_id: server.id().as_str().to_owned(),
+        project_id: server
+            .project_id()
+            .map(|project_id| project_id.as_str().to_owned()),
+        display_name: server.display_name().as_str().to_owned(),
+        record_version: server.record_version().get(),
+    }
+}
+
+fn trust_state_for(profile: &ConnectionProfile, trust: Option<&StoredHostTrust>) -> TrustStateDto {
+    match trust {
         Some(trust) if trust.matches(profile) => TrustStateDto::Ready,
         Some(_) => TrustStateDto::Stale,
         None => TrustStateDto::Required,
-    })
+    }
 }
 
 fn connection_editor_dto(
-    storage: &SqliteStorage,
     profile: &ConnectionProfile,
-) -> Result<ConnectionEditorDto, IpcErrorDto> {
-    Ok(ConnectionEditorDto {
+    trust_state: TrustStateDto,
+) -> ConnectionEditorDto {
+    ConnectionEditorDto {
         profile_id: profile.id().as_str().to_owned(),
         server_id: profile.server_id().as_str().to_owned(),
         display_name: profile.display_name().as_str().to_owned(),
@@ -853,8 +1004,8 @@ fn connection_editor_dto(
         username: profile.route().username().to_owned(),
         enabled: profile.is_enabled(),
         record_version: profile.record_version().get(),
-        trust_state: trust_state_for(storage, profile)?,
-    })
+        trust_state,
+    }
 }
 
 #[tauri::command]
@@ -873,14 +1024,17 @@ fn get_connection_editor_from(
 ) -> Result<ConnectionEditorDto, IpcErrorDto> {
     let profile_id = ConnectionProfileId::parse(request.profile_id)
         .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?;
-    let profile = ConnectionProfileRepository::find(storage, &profile_id)
+    let snapshot = storage
+        .load_connection_editor_snapshot(&profile_id)
         .map_err(|_| IpcErrorDto::storage_unavailable())?
         .ok_or_else(|| IpcErrorDto::from(IpcErrorCode::ConnectionNotFound))?;
+    let (profile, trust) = snapshot.into_parts();
     if profile.id() != &profile_id {
         return Err(IpcErrorDto::from(IpcErrorCode::ConnectionRecordMismatch));
     }
 
-    connection_editor_dto(storage, &profile)
+    let trust_state = trust_state_for(&profile, trust.as_ref());
+    Ok(connection_editor_dto(&profile, trust_state))
 }
 
 #[tauri::command]
@@ -909,9 +1063,12 @@ fn create_connection_profile_from(
     server_id: ManagedServerId,
     credential_ref: CredentialRef,
 ) -> Result<ConnectionEditorDto, IpcErrorDto> {
-    let request = CreateConnectionProfileRequest::new(
-        profile_id,
+    let server_display_name = request.display_name.clone();
+    let request = CreateServerWithConnectionRequest::new(
         server_id,
+        None,
+        server_display_name,
+        profile_id,
         credential_ref,
         request.display_name,
         request.host,
@@ -920,11 +1077,204 @@ fn create_connection_profile_from(
         request.enabled,
     )
     .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?;
-    let profile = ConnectionProfileMutationService::new(storage)
-        .create(request)
+    let created = ServerWorkspaceService::new(storage)
+        .create_server_with_connection(request)
         .map_err(IpcErrorDto::from)?;
 
-    connection_editor_dto(storage, &profile)
+    Ok(connection_editor_dto(
+        created.connection(),
+        TrustStateDto::Required,
+    ))
+}
+
+#[tauri::command]
+fn create_project(
+    storage: State<'_, SqliteStorage>,
+    lifecycle: State<'_, ResidentLifecycleRuntime>,
+    request: CreateProjectRequestDto,
+) -> Result<ProjectDto, IpcErrorDto> {
+    let _operation = admit_effectful_operation(&lifecycle)?;
+    create_project_from(
+        &storage,
+        request,
+        ProjectId::parse(Uuid::new_v4().to_string())
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+    )
+}
+
+fn create_project_from(
+    storage: &SqliteStorage,
+    request: CreateProjectRequestDto,
+    project_id: ProjectId,
+) -> Result<ProjectDto, IpcErrorDto> {
+    let request = CreateProjectRequest::new(project_id, request.display_name)
+        .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?;
+    let project = ServerWorkspaceService::new(storage)
+        .create_project(request)
+        .map_err(IpcErrorDto::from)?;
+    Ok(project_dto(&project))
+}
+
+#[tauri::command]
+fn update_project(
+    storage: State<'_, SqliteStorage>,
+    lifecycle: State<'_, ResidentLifecycleRuntime>,
+    request: UpdateProjectRequestDto,
+) -> Result<ProjectDto, IpcErrorDto> {
+    let _operation = admit_effectful_operation(&lifecycle)?;
+    update_project_from(storage.inner(), request)
+}
+
+fn update_project_from(
+    storage: &SqliteStorage,
+    request: UpdateProjectRequestDto,
+) -> Result<ProjectDto, IpcErrorDto> {
+    let request = UpdateProjectRequest::new(
+        ProjectId::parse(request.project_id)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        ProjectRecordVersion::new(request.expected_record_version)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        request.display_name,
+    )
+    .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?;
+    let project = ServerWorkspaceService::new(storage)
+        .update_project(request)
+        .map_err(IpcErrorDto::from)?;
+    Ok(project_dto(&project))
+}
+
+#[tauri::command]
+fn delete_project(
+    storage: State<'_, SqliteStorage>,
+    lifecycle: State<'_, ResidentLifecycleRuntime>,
+    request: DeleteProjectRequestDto,
+) -> Result<DeleteProjectSettlementDto, IpcErrorDto> {
+    let _operation = admit_effectful_operation(&lifecycle)?;
+    delete_project_from(storage.inner(), request)
+}
+
+fn delete_project_from(
+    storage: &SqliteStorage,
+    request: DeleteProjectRequestDto,
+) -> Result<DeleteProjectSettlementDto, IpcErrorDto> {
+    let request = DeleteProjectRequest::new(
+        ProjectId::parse(request.project_id)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        ProjectRecordVersion::new(request.expected_record_version)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+    );
+    let unassigned_servers = ServerWorkspaceService::new(storage)
+        .delete_project(request)
+        .map_err(IpcErrorDto::from)?;
+    Ok(DeleteProjectSettlementDto {
+        status: DeleteProjectStatusDto::Deleted,
+        unassigned_servers,
+    })
+}
+
+#[tauri::command]
+fn update_managed_server(
+    storage: State<'_, SqliteStorage>,
+    lifecycle: State<'_, ResidentLifecycleRuntime>,
+    request: UpdateManagedServerRequestDto,
+) -> Result<ManagedServerDto, IpcErrorDto> {
+    let _operation = admit_effectful_operation(&lifecycle)?;
+    update_managed_server_from(storage.inner(), request)
+}
+
+fn update_managed_server_from(
+    storage: &SqliteStorage,
+    request: UpdateManagedServerRequestDto,
+) -> Result<ManagedServerDto, IpcErrorDto> {
+    let request = UpdateManagedServerRequest::new(
+        ManagedServerId::parse(request.server_id)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        ManagedServerRecordVersion::new(request.expected_record_version)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        parse_optional_project_id(request.project_id)?,
+        request.display_name,
+    )
+    .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?;
+    let server = ServerWorkspaceService::new(storage)
+        .update_server(request)
+        .map_err(IpcErrorDto::from)?;
+    Ok(managed_server_dto(&server))
+}
+
+#[tauri::command]
+fn delete_managed_server(
+    storage: State<'_, SqliteStorage>,
+    lifecycle: State<'_, ResidentLifecycleRuntime>,
+    request: DeleteManagedServerRequestDto,
+) -> Result<DeleteManagedServerSettlementDto, IpcErrorDto> {
+    let _operation = admit_effectful_operation(&lifecycle)?;
+    delete_managed_server_from(storage.inner(), request)
+}
+
+fn delete_managed_server_from(
+    storage: &SqliteStorage,
+    request: DeleteManagedServerRequestDto,
+) -> Result<DeleteManagedServerSettlementDto, IpcErrorDto> {
+    let request = DeleteManagedServerRequest::new(
+        ManagedServerId::parse(request.server_id)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        ManagedServerRecordVersion::new(request.expected_record_version)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+    );
+    ServerWorkspaceService::new(storage)
+        .delete_server(request)
+        .map_err(IpcErrorDto::from)?;
+    Ok(DeleteManagedServerSettlementDto {
+        status: DeleteManagedServerStatusDto::Deleted,
+    })
+}
+
+#[tauri::command]
+fn add_connection_profile_to_server(
+    storage: State<'_, SqliteStorage>,
+    lifecycle: State<'_, ResidentLifecycleRuntime>,
+    request: AddConnectionProfileToServerRequestDto,
+) -> Result<ConnectionEditorDto, IpcErrorDto> {
+    let _operation = admit_effectful_operation(&lifecycle)?;
+    add_connection_profile_to_server_from(
+        storage.inner(),
+        request,
+        ConnectionProfileId::parse(Uuid::new_v4().to_string())
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        CredentialRef::parse(Uuid::new_v4().to_string())
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+    )
+}
+
+fn add_connection_profile_to_server_from(
+    storage: &SqliteStorage,
+    request: AddConnectionProfileToServerRequestDto,
+    profile_id: ConnectionProfileId,
+    credential_ref: CredentialRef,
+) -> Result<ConnectionEditorDto, IpcErrorDto> {
+    let request = AddConnectionToServerRequest::new(
+        ManagedServerId::parse(request.server_id)
+            .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?,
+        profile_id,
+        credential_ref,
+        request.display_name,
+        request.host,
+        parse_port(request.port)?,
+        request.username,
+        request.enabled,
+    )
+    .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))?;
+    let profile = ServerWorkspaceService::new(storage)
+        .add_connection_to_server(request)
+        .map_err(IpcErrorDto::from)?;
+    Ok(connection_editor_dto(&profile, TrustStateDto::Required))
+}
+
+fn parse_optional_project_id(value: Option<String>) -> Result<Option<ProjectId>, IpcErrorDto> {
+    value
+        .map(ProjectId::parse)
+        .transpose()
+        .map_err(|_| IpcErrorDto::from(IpcErrorCode::InvalidRequest))
 }
 
 #[tauri::command]
@@ -956,8 +1306,10 @@ fn update_connection_profile_from(
     let profile = ConnectionProfileMutationService::new(storage)
         .update(request)
         .map_err(IpcErrorDto::from)?;
-
-    connection_editor_dto(storage, &profile)
+    let trust = HostTrustRepository::find(storage, profile.id())
+        .map_err(|_| IpcErrorDto::storage_unavailable())?;
+    let trust_state = trust_state_for(&profile, trust.as_ref());
+    Ok(connection_editor_dto(&profile, trust_state))
 }
 
 fn parse_port(value: i64) -> Result<u16, IpcErrorDto> {
@@ -2239,13 +2591,15 @@ where
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
+    let default_data_root = dirs::data_local_dir()
+        .map(|path| path.join(&context.config().identifier))
+        .expect("failed to resolve the private desktop data root");
+    let data_layout = DesktopDataLayout::resolve(default_data_root)
+        .expect("failed to establish the private desktop data layout");
 
     #[cfg(target_os = "macos")]
     let single_instance_admission = {
-        let private_storage_root = dirs::data_local_dir()
-            .map(|path| path.join(&context.config().identifier))
-            .expect("failed to resolve the private storage root for single-instance admission");
-        admit_macos_primary_instance(&private_storage_root, &context.config().identifier)
+        admit_macos_primary_instance(data_layout.authority_root(), &context.config().identifier)
             .expect("failed to establish single-instance admission")
     };
     #[cfg(target_os = "macos")]
@@ -2254,7 +2608,14 @@ pub fn run() {
         MacOsSingleInstanceAdmission::SecondaryNotified => std::process::exit(0),
     };
 
-    let builder = tauri::Builder::default().enable_macos_default_menu(false);
+    #[cfg(target_os = "macos")]
+    data_layout
+        .prepare_primary()
+        .expect("failed to prepare the primary desktop data layout");
+
+    let builder = tauri::Builder::default()
+        .enable_macos_default_menu(false)
+        .manage(data_layout);
 
     #[cfg(target_os = "macos")]
     let builder = builder.manage(single_instance_lock);
@@ -2313,39 +2674,39 @@ pub fn run() {
             _ => {}
         })
         .setup(|app| {
-            let private_storage_root = app.path().app_local_data_dir()?;
-            fs::create_dir_all(&private_storage_root)?;
+            let data_layout = app.state::<DesktopDataLayout>();
+            #[cfg(not(target_os = "macos"))]
+            data_layout.prepare_primary()?;
 
             #[cfg(debug_assertions)]
-            let database_override = std::env::var_os(DEBUG_DATABASE_PATH_ENV);
+            let data_root_override = std::env::var_os(DESKTOP_DATA_DIR_ENV);
             #[cfg(debug_assertions)]
             let debug_terminal_fixture_enabled = debug_human_terminal_fixture::fixture_enabled(
                 std::env::var_os(debug_human_terminal_fixture::DEBUG_TERMINAL_FIXTURE_ENV),
-                database_override.as_ref(),
+                data_root_override.as_ref(),
             )?;
-            #[cfg(debug_assertions)]
-            let (database_path, seed_default_fixtures) =
-                debug_database_selection(&private_storage_root, database_override)?;
-            #[cfg(not(debug_assertions))]
-            let database_path = private_storage_root.join(ACTIVE_DATABASE_FILE_NAME);
-
-            let storage = SqliteStorage::new(database_path)?;
+            let storage = SqliteStorage::new(data_layout.database_path())?;
+            data_layout.harden_sqlite_sidecars()?;
 
             #[cfg(debug_assertions)]
-            if seed_default_fixtures || debug_terminal_fixture_enabled {
+            if data_root_override.is_none() || debug_terminal_fixture_enabled {
                 seed_debug_storage(&storage)?;
             }
 
+            let secure_credentials_root = data_layout
+                .secure_credentials_root()
+                .map(std::path::Path::to_path_buf);
             #[cfg(debug_assertions)]
             let credentials = if debug_terminal_fixture_enabled {
                 HumanCredentialRuntime::development(
+                    secure_credentials_root,
                     debug_human_terminal_fixture::reserved_credential_refs()?,
-                )
+                )?
             } else {
-                HumanCredentialRuntime::production()
+                HumanCredentialRuntime::production(secure_credentials_root)?
             };
             #[cfg(not(debug_assertions))]
-            let credentials = HumanCredentialRuntime::production();
+            let credentials = HumanCredentialRuntime::production(secure_credentials_root)?;
 
             let terminal_runtime = HumanTerminalRuntime::new();
             let lifecycle = ResidentLifecycleRuntime::new();
@@ -2376,6 +2737,12 @@ pub fn run() {
         load_human_workbench,
         get_connection_editor,
         create_connection_profile,
+        create_project,
+        update_project,
+        delete_project,
+        update_managed_server,
+        delete_managed_server,
+        add_connection_profile_to_server,
         update_connection_profile,
         delete_connection_profile,
         get_human_password_status,
@@ -2411,23 +2778,6 @@ pub fn run() {
         }
         _ => {}
     });
-}
-
-#[cfg(debug_assertions)]
-fn debug_database_selection(
-    private_storage_root: &std::path::Path,
-    override_path: Option<std::ffi::OsString>,
-) -> Result<(std::path::PathBuf, bool), Box<dyn Error>> {
-    match override_path {
-        Some(path) => {
-            let path = std::path::PathBuf::from(path);
-            if !path.is_absolute() {
-                return Err("debug database override must be an absolute path".into());
-            }
-            Ok((path, false))
-        }
-        None => Ok((private_storage_root.join(ACTIVE_DATABASE_FILE_NAME), true)),
-    }
 }
 
 #[cfg(all(test, debug_assertions))]
@@ -2775,34 +3125,6 @@ mod tests {
         ) -> Result<RemovePasswordSettlement, CredentialProviderError> {
             self.remove_password_on_main_thread(credential_ref)
         }
-    }
-
-    #[test]
-    fn debug_and_production_databases_are_isolated() {
-        assert_eq!(ACTIVE_DATABASE_FILE_NAME, "vigilshell-debug.sqlite3");
-        assert_ne!(ACTIVE_DATABASE_FILE_NAME, "vigilshell.sqlite3");
-
-        let private_root = std::path::Path::new("/private/fixture-root");
-        let (default_path, seed_default) =
-            debug_database_selection(private_root, None).expect("select default debug database");
-        assert_eq!(default_path, private_root.join("vigilshell-debug.sqlite3"));
-        assert!(seed_default);
-
-        let isolated = std::ffi::OsString::from("/private/tmp/vigilshell-isolated.sqlite3");
-        let (isolated_path, seed_isolated) = debug_database_selection(private_root, Some(isolated))
-            .expect("select isolated debug database");
-        assert_eq!(
-            isolated_path,
-            std::path::Path::new("/private/tmp/vigilshell-isolated.sqlite3")
-        );
-        assert!(!seed_isolated);
-        assert!(
-            debug_database_selection(
-                private_root,
-                Some(std::ffi::OsString::from("relative.sqlite3"))
-            )
-            .is_err()
-        );
     }
 
     #[test]
@@ -3568,6 +3890,298 @@ mod tests {
     }
 
     #[test]
+    fn new_connection_settlements_do_not_depend_on_a_post_commit_trust_read() {
+        let create_storage = SqliteStorage::open_in_memory().expect("open create storage");
+        create_storage
+            .make_host_trust_reads_unavailable_fixture()
+            .expect("make trust reads unavailable");
+        let created = create_connection_profile_from(
+            &create_storage,
+            CreateConnectionProfileRequestDto {
+                display_name: "Created route".to_owned(),
+                host: "created.example.invalid".to_owned(),
+                port: 22,
+                username: "created-user".to_owned(),
+                enabled: true,
+            },
+            ConnectionProfileId::parse("profile-created-settlement").expect("profile id"),
+            ManagedServerId::parse("server-created-settlement").expect("server id"),
+            CredentialRef::parse("credential-created-settlement").expect("credential ref"),
+        )
+        .expect("settle committed create");
+        assert_eq!(created.trust_state, TrustStateDto::Required);
+        assert!(
+            ConnectionProfileRepository::find(
+                &create_storage,
+                &ConnectionProfileId::parse(&created.profile_id).expect("profile id"),
+            )
+            .expect("read committed create")
+            .is_some()
+        );
+        assert_eq!(
+            get_connection_editor_from(
+                &create_storage,
+                GetConnectionEditorRequestDto {
+                    profile_id: created.profile_id,
+                },
+            )
+            .expect_err("editor trust read must remain unavailable")
+            .code,
+            IpcErrorCode::StorageUnavailable
+        );
+
+        let add_storage = SqliteStorage::open_in_memory().expect("open add storage");
+        let first = create_connection_profile_from(
+            &add_storage,
+            CreateConnectionProfileRequestDto {
+                display_name: "First route".to_owned(),
+                host: "first.example.invalid".to_owned(),
+                port: 22,
+                username: "first-user".to_owned(),
+                enabled: true,
+            },
+            ConnectionProfileId::parse("profile-first-settlement").expect("profile id"),
+            ManagedServerId::parse("server-add-settlement").expect("server id"),
+            CredentialRef::parse("credential-first-settlement").expect("credential ref"),
+        )
+        .expect("create first profile");
+        add_storage
+            .make_host_trust_reads_unavailable_fixture()
+            .expect("make trust reads unavailable");
+        let added = add_connection_profile_to_server_from(
+            &add_storage,
+            AddConnectionProfileToServerRequestDto {
+                server_id: first.server_id,
+                display_name: "Added route".to_owned(),
+                host: "added.example.invalid".to_owned(),
+                port: 2222,
+                username: "added-user".to_owned(),
+                enabled: false,
+            },
+            ConnectionProfileId::parse("profile-added-settlement").expect("profile id"),
+            CredentialRef::parse("credential-added-settlement").expect("credential ref"),
+        )
+        .expect("settle committed add");
+        assert_eq!(added.trust_state, TrustStateDto::Required);
+        assert!(
+            ConnectionProfileRepository::find(
+                &add_storage,
+                &ConnectionProfileId::parse(&added.profile_id).expect("profile id"),
+            )
+            .expect("read committed add")
+            .is_some()
+        );
+        assert_eq!(
+            get_connection_editor_from(
+                &add_storage,
+                GetConnectionEditorRequestDto {
+                    profile_id: added.profile_id,
+                },
+            )
+            .expect_err("editor trust read must remain unavailable")
+            .code,
+            IpcErrorCode::StorageUnavailable
+        );
+    }
+
+    #[test]
+    fn project_server_and_second_connection_commands_preserve_profile_scoped_authority() {
+        let storage = SqliteStorage::open_in_memory().expect("open storage");
+        let project = create_project_from(
+            &storage,
+            CreateProjectRequestDto {
+                display_name: "  Production  ".to_owned(),
+            },
+            ProjectId::parse("project-production").expect("project id"),
+        )
+        .expect("create project");
+        let first = create_connection_profile_from(
+            &storage,
+            CreateConnectionProfileRequestDto {
+                display_name: "Primary route".to_owned(),
+                host: "primary.example.invalid".to_owned(),
+                port: 22,
+                username: "primary-user".to_owned(),
+                enabled: true,
+            },
+            ConnectionProfileId::parse("profile-primary").expect("profile id"),
+            ManagedServerId::parse("server-primary").expect("server id"),
+            CredentialRef::parse("credential-primary").expect("credential ref"),
+        )
+        .expect("create server and first connection");
+        let server = update_managed_server_from(
+            &storage,
+            UpdateManagedServerRequestDto {
+                server_id: first.server_id.clone(),
+                expected_record_version: 1,
+                project_id: Some(project.project_id.clone()),
+                display_name: "Production server".to_owned(),
+            },
+        )
+        .expect("assign and rename server");
+        assert_eq!(server.record_version, 2);
+        assert_eq!(server.project_id.as_deref(), Some("project-production"));
+
+        let second = add_connection_profile_to_server_from(
+            &storage,
+            AddConnectionProfileToServerRequestDto {
+                server_id: server.server_id.clone(),
+                display_name: "Secondary route".to_owned(),
+                host: "secondary.example.invalid".to_owned(),
+                port: 2222,
+                username: "secondary-user".to_owned(),
+                enabled: false,
+            },
+            ConnectionProfileId::parse("profile-secondary").expect("profile id"),
+            CredentialRef::parse("credential-secondary").expect("credential ref"),
+        )
+        .expect("add second connection");
+        assert_eq!(second.server_id, server.server_id);
+
+        let snapshot = load_human_workbench_from(&storage).expect("load workspace");
+        assert_eq!(snapshot.projects.len(), 1);
+        assert_eq!(snapshot.servers.len(), 1);
+        assert_eq!(snapshot.connections.len(), 2);
+        assert_eq!(snapshot.servers[0].display_name, "Production server");
+        assert_eq!(
+            snapshot.servers[0].project_id,
+            Some(project.project_id.clone())
+        );
+
+        let non_empty = delete_managed_server_from(
+            &storage,
+            DeleteManagedServerRequestDto {
+                server_id: server.server_id.clone(),
+                expected_record_version: 2,
+            },
+        )
+        .expect_err("non-empty server delete must fail");
+        assert_eq!(non_empty.code, IpcErrorCode::ManagedServerNotEmpty);
+
+        let project_delete = delete_project_from(
+            &storage,
+            DeleteProjectRequestDto {
+                project_id: project.project_id,
+                expected_record_version: 1,
+            },
+        )
+        .expect("delete project and unassign server");
+        assert_eq!(project_delete.unassigned_servers, 1);
+        let reloaded = load_human_workbench_from(&storage).expect("reload workspace");
+        assert!(reloaded.projects.is_empty());
+        assert_eq!(reloaded.servers[0].project_id, None);
+        assert_eq!(reloaded.servers[0].record_version, 3);
+
+        for profile_id in [first.profile_id, second.profile_id] {
+            assert_eq!(
+                vigilshell_core::connection_mutation::ConnectionProfileMutationRepository::delete_if_version(
+                    &storage,
+                    &ConnectionProfileId::parse(profile_id).expect("profile id"),
+                    ConnectionRecordVersion::INITIAL,
+                )
+                .expect("delete profile"),
+                vigilshell_core::connection_mutation::DeleteConnectionProfileResult::Deleted
+            );
+        }
+        assert_eq!(
+            delete_managed_server_from(
+                &storage,
+                DeleteManagedServerRequestDto {
+                    server_id: server.server_id,
+                    expected_record_version: 3,
+                },
+            )
+            .expect("delete empty server")
+            .status,
+            DeleteManagedServerStatusDto::Deleted
+        );
+    }
+
+    #[test]
+    fn workspace_requests_reject_unknown_fields_and_map_safe_errors() {
+        assert!(
+            serde_json::from_str::<CreateProjectRequestDto>(
+                r#"{"displayName":"Project","unexpected":true}"#
+            )
+            .is_err()
+        );
+        assert_eq!(
+            IpcErrorDto::from(MutateServerWorkspaceError::Conflict).code,
+            IpcErrorCode::WorkspaceConflict
+        );
+        assert_eq!(
+            IpcErrorDto::from(MutateServerWorkspaceError::RecordMismatch).code,
+            IpcErrorCode::WorkspaceRecordMismatch
+        );
+        assert_eq!(
+            IpcErrorDto::from(MutateServerWorkspaceError::ServerNotEmpty).code,
+            IpcErrorCode::ManagedServerNotEmpty
+        );
+    }
+
+    #[test]
+    fn generated_workspace_catalogue_contract_excludes_sensitive_profile_fields() {
+        let generated = concat!(
+            include_str!("../../src/lib/desktop/generated/HumanWorkbenchDto.ts"),
+            include_str!("../../src/lib/desktop/generated/ProjectDto.ts"),
+            include_str!("../../src/lib/desktop/generated/ManagedServerDto.ts"),
+            include_str!("../../src/lib/desktop/generated/ConnectionDto.ts"),
+        );
+        for forbidden in [
+            "host:",
+            "username:",
+            "credential",
+            "securityRevision",
+            "fingerprint",
+            "password",
+        ] {
+            assert!(!generated.contains(forbidden));
+        }
+    }
+
+    #[test]
+    fn generated_workspace_bindings_are_current() {
+        assert_generated_binding::<HumanWorkbenchDto>("HumanWorkbenchDto.ts");
+        assert_generated_binding::<ProjectDto>("ProjectDto.ts");
+        assert_generated_binding::<ManagedServerDto>("ManagedServerDto.ts");
+        assert_generated_binding::<ConnectionDto>("ConnectionDto.ts");
+        assert_generated_binding::<ConnectionEditorDto>("ConnectionEditorDto.ts");
+        assert_generated_binding::<TrustStateDto>("TrustStateDto.ts");
+        assert_generated_binding::<IpcErrorCode>("IpcErrorCode.ts");
+        assert_generated_binding::<CreateConnectionProfileRequestDto>(
+            "CreateConnectionProfileRequestDto.ts",
+        );
+        assert_generated_binding::<CreateProjectRequestDto>("CreateProjectRequestDto.ts");
+        assert_generated_binding::<UpdateProjectRequestDto>("UpdateProjectRequestDto.ts");
+        assert_generated_binding::<DeleteProjectRequestDto>("DeleteProjectRequestDto.ts");
+        assert_generated_binding::<UpdateManagedServerRequestDto>(
+            "UpdateManagedServerRequestDto.ts",
+        );
+        assert_generated_binding::<DeleteManagedServerRequestDto>(
+            "DeleteManagedServerRequestDto.ts",
+        );
+        assert_generated_binding::<AddConnectionProfileToServerRequestDto>(
+            "AddConnectionProfileToServerRequestDto.ts",
+        );
+        assert_generated_binding::<DeleteProjectSettlementDto>("DeleteProjectSettlementDto.ts");
+        assert_generated_binding::<DeleteProjectStatusDto>("DeleteProjectStatusDto.ts");
+        assert_generated_binding::<DeleteManagedServerSettlementDto>(
+            "DeleteManagedServerSettlementDto.ts",
+        );
+        assert_generated_binding::<DeleteManagedServerStatusDto>("DeleteManagedServerStatusDto.ts");
+    }
+
+    fn assert_generated_binding<T: TS + 'static>(filename: &str) {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../src/lib/desktop/generated")
+            .join(filename);
+        let committed = fs::read_to_string(&path).expect("read committed binding");
+        let generated =
+            T::export_to_string(&ts_rs::Config::from_env()).expect("generate renderer binding");
+        assert_eq!(committed, generated, "binding drift: {}", path.display());
+    }
+
+    #[test]
     fn connection_update_maps_version_conflicts_and_refreshes_editor_state() {
         let storage = SqliteStorage::open_in_memory().expect("open storage");
         create_connection_profile_from(
@@ -3803,9 +4417,11 @@ mod tests {
         let storage = SqliteStorage::open_in_memory().expect("open storage");
         seed_debug_storage(&storage).expect("seed debug records");
         let credentials = HumanCredentialRuntime::development(
+            None,
             debug_human_terminal_fixture::reserved_credential_refs()
                 .expect("reserved credential references"),
-        );
+        )
+        .expect("development credentials");
 
         let action = prepare_credential_action(
             &storage,
@@ -3858,7 +4474,7 @@ mod tests {
     fn debug_fixture_requires_explicit_runtime_opt_in_and_ordinary_profiles_stay_production() {
         let storage = SqliteStorage::open_in_memory().expect("open storage");
         seed_debug_storage(&storage).expect("seed debug records");
-        let production = HumanCredentialRuntime::production();
+        let production = HumanCredentialRuntime::production(None).expect("production credentials");
         let reserved = match prepare_credential_action(
             &storage,
             &production,
@@ -3886,9 +4502,11 @@ mod tests {
         )
         .expect("create ordinary profile");
         let development = HumanCredentialRuntime::development(
+            None,
             debug_human_terminal_fixture::reserved_credential_refs()
                 .expect("reserved credential references"),
-        );
+        )
+        .expect("development credentials");
         let ordinary = prepare_credential_action(
             &storage,
             &development,

@@ -1,37 +1,42 @@
-export type TrustState = "ready" | "required" | "stale";
+import type {
+	AddConnectionProfileToServerRequestDto,
+	ConnectionDto,
+	ConnectionEditorDto,
+	CreateConnectionProfileRequestDto,
+	CreateProjectRequestDto,
+	DeleteManagedServerRequestDto,
+	DeleteManagedServerSettlementDto,
+	DeleteProjectRequestDto,
+	DeleteProjectSettlementDto,
+	HumanWorkbenchDto,
+	IpcErrorCode,
+	ManagedServerDto,
+	ProjectDto,
+	TrustStateDto,
+	UpdateManagedServerRequestDto,
+	UpdateProjectRequestDto,
+} from "./generated";
 
-export type ConnectionSummary = {
-	profileId: string;
-	serverId: string;
-	displayName: string;
-	enabled: boolean;
-	recordVersion: number;
-	trustState: TrustState;
-};
-
-export type ConnectionEditorView = {
-	profileId: string;
-	serverId: string;
-	displayName: string;
-	host: string;
-	port: number;
-	username: string;
-	enabled: boolean;
-	recordVersion: number;
-	trustState: TrustState;
-};
+export type TrustState = TrustStateDto;
+export type ProjectSummary = ProjectDto;
+export type ManagedServerSummary = ManagedServerDto;
+export type ConnectionSummary = ConnectionDto;
+export type ConnectionEditorView = ConnectionEditorDto;
 
 export type GetConnectionEditorRequest = {
 	profileId: string;
 };
 
-export type CreateConnectionProfileRequest = {
-	displayName: string;
-	host: string;
-	port: number;
-	username: string;
-	enabled: boolean;
-};
+export type CreateConnectionProfileRequest = CreateConnectionProfileRequestDto;
+
+export type CreateProjectRequest = CreateProjectRequestDto;
+export type UpdateProjectRequest = UpdateProjectRequestDto;
+export type DeleteProjectRequest = DeleteProjectRequestDto;
+export type DeleteProjectSettlement = DeleteProjectSettlementDto;
+export type UpdateManagedServerRequest = UpdateManagedServerRequestDto;
+export type DeleteManagedServerRequest = DeleteManagedServerRequestDto;
+export type DeleteManagedServerSettlement = DeleteManagedServerSettlementDto;
+export type AddConnectionProfileToServerRequest = AddConnectionProfileToServerRequestDto;
 
 export type UpdateConnectionProfileRequest = CreateConnectionProfileRequest & {
 	profileId: string;
@@ -79,10 +84,7 @@ export type DiscardHostTrustSettlement = {
 	status: "discarded" | "already_unavailable";
 };
 
-export type HumanWorkbenchSnapshot = {
-	connections: ConnectionSummary[];
-	terminalAvailable: boolean;
-};
+export type HumanWorkbenchSnapshot = HumanWorkbenchDto;
 
 export type OpenHumanTerminalRequest = {
 	profileId: string;
@@ -183,6 +185,11 @@ export const desktopErrorCodes = [
 	"connection_conflict",
 	"connection_delete_incomplete",
 	"version_exhausted",
+	"workspace_conflict",
+	"workspace_record_mismatch",
+	"project_not_found",
+	"managed_server_not_found",
+	"managed_server_not_empty",
 	"connection_disabled",
 	"connection_in_use",
 	"connection_delete_in_progress",
@@ -216,4 +223,13 @@ export const desktopErrorCodes = [
 	"application_shutting_down",
 ] as const;
 
-export type DesktopErrorCode = (typeof desktopErrorCodes)[number] | "unexpected_failure";
+type RuntimeDesktopErrorCode = (typeof desktopErrorCodes)[number];
+type AssertNever<Value extends never> = Value;
+type GeneratedCodesMissingFromRuntime = AssertNever<Exclude<IpcErrorCode, RuntimeDesktopErrorCode>>;
+type RuntimeCodesMissingFromGenerated = AssertNever<Exclude<RuntimeDesktopErrorCode, IpcErrorCode>>;
+type VerifiedDesktopErrorCode =
+	| IpcErrorCode
+	| GeneratedCodesMissingFromRuntime
+	| RuntimeCodesMissingFromGenerated;
+
+export type DesktopErrorCode = VerifiedDesktopErrorCode | "unexpected_failure";

@@ -12,6 +12,19 @@ VigilShell has three directional layers:
 Dependencies point inward. Composition roots assemble concrete adapters, but
 domain contracts do not import renderer, Tauri, or global-runtime concerns.
 
+## Repository Map
+
+| Path | Primary responsibility |
+| --- | --- |
+| `src/` | Svelte renderer features, project-owned UI wrappers, and typed desktop adapters. |
+| `src-tauri/` | Tauri composition root, immutable desktop data layout, IPC mapping, native runtime ownership, permissions, and desktop lifecycle. |
+| `crates/vigilshell-core/` | Runtime-independent domain values, application services, and inward-facing Ports. |
+| `crates/vigilshell-storage-sqlite/` | SQLite persistence, migrations, transactions, and storage Port implementations. |
+| `crates/vigilshell-credentials/` | Platform credential adapter: macOS secure input and Keychain, plus Windows native input and Current-User DPAPI. |
+| `crates/vigilshell-lifecycle-macos/` | macOS native termination and lifecycle adapter. |
+| `crates/vigilshell-transport-russh/` | Project-owned SSH transport and Human terminal adapter. |
+| `vendor/russh/` | Pinned upstream source plus the reviewed VigilShell security hardening patch. |
+
 ## Initial Rust Backend Composition
 
 The backend begins as a Rust modular monolith. The initial `vigilshell-core`
@@ -31,6 +44,9 @@ names alone do not justify placeholder crates.
   safe state projection.
 - Connection and trust services manage profiles, routes, host trust, and
   credential references.
+- Project and Managed Server services own Human navigation grouping, stable Server
+  identity, Server naming, and the Server-to-Connection relationship. They do not
+  own route trust, credentials, or transport authority.
 - Human operation services manage terminals, files, transfers, tunnels, and
   server operations.
 - Agent governance services manage Scopes, Sessions, templates, revocation, and
@@ -45,6 +61,12 @@ transport leases remain distinct. Data is persisted or cached by the owner whose
 invariants it represents; other layers consume typed ports rather than shared
 mutable models. Composition remains explicit, including partial-startup unwind
 and shutdown.
+
+Project membership is an optional property of a Managed Server. Connection
+Profiles inherit that navigation projection but retain independent route,
+credential, Host Trust, security revision, and terminal lifecycle ownership.
+Every remote Human operation continues to resolve and authorize an exact
+Connection Profile; neither Project ID nor Managed Server ID is a transport target.
 
 ## Human Terminal Admission Ports
 

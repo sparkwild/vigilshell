@@ -8,8 +8,8 @@ use zeroize::Zeroizing;
 
 use crate::{
     ConfigurePasswordSettlement, CredentialProviderError, HumanPasswordCredentialProvider,
-    MacOsHumanPasswordCredentialProvider, NativePasswordPrompt, PasswordConfigurationStatus,
-    PasswordPromptSettlement, PasswordStore, RemovePasswordSettlement,
+    NativePasswordPrompt, PasswordConfigurationStatus, PasswordPromptSettlement, PasswordStore,
+    PlatformHumanPasswordCredentialProvider, RemovePasswordSettlement,
 };
 
 #[derive(Default)]
@@ -159,8 +159,8 @@ fn fixture_reference() -> CredentialRef {
 fn fixture_provider(
     store: Arc<FakePasswordStore>,
     prompt: Arc<FakePrompt>,
-) -> MacOsHumanPasswordCredentialProvider {
-    MacOsHumanPasswordCredentialProvider::with_drivers(store, prompt)
+) -> PlatformHumanPasswordCredentialProvider {
+    PlatformHumanPasswordCredentialProvider::with_drivers(store, prompt)
 }
 
 #[test]
@@ -363,7 +363,7 @@ fn debug_and_display_are_redacted_and_provider_is_object_safe() {
     let provider_debug = format!("{provider:?}");
     assert_eq!(
         provider_debug,
-        "MacOsHumanPasswordCredentialProvider { .. }"
+        "PlatformHumanPasswordCredentialProvider { .. }"
     );
 
     let platform_detail = "credential-fixture";
@@ -380,7 +380,7 @@ fn debug_and_display_are_redacted_and_provider_is_object_safe() {
 
     let object_safe: Box<dyn HumanPasswordCredentialProvider> = Box::new(provider.clone());
     drop(object_safe);
-    assert_send_sync::<MacOsHumanPasswordCredentialProvider>();
+    assert_send_sync::<PlatformHumanPasswordCredentialProvider>();
 }
 
 fn assert_send_sync<T: Send + Sync>() {}

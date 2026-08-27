@@ -7,7 +7,8 @@ available while the on-demand Svelte renderer is closed. The Core owns connectio
 establishment, local state, Agent admission, policy enforcement, operation
 settlement, redaction, audit, notifications, and native lifecycle integration.
 
-The system has four runtime participants:
+The accepted target topology has four runtime participants. This topology does
+not claim that every participant is already implemented or released:
 
 - the resident desktop executable and composition root;
 - one or more on-demand renderer windows with safe view models only;
@@ -36,6 +37,29 @@ starting competing shutdowns.
 Single-instance activation, login start, the menu-bar or tray controller, and
 native notifications are Core-owned adapters. Their visible state must reflect
 trusted lifecycle state rather than renderer inference.
+
+## Single-Instance And Activation
+
+A synchronous per-user primary-instance claim completes before desktop runtime
+and business setup. On the initial macOS path, the primary removes any stale
+official-listener socket before constructing the Tauri runtime; failure to clean
+that exact socket stops startup.
+
+Before window or business setup, a readiness gate sends an empty payload through
+the official listener and requires the official callback to acknowledge it. If
+the owner fails during startup, another launch may recover the claim within the
+same bounded five-second window. Readiness timeout, listener failure, or local I/O
+failure stops startup without creating a partial second instance.
+
+A secondary launch sends only an empty activation signal. Its arguments and
+working directory do not enter the renderer, logs, persistence, or an authority
+decision. Listener connect, empty-payload write, and notification run inside one
+worker governed by the same deadline so blocked native I/O cannot extend startup
+without bound.
+
+Activation uses the resident operation admission that linearizes `Running` to
+`Quitting`. `Quitting` and `ExitReady` reject activation rather than reopening the
+workbench or delaying settlement.
 
 ## Cross-Lane Isolation
 

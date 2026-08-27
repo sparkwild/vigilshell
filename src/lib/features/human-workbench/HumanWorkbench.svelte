@@ -3,6 +3,7 @@
 	import { resetMode, setMode, userPrefersMode } from "mode-watcher";
 	import { toast } from "svelte-sonner";
 	import CircleAlertIcon from "@lucide/svelte/icons/circle-alert";
+	import FolderPlusIcon from "@lucide/svelte/icons/folder-plus";
 	import KeyRoundIcon from "@lucide/svelte/icons/key-round";
 	import MonitorIcon from "@lucide/svelte/icons/monitor";
 	import MoonIcon from "@lucide/svelte/icons/moon";
@@ -25,6 +26,7 @@
 	import * as Field from "$lib/components/ui/field";
 	import * as InputGroup from "$lib/components/ui/input-group";
 	import { Input } from "$lib/components/ui/input";
+	import * as NativeSelect from "$lib/components/ui/native-select";
 	import * as Resizable from "$lib/components/ui/resizable";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
@@ -32,7 +34,6 @@
 	import { Switch } from "$lib/components/ui/switch";
 	import * as Tabs from "$lib/components/ui/tabs";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import { cn } from "$lib/utils";
 	import type {
 		ConnectionEditorView,
 		ConnectionSummary,
@@ -43,13 +44,19 @@
 		HumanTerminalSession,
 		HumanWorkbenchSnapshot,
 		HostTrustProbeResult,
+		ManagedServerSummary,
+		ProjectSummary,
 		TrustState,
 	} from "$lib/desktop/contracts";
 	import {
+		addConnectionProfileToServer,
 		confirmHostTrust,
 		configureHumanPassword,
 		createConnectionProfile,
+		createProject,
 		deleteConnectionProfile,
+		deleteManagedServer,
+		deleteProject,
 		DesktopAdapterError,
 		discardHostTrust,
 		getConnectionEditor,
@@ -58,7 +65,23 @@
 		probeHostKey,
 		removeHumanPassword,
 		updateConnectionProfile,
+		updateManagedServer,
+		updateProject,
 	} from "$lib/desktop/tauri-desktop-adapter";
+	import CatalogueTree from "$lib/features/server-workspace/CatalogueTree.svelte";
+	import {
+		buildCatalogueHierarchy,
+		connectionLabel,
+		serverForConnection,
+	} from "$lib/features/server-workspace/catalogue";
+	import {
+		connectionSelection,
+		projectSelection,
+		resolveWorkspaceSelection,
+		serverSelection,
+		type WorkspaceInspectorKind,
+		type WorkspaceSelection,
+	} from "$lib/features/server-workspace/selection";
 	import { desktopErrorMessage } from "./error-messages";
 	import HostTrustCard from "./HostTrustCard.svelte";
 	import TerminalSurface from "./TerminalSurface.svelte";
@@ -69,6 +92,8 @@
 	const controlCharacterPattern = /[\u0000-\u001f\u007f-\u009f]/;
 	type ThemePreference = "system" | "light" | "dark";
 	type EditorMode = "view" | "create" | "edit";
+	type InspectorKind = WorkspaceInspectorKind;
+	type EntityEditorMode = "view" | "create" | "edit";
 	type HostTrustActionKind = "probe" | "confirm" | "discard" | null;
 	type HumanPasswordStatusPhase = "idle" | "loading" | HumanPasswordStatus | "unavailable";
 	type HumanTerminalPhase =
@@ -96,8 +121,12 @@
 	type ConnectionDraftErrors = Partial<Record<"displayName" | "host" | "port" | "username", string>>;
 	type LoadWorkbenchOptions = {
 		preferredProfileId?: string;
+		preferredServerId?: string;
+		preferredProjectId?: string;
+		inspectorKind?: InspectorKind;
 		selectFallback?: boolean;
 	};
+	type InspectorSelection = WorkspaceSelection;
 
 	function newConnectionDraft(): ConnectionDraft {
 		return { displayName: "", host: "", port: "22", username: "", enabled: true };
@@ -127,6 +156,17 @@
 		return new TextEncoder().encode(value).length;
 	}
 
+	function validateWorkspaceName(value: string): string | null {
+		const name = value.trim();
+		if (name.length === 0) {
+			return "Enter a name.";
+		}
+		if (utf8Length(name) > 128) {
+			return "Name must be at most 128 UTF-8 bytes.";
+		}
+		return null;
+	}
+
 	function validateConnectionDraft(draft: ConnectionDraft): ConnectionDraftErrors {
 		const errors: ConnectionDraftErrors = {};
 		const displayName = draft.displayName.trim();
@@ -137,7 +177,7 @@
 		if (displayName.length === 0) {
 			errors.displayName = "Enter a display name.";
 		} else if (utf8Length(displayName) > 128) {
-			errors.displayName = "Display name must be at most 128 UTF-8 bytes.";
+			errors.displayName = "Name must be at most 128 UTF-8 bytes.";
 		}
 
 		if (host.length === 0) {
@@ -168,6 +208,10 @@
 	let loadError = $state<string | null>(null);
 	let query = $state("");
 	let selectedProfileId = $state("");
+	let selectedServerId = $state("");
+	let selectedProjectId = $state("");
+	let inspectorKind = $state<InspectorKind>("connection");
+	let addingToServerId = $state("");
 	let sessions = $state<HumanTerminalSessionView[]>([]);
 	let activeSessionId = $state("");
 	let openingProfileId = $state<string | null>(null);
@@ -195,18 +239,48 @@
 	let editorError = $state<string | null>(null);
 	let editorValidationVisible = $state(false);
 	let deleteDialogOpen = $state(false);
-	let createReturnProfileId = $state("");
+	let createReturnSelection = $state<InspectorSelection | null>(null);
+	let projectEditorMode = $state<EntityEditorMode>("view");
+	let projectDraftName = $state("");
+	let projectBaselineName = $state("");
+	let projectSaving = $state(false);
+	let projectError = $state<string | null>(null);
+	let projectConflict = $state(false);
+	let projectValidationVisible = $state(false);
+	let projectDeleteDialogOpen = $state(false);
+	let serverEditorMode = $state<EntityEditorMode>("view");
+	let serverDraftName = $state("");
+	let serverDraftProjectId = $state("");
+	let serverBaselineName = $state("");
+	let serverBaselineProjectId = $state("");
+	let serverSaving = $state(false);
+	let serverError = $state<string | null>(null);
+	let serverConflict = $state(false);
+	let serverValidationVisible = $state(false);
+	let serverDeleteDialogOpen = $state(false);
 	let editorLoadSequence = 0;
+	let workbenchLoadSequence = 0;
 	const passwordStatusLoadSequences = new Map<string, number>();
 	let searchInput = $state<HTMLInputElement | null>(null);
 	let displayNameInput = $state<HTMLInputElement | null>(null);
+	let projectNameInput = $state<HTMLInputElement | null>(null);
+	let serverNameInput = $state<HTMLInputElement | null>(null);
 	let openTerminalButton = $state<HTMLButtonElement | null>(null);
 	let workbenchMounted = false;
 
 	let connections = $derived(snapshot?.connections ?? []);
+	let projects = $derived(snapshot?.projects ?? []);
+	let servers = $derived(snapshot?.servers ?? []);
 	let terminalAvailable = $derived(snapshot?.terminalAvailable ?? false);
 	let selectedConnection = $derived(
 		connections.find((connection) => connection.profileId === selectedProfileId),
+	);
+	let selectedServer = $derived(servers.find((server) => server.serverId === selectedServerId));
+	let selectedProject = $derived(
+		projects.find((project) => project.projectId === selectedProjectId),
+	);
+	let selectedServerConnections = $derived(
+		connections.filter((connection) => connection.serverId === selectedServerId),
 	);
 	let activeSession = $derived(
 		sessions.find((session) => session.sessionId === activeSessionId),
@@ -215,19 +289,11 @@
 		sessions.findIndex((session) => session.sessionId === activeSessionId),
 	);
 	let normalizedQuery = $derived(query.trim().toLocaleLowerCase());
-	let filteredConnections = $derived(
-		normalizedQuery.length === 0
-			? connections
-			: connections.filter(
-					(connection) =>
-						connection.displayName.toLocaleLowerCase().includes(normalizedQuery) ||
-						connection.serverId.toLocaleLowerCase().includes(normalizedQuery) ||
-						connection.profileId.toLocaleLowerCase().includes(normalizedQuery),
-				),
-	);
+	let catalogueGroups = $derived(buildCatalogueHierarchy(snapshot, query));
 	let canOpenSelected = $derived(
 		Boolean(
 			selectedConnection &&
+				!isLoading &&
 				selectedConnection.enabled &&
 				selectedConnection.trustState === "ready" &&
 				passwordStatusForProfile(selectedConnection.profileId) === "configured" &&
@@ -242,20 +308,32 @@
 	let isInteractionActionInFlight = $derived(
 		isCredentialActionInFlight || isHostTrustActionInFlight,
 	);
+	let workspaceMutationBusy = $derived(
+		isLoading ||
+			editorMode === "create" ||
+			projectEditorMode === "create" ||
+			editorSaving ||
+			editorDeleting ||
+			projectSaving ||
+			serverSaving ||
+			isInteractionActionInFlight,
+	);
 	let editorDraftErrors = $derived(validateConnectionDraft(editorDraft));
 	let editorDirty = $derived(
 		editorMode !== "view" && !draftsMatch(editorDraft, editorBaseline),
 	);
 	let editorInputsDisabled = $derived(
 		editorMode === "view" ||
+			isLoading ||
 			editorLoading ||
 			editorSaving ||
 			editorDeleting ||
 			isHostTrustActionInFlight,
 	);
 	let canSaveEditor = $derived(
-		editorMode !== "view" &&
+			editorMode !== "view" &&
 			editorDirty &&
+			!isLoading &&
 			!editorLoading &&
 			!editorSaving &&
 			!editorDeleting &&
@@ -265,35 +343,20 @@
 	let editorProfileHasSession = $derived(
 		Boolean(editorView && sessions.some((session) => session.profileId === editorView?.profileId)),
 	);
+	let projectDirty = $derived(
+		projectEditorMode !== "view" && projectDraftName.trim() !== projectBaselineName,
+	);
+	let projectNameError = $derived(validateWorkspaceName(projectDraftName));
+	let serverDirty = $derived(
+		serverEditorMode !== "view" &&
+			(serverDraftName.trim() !== serverBaselineName ||
+				serverDraftProjectId !== serverBaselineProjectId),
+	);
+	let serverNameError = $derived(validateWorkspaceName(serverDraftName));
 	let preferredMode = $derived(userPrefersMode.current);
 	let nextMode: ThemePreference = $derived(
 		preferredMode === "system" ? "light" : preferredMode === "light" ? "dark" : "system",
 	);
-
-	function trustLabel(trustState: TrustState): string {
-		switch (trustState) {
-			case "ready":
-				return "Trust ready";
-			case "required":
-				return "Trust required";
-			case "stale":
-				return "Trust review";
-		}
-	}
-
-	function connectionStatus(connection: ConnectionSummary): string {
-		if (connection.enabled) {
-			return trustLabel(connection.trustState);
-		}
-
-		const trustState =
-			connection.trustState === "ready"
-				? "Ready"
-				: connection.trustState === "required"
-					? "Required"
-					: "Review";
-		return `Disabled · ${trustState}`;
-	}
 
 	function editorStatusLabel(): string {
 		if (editorLoading) {
@@ -331,17 +394,18 @@
 	}
 
 	function sessionTabLabel(session: HumanTerminalSessionView, sessionIndex: number): string {
+		const label = connectionLabel(snapshot, session.profileId) ?? "Terminal";
 		const matchingSessions = sessions.filter(
-			(candidate) => candidate.serverId === session.serverId,
+			(candidate) => candidate.profileId === session.profileId,
 		);
 		if (matchingSessions.length === 1) {
-			return session.serverId;
+			return label;
 		}
 
 		const ordinal = sessions
 			.slice(0, sessionIndex + 1)
-			.filter((candidate) => candidate.serverId === session.serverId).length;
-		return `${session.serverId} · ${ordinal}`;
+			.filter((candidate) => candidate.profileId === session.profileId).length;
+		return `${label} · ${ordinal}`;
 	}
 
 	function openButtonLabel(): string {
@@ -831,15 +895,163 @@
 		}
 	}
 
+	function captureInspectorSelection(): InspectorSelection {
+		return {
+			kind: inspectorKind,
+			projectId: selectedProjectId,
+			serverId: selectedServerId,
+			profileId: selectedProfileId,
+		};
+	}
+
+	function resetProjectEditorState() {
+		projectEditorMode = "view";
+		projectDraftName = selectedProject?.displayName ?? "";
+		projectBaselineName = selectedProject?.displayName ?? "";
+		projectError = null;
+		projectConflict = false;
+		projectValidationVisible = false;
+	}
+
+	function resetServerEditorState() {
+		serverEditorMode = "view";
+		serverDraftName = selectedServer?.displayName ?? "";
+		serverBaselineName = selectedServer?.displayName ?? "";
+		serverDraftProjectId = selectedServer?.projectId ?? "";
+		serverBaselineProjectId = selectedServer?.projectId ?? "";
+		serverError = null;
+		serverConflict = false;
+		serverValidationVisible = false;
+	}
+
+	function discardDraftsForNavigation() {
+		if (editorDirty || projectDirty || serverDirty) {
+			toast.info("Unsaved changes were discarded.");
+		}
+		resetProjectEditorState();
+		resetServerEditorState();
+	}
+
+	function restoreInspectorSelection(selection: InspectorSelection | null) {
+		createReturnSelection = null;
+		projectEditorMode = "view";
+		projectValidationVisible = false;
+		serverEditorMode = "view";
+		serverValidationVisible = false;
+		const resolvedSelection = snapshot
+			? resolveWorkspaceSelection(snapshot, selection)
+			: null;
+		if (!resolvedSelection) {
+			inspectorKind = "connection";
+			selectedProjectId = "";
+			selectedServerId = "";
+			selectedProfileId = "";
+			clearEditorView();
+			return;
+		}
+
+		if (resolvedSelection.kind === "connection") {
+			const connection = connections.find(
+				(candidate) => candidate.profileId === resolvedSelection.profileId,
+			);
+			if (connection) {
+				inspectorKind = "connection";
+				selectedProfileId = connection.profileId;
+				selectedServerId = connection.serverId;
+				selectedProjectId =
+					servers.find((server) => server.serverId === connection.serverId)?.projectId ?? "";
+				void loadEditor(connection.profileId);
+				return;
+			}
+		}
+
+		if (resolvedSelection.kind === "server") {
+			const server = servers.find(
+				(candidate) => candidate.serverId === resolvedSelection.serverId,
+			);
+			if (server) {
+				inspectorKind = "server";
+				selectedProjectId = server.projectId ?? "";
+				selectedServerId = server.serverId;
+				selectedProfileId = "";
+				resetServerEditorState();
+				clearEditorView();
+				return;
+			}
+		}
+
+		if (resolvedSelection.kind === "project") {
+			const project = projects.find(
+				(candidate) => candidate.projectId === resolvedSelection.projectId,
+			);
+			if (project) {
+				inspectorKind = "project";
+				selectedProjectId = project.projectId;
+				selectedServerId = "";
+				selectedProfileId = "";
+				resetProjectEditorState();
+				clearEditorView();
+				return;
+			}
+		}
+
+		inspectorKind = "connection";
+		selectedProjectId = "";
+		selectedServerId = "";
+		selectedProfileId = "";
+		clearEditorView();
+	}
+
 	async function loadWorkbench(options: LoadWorkbenchOptions = {}) {
+		const loadSequence = ++workbenchLoadSequence;
 		const preferredProfileId = options.preferredProfileId ?? selectedProfileId;
+		const preferredServerId = options.preferredServerId ?? selectedServerId;
+		const preferredProjectId = options.preferredProjectId ?? selectedProjectId;
+		const preferredInspectorKind = options.inspectorKind ?? inspectorKind;
 		const selectFallback = options.selectFallback ?? true;
 		isLoading = true;
 		loadError = null;
 
 		try {
 			const nextSnapshot = await loadHumanWorkbench();
+			if (loadSequence !== workbenchLoadSequence) {
+				return false;
+			}
 			snapshot = nextSnapshot;
+			if (preferredInspectorKind === "project") {
+				const project = nextSnapshot.projects.find(
+					(candidate) => candidate.projectId === preferredProjectId,
+				);
+				if (project) {
+					inspectorKind = "project";
+					selectedProjectId = project.projectId;
+					selectedServerId = "";
+					selectedProfileId = "";
+					projectEditorMode = "view";
+					projectDraftName = project.displayName;
+					projectBaselineName = project.displayName;
+					clearEditorView();
+					return true;
+				}
+			}
+			if (preferredInspectorKind === "server") {
+				const server = nextSnapshot.servers.find(
+					(candidate) => candidate.serverId === preferredServerId,
+				);
+				if (server) {
+					inspectorKind = "server";
+					selectedServerId = server.serverId;
+					selectedProjectId = server.projectId ?? "";
+					selectedProfileId = "";
+					serverEditorMode = "view";
+					serverDraftName = server.displayName;
+					serverBaselineName = server.displayName;
+					serverDraftProjectId = server.projectId ?? "";
+					serverBaselineProjectId = server.projectId ?? "";
+					clearEditorView();
+					return true;
+				}
+			}
 			const preferredConnection = nextSnapshot.connections.find(
 				(connection) => connection.profileId === preferredProfileId,
 			);
@@ -849,7 +1061,11 @@
 					) ?? nextSnapshot.connections[0])
 				: undefined;
 			const nextSelection = preferredConnection?.profileId ?? fallbackConnection?.profileId ?? "";
+			inspectorKind = "connection";
 			selectedProfileId = nextSelection;
+			const nextServer = serverForConnection(nextSnapshot, nextSelection);
+			selectedServerId = nextServer?.serverId ?? "";
+			selectedProjectId = nextServer?.projectId ?? "";
 			if (nextSelection) {
 				await loadEditor(nextSelection);
 			} else {
@@ -857,47 +1073,329 @@
 			}
 			return true;
 		} catch (error) {
+			if (loadSequence !== workbenchLoadSequence) {
+				return false;
+			}
 			snapshot = null;
 			selectedProfileId = "";
+			selectedServerId = "";
+			selectedProjectId = "";
+			inspectorKind = "connection";
 			clearEditorView();
 			loadError = desktopErrorMessage(error);
 			return false;
 		} finally {
-			isLoading = false;
+			if (loadSequence === workbenchLoadSequence) {
+				isLoading = false;
+			}
 		}
 	}
 
 	async function selectConnection(profileId: string) {
 		if (
-			editorSaving ||
-			editorDeleting ||
-			isInteractionActionInFlight ||
-			profileId === selectedProfileId
+			workspaceMutationBusy ||
+			(profileId === selectedProfileId && inspectorKind === "connection")
 		) {
 			return;
 		}
 		if (!(await prepareForHostTrustTransition())) {
 			return;
 		}
-		if (editorDirty) {
-			toast.info("Unsaved connection changes were discarded.");
+		const nextSelection = snapshot ? connectionSelection(snapshot, profileId) : null;
+		if (!nextSelection) {
+			return;
 		}
-		createReturnProfileId = "";
-		selectedProfileId = profileId;
-		void loadEditor(profileId);
+		discardDraftsForNavigation();
+		createReturnSelection = null;
+		addingToServerId = "";
+		inspectorKind = "connection";
+		selectedProfileId = nextSelection.profileId;
+		selectedServerId = nextSelection.serverId;
+		selectedProjectId = nextSelection.projectId;
+		void loadEditor(nextSelection.profileId);
 	}
 
-	async function beginCreate() {
-		if (editorSaving || editorDeleting || isInteractionActionInFlight) {
+	async function selectProject(projectId: string) {
+		if (workspaceMutationBusy) {
 			return;
 		}
 		if (!(await prepareForHostTrustTransition())) {
 			return;
 		}
-		if (editorDirty) {
-			toast.info("Unsaved connection changes were discarded.");
+		const nextSelection = snapshot ? projectSelection(snapshot, projectId) : null;
+		const project = projects.find((candidate) => candidate.projectId === nextSelection?.projectId);
+		if (!nextSelection || !project) {
+			return;
 		}
-		createReturnProfileId = selectedProfileId;
+		discardDraftsForNavigation();
+		inspectorKind = "project";
+		selectedProjectId = nextSelection.projectId;
+		selectedServerId = nextSelection.serverId;
+		selectedProfileId = nextSelection.profileId;
+		projectEditorMode = "view";
+		projectDraftName = project.displayName;
+		projectBaselineName = project.displayName;
+		projectError = null;
+		projectConflict = false;
+		clearEditorView();
+	}
+
+	async function selectServer(serverId: string) {
+		if (workspaceMutationBusy) {
+			return;
+		}
+		if (!(await prepareForHostTrustTransition())) {
+			return;
+		}
+		const nextSelection = snapshot ? serverSelection(snapshot, serverId) : null;
+		const server = servers.find((candidate) => candidate.serverId === nextSelection?.serverId);
+		if (!nextSelection || !server) {
+			return;
+		}
+		discardDraftsForNavigation();
+		inspectorKind = "server";
+		selectedServerId = nextSelection.serverId;
+		selectedProjectId = nextSelection.projectId;
+		selectedProfileId = nextSelection.profileId;
+		serverEditorMode = "view";
+		serverDraftName = server.displayName;
+		serverBaselineName = server.displayName;
+		serverDraftProjectId = server.projectId ?? "";
+		serverBaselineProjectId = server.projectId ?? "";
+		serverError = null;
+		serverConflict = false;
+		clearEditorView();
+	}
+
+	async function beginProjectCreate() {
+		if (workspaceMutationBusy) {
+			return;
+		}
+		if (!(await prepareForHostTrustTransition())) {
+			return;
+		}
+		createReturnSelection = captureInspectorSelection();
+		discardDraftsForNavigation();
+		inspectorKind = "project";
+		selectedProjectId = "";
+		selectedServerId = "";
+		selectedProfileId = "";
+		projectEditorMode = "create";
+		projectDraftName = "";
+		projectBaselineName = "";
+		projectError = null;
+		projectConflict = false;
+		projectValidationVisible = false;
+		clearEditorView();
+		await tick();
+		projectNameInput?.focus();
+	}
+
+	async function beginProjectEdit() {
+		if (!selectedProject || workspaceMutationBusy) {
+			return;
+		}
+		projectEditorMode = "edit";
+		projectDraftName = selectedProject.displayName;
+		projectBaselineName = selectedProject.displayName;
+		projectError = null;
+		projectConflict = false;
+		projectValidationVisible = false;
+		await tick();
+		projectNameInput?.focus();
+	}
+
+	async function cancelProjectEditor() {
+		if (projectSaving || isLoading) {
+			return;
+		}
+		if (projectEditorMode === "create") {
+			restoreInspectorSelection(createReturnSelection);
+			await tick();
+			searchInput?.focus();
+			return;
+		}
+		projectEditorMode = "view";
+		projectDraftName = selectedProject?.displayName ?? "";
+		projectBaselineName = selectedProject?.displayName ?? "";
+		projectError = null;
+		projectConflict = false;
+		projectValidationVisible = false;
+		await tick();
+		searchInput?.focus();
+	}
+
+	async function saveProjectEditor() {
+		const displayName = projectDraftName.trim();
+		if (isLoading || projectSaving || !projectDirty || projectConflict) {
+			return;
+		}
+		projectValidationVisible = true;
+		if (projectNameError) {
+			return;
+		}
+		projectSaving = true;
+		projectError = null;
+		try {
+			const project =
+				projectEditorMode === "create"
+					? await createProject({ displayName })
+					: selectedProject
+						? await updateProject({
+								projectId: selectedProject.projectId,
+								expectedRecordVersion: selectedProject.recordVersion,
+								displayName,
+							})
+						: null;
+			if (!project) {
+				return;
+			}
+			createReturnSelection = null;
+			toast.success(projectEditorMode === "create" ? "Project created" : "Project saved");
+			await loadWorkbench({
+				preferredProjectId: project.projectId,
+				inspectorKind: "project",
+				selectFallback: false,
+			});
+		} catch (error) {
+			projectConflict = requiresWorkspaceReload(error);
+			projectError = desktopErrorMessage(error);
+		} finally {
+			projectSaving = false;
+		}
+	}
+
+	async function deleteSelectedProject() {
+		if (!selectedProject || projectSaving) {
+			return;
+		}
+		projectSaving = true;
+		try {
+			await deleteProject({
+				projectId: selectedProject.projectId,
+				expectedRecordVersion: selectedProject.recordVersion,
+			});
+			toast.success(`Deleted ${selectedProject.displayName}`);
+			selectedProjectId = "";
+			inspectorKind = "connection";
+			await loadWorkbench({ selectFallback: true, inspectorKind: "connection" });
+		} catch (error) {
+			projectConflict = requiresWorkspaceReload(error);
+			projectError = desktopErrorMessage(error);
+			toast.error(projectError);
+		} finally {
+			projectSaving = false;
+			projectDeleteDialogOpen = false;
+		}
+	}
+
+	async function beginServerEdit() {
+		if (!selectedServer || workspaceMutationBusy) {
+			return;
+		}
+		serverEditorMode = "edit";
+		serverDraftName = selectedServer.displayName;
+		serverBaselineName = selectedServer.displayName;
+		serverDraftProjectId = selectedServer.projectId ?? "";
+		serverBaselineProjectId = selectedServer.projectId ?? "";
+		serverError = null;
+		serverConflict = false;
+		serverValidationVisible = false;
+		await tick();
+		serverNameInput?.focus();
+	}
+
+	async function cancelServerEditor() {
+		if (serverSaving || isLoading) {
+			return;
+		}
+		serverEditorMode = "view";
+		serverDraftName = selectedServer?.displayName ?? "";
+		serverBaselineName = selectedServer?.displayName ?? "";
+		serverDraftProjectId = selectedServer?.projectId ?? "";
+		serverBaselineProjectId = selectedServer?.projectId ?? "";
+		serverError = null;
+		serverConflict = false;
+		serverValidationVisible = false;
+		await tick();
+		searchInput?.focus();
+	}
+
+	async function saveServerEditor() {
+		const displayName = serverDraftName.trim();
+		if (!selectedServer || isLoading || serverSaving || !serverDirty || serverConflict) {
+			return;
+		}
+		serverValidationVisible = true;
+		if (serverNameError) {
+			return;
+		}
+		serverSaving = true;
+		serverError = null;
+		try {
+			const server = await updateManagedServer({
+				serverId: selectedServer.serverId,
+				expectedRecordVersion: selectedServer.recordVersion,
+				projectId: serverDraftProjectId || null,
+				displayName,
+			});
+			toast.success("Server saved");
+			await loadWorkbench({
+				preferredServerId: server.serverId,
+				preferredProfileId: selectedProfileId,
+				inspectorKind: "server",
+				selectFallback: false,
+			});
+		} catch (error) {
+			serverConflict = requiresWorkspaceReload(error);
+			serverError = desktopErrorMessage(error);
+		} finally {
+			serverSaving = false;
+		}
+	}
+
+	async function deleteSelectedServer() {
+		if (!selectedServer || serverSaving || selectedServerConnections.length > 0) {
+			return;
+		}
+		serverSaving = true;
+		try {
+			await deleteManagedServer({
+				serverId: selectedServer.serverId,
+				expectedRecordVersion: selectedServer.recordVersion,
+			});
+			toast.success(`Deleted ${selectedServer.displayName}`);
+			selectedServerId = "";
+			inspectorKind = "connection";
+			await loadWorkbench({ selectFallback: true, inspectorKind: "connection" });
+		} catch (error) {
+			serverConflict = requiresWorkspaceReload(error);
+			serverError = desktopErrorMessage(error);
+			toast.error(serverError);
+		} finally {
+			serverSaving = false;
+			serverDeleteDialogOpen = false;
+		}
+	}
+
+	async function beginCreate(serverId = "") {
+		if (workspaceMutationBusy) {
+			return;
+		}
+		if (!(await prepareForHostTrustTransition())) {
+			return;
+		}
+		createReturnSelection = captureInspectorSelection();
+		discardDraftsForNavigation();
+		addingToServerId = serverId;
+		inspectorKind = "connection";
+		if (serverId) {
+			selectedServerId = serverId;
+			selectedProjectId = servers.find((server) => server.serverId === serverId)?.projectId ?? "";
+		} else {
+			selectedServerId = "";
+			selectedProjectId = "";
+		}
 		selectedProfileId = "";
 		editorLoadSequence += 1;
 		editorMode = "create";
@@ -916,6 +1414,7 @@
 	async function beginEdit() {
 		if (
 			!editorView ||
+			isLoading ||
 			editorLoading ||
 			editorSaving ||
 			editorDeleting ||
@@ -937,16 +1436,12 @@
 		displayNameInput?.focus();
 	}
 
-	function cancelEditor() {
+	async function cancelEditor() {
 		if (editorMode === "create") {
-			const returnProfileId = createReturnProfileId;
-			createReturnProfileId = "";
-			if (returnProfileId && connections.some((connection) => connection.profileId === returnProfileId)) {
-				selectedProfileId = returnProfileId;
-				void loadEditor(returnProfileId);
-			} else {
-				clearEditorView();
-			}
+			addingToServerId = "";
+			restoreInspectorSelection(createReturnSelection);
+			await tick();
+			searchInput?.focus();
 			return;
 		}
 
@@ -955,10 +1450,42 @@
 		editorConflict = false;
 		editorError = null;
 		editorValidationVisible = false;
+		await tick();
+		searchInput?.focus();
 	}
 
 	function isConflictError(error: unknown): boolean {
 		return error instanceof DesktopAdapterError && error.code === "connection_conflict";
+	}
+
+	function requiresWorkspaceReload(error: unknown): boolean {
+		return (
+			error instanceof DesktopAdapterError &&
+			(error.code === "workspace_conflict" ||
+				error.code === "workspace_record_mismatch" ||
+				error.code === "project_not_found" ||
+				error.code === "managed_server_not_found")
+		);
+	}
+
+	function reloadSelectedProject() {
+		if (selectedProjectId) {
+			void loadWorkbench({
+				preferredProjectId: selectedProjectId,
+				inspectorKind: "project",
+				selectFallback: false,
+			});
+		}
+	}
+
+	function reloadSelectedServer() {
+		if (selectedServerId) {
+			void loadWorkbench({
+				preferredServerId: selectedServerId,
+				inspectorKind: "server",
+				selectFallback: false,
+			});
+		}
 	}
 
 	function reloadSelectedEditor() {
@@ -971,6 +1498,7 @@
 	async function saveEditor() {
 		if (
 			editorMode === "view" ||
+			isLoading ||
 			!editorDirty ||
 			editorSaving ||
 			editorDeleting ||
@@ -997,7 +1525,11 @@
 
 		try {
 			if (editorMode === "create") {
-				const created = await createConnectionProfile(request);
+				const created = addingToServerId
+					? await addConnectionProfileToServer({ ...request, serverId: addingToServerId })
+					: await createConnectionProfile(request);
+				addingToServerId = "";
+				createReturnSelection = null;
 				editorSaving = false;
 				selectedProfileId = created.profileId;
 				applyEditorView(created);
@@ -1067,7 +1599,12 @@
 			selectedProfileId = "";
 			clearEditorView();
 			toast.success(`Deleted ${view.displayName}`);
-			await loadWorkbench({ preferredProfileId: "", selectFallback: false });
+			await loadWorkbench({
+				preferredServerId: view.serverId,
+				preferredProfileId: "",
+				inspectorKind: "server",
+				selectFallback: false,
+			});
 			await tick();
 			searchInput?.focus();
 		} catch (error) {
@@ -1264,58 +1801,18 @@
 </script>
 
 <div class="flex h-full min-h-0 flex-col bg-background text-foreground">
-	<main class="min-h-0 flex-1" aria-label="VigilShell Human workbench">
+	<main class="min-h-0 flex-1" aria-label="Workbench">
 		<Resizable.PaneGroup direction="horizontal">
 			<Resizable.Pane defaultSize={20} minSize={17} class="min-w-0">
-				<section class="flex h-full min-h-0 flex-col" aria-labelledby="connection-catalog-title">
-					<header class="flex h-12 shrink-0 items-center px-3">
-						<h1 id="connection-catalog-title" class="sr-only">Connections</h1>
-						<div class="flex w-full items-center justify-between gap-1">
-							<Button
-								size="xs"
-								disabled={editorSaving || editorDeleting || isInteractionActionInFlight}
-								onclick={() => void beginCreate()}
-							>
-								<PlusIcon data-icon="inline-start" />
-								New
-							</Button>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											onclick={cycleMode}
-											aria-label={`Theme: ${modeLabel(preferredMode)}. Switch to ${modeLabel(nextMode)}.`}
-										>
-											{#if preferredMode === "system"}
-												<MonitorIcon data-icon="inline-start" />
-											{:else if preferredMode === "light"}
-												<SunIcon data-icon="inline-start" />
-											{:else}
-												<MoonIcon data-icon="inline-start" />
-											{/if}
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									Theme: {modeLabel(preferredMode)} · next {modeLabel(nextMode)}
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</div>
-					</header>
-
-					<Separator />
-
+				<section class="flex h-full min-h-0 flex-col" aria-label="Connections">
 					<div class="shrink-0 p-3">
 						<InputGroup.Root>
 							<InputGroup.Input
 								bind:ref={searchInput}
 								bind:value={query}
 								type="search"
-								placeholder="Search connections"
-								aria-label="Search connections by display name, server, or profile identifier"
+								placeholder="Search"
+								aria-label="Search projects, servers, and connections by name"
 							/>
 							<InputGroup.Addon>
 								<SearchIcon />
@@ -1337,7 +1834,7 @@
 					<ScrollArea class="min-h-0 flex-1">
 						<div class="flex flex-col gap-1 px-2 pb-3">
 							{#if isLoading}
-								<div role="status" aria-label="Loading connection catalog">
+								<div role="status" aria-label="Loading connections">
 									{#each Array(5) as _, index (index)}
 										<div class="flex items-center gap-2 px-2 py-2">
 											<Skeleton class="size-2 shrink-0 rounded-full" />
@@ -1353,7 +1850,7 @@
 								<Empty.Root>
 									<Empty.Header>
 										<Empty.Media variant="icon"><ServerIcon /></Empty.Media>
-										<Empty.Title>Catalog unavailable</Empty.Title>
+										<Empty.Title>Connections unavailable</Empty.Title>
 										<Empty.Description>{loadError}</Empty.Description>
 									</Empty.Header>
 									<Empty.Content>
@@ -1362,22 +1859,22 @@
 										</Button>
 									</Empty.Content>
 								</Empty.Root>
-							{:else if filteredConnections.length === 0}
+							{:else if catalogueGroups.length === 0}
 								<Empty.Root>
 									<Empty.Header>
 										<Empty.Media variant="icon"><SearchIcon /></Empty.Media>
-										<Empty.Title>No connections found</Empty.Title>
+										<Empty.Title>Nothing found</Empty.Title>
 										<Empty.Description>
 											{normalizedQuery
-												? "No display name, server, or profile identifier matches this search."
-												: "No connection profiles are available."}
+												? "No project, server, or connection name matches this search."
+												: "Create a connection to begin."}
 										</Empty.Description>
 									</Empty.Header>
 									{#if normalizedQuery.length === 0}
 										<Empty.Content>
-									<Button
-										disabled={editorSaving || editorDeleting || isInteractionActionInFlight}
-										onclick={() => void beginCreate()}
+											<Button
+												disabled={workspaceMutationBusy}
+												onclick={() => void beginCreate()}
 											>
 												<PlusIcon data-icon="inline-start" />
 												New connection
@@ -1386,38 +1883,18 @@
 									{/if}
 								</Empty.Root>
 							{:else}
-								{#each filteredConnections as connection (connection.profileId)}
-								<Button
-									variant={selectedProfileId === connection.profileId ? "secondary" : "ghost"}
-									class="h-auto w-full justify-start px-2 py-2"
-									disabled={editorSaving || editorDeleting || isInteractionActionInFlight}
-									onclick={() => void selectConnection(connection.profileId)}
-										aria-pressed={selectedProfileId === connection.profileId}
-									>
-										<span
-											class={cn("workbench-status-dot", !connection.enabled && "is-disabled")}
-											data-trust={connection.trustState}
-											aria-hidden="true"
-										></span>
-										<span class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-											<span class="w-full truncate text-left">{connection.displayName}</span>
-											<span class="text-muted-foreground w-full truncate text-left text-[0.625rem]">
-												{connection.serverId}
-											</span>
-										</span>
-										<Badge
-											variant={
-												!connection.enabled
-													? "outline"
-													: connection.trustState === "ready"
-														? "secondary"
-														: "destructive"
-											}
-										>
-											{connectionStatus(connection)}
-										</Badge>
-									</Button>
-								{/each}
+								{#key normalizedQuery}
+									<CatalogueTree
+										groups={catalogueGroups}
+										{selectedProjectId}
+										{selectedServerId}
+										{selectedProfileId}
+										disabled={workspaceMutationBusy}
+										onselectproject={(projectId) => void selectProject(projectId)}
+										onselectserver={(serverId) => void selectServer(serverId)}
+										onselectconnection={(profileId) => void selectConnection(profileId)}
+									/>
+								{/key}
 							{/if}
 						</div>
 					</ScrollArea>
@@ -1427,30 +1904,7 @@
 			<Resizable.Handle withHandle />
 
 			<Resizable.Pane defaultSize={57} minSize={40} class="min-w-0">
-				<section class="flex h-full min-h-0 flex-col" aria-labelledby="terminal-workspace-title">
-					<header class="flex h-12 shrink-0 items-center justify-between gap-3 px-3">
-						<div class="min-w-0">
-							<h2 id="terminal-workspace-title" class="truncate text-xs font-medium">
-								{selectedConnection?.displayName ?? "Terminal workspace"}
-							</h2>
-							<p class="text-muted-foreground truncate text-[0.625rem]">
-								{selectedConnection?.serverId ?? "Select a connection from the catalog"}
-							</p>
-						</div>
-						<Button
-							bind:ref={openTerminalButton}
-							size="sm"
-							disabled={!canOpenSelected}
-							onclick={() => void openSelectedTerminal()}
-							aria-busy={openingProfileId !== null}
-						>
-							<SquareTerminalIcon data-icon="inline-start" />
-							{openButtonLabel()}
-						</Button>
-					</header>
-
-					<Separator />
-
+				<section class="flex h-full min-h-0 flex-col" aria-label="Terminal workspace">
 					{#if sessions.length === 0}
 						<Empty.Root class="min-h-0 flex-1">
 							<Empty.Header>
@@ -1514,7 +1968,7 @@
 								<Tabs.Content value={session.sessionId} class="m-0 min-h-0 overflow-hidden">
 									<TerminalSurface
 										sessionId={session.sessionId}
-										label={`Terminal for ${session.serverId}`}
+										label={`Terminal for ${connectionLabel(snapshot, session.profileId) ?? "connection"}`}
 										active={session.sessionId === activeSessionId}
 										interactive={session.phase === "connected" &&
 											!session.closing &&
@@ -1530,25 +1984,239 @@
 			<Resizable.Handle withHandle />
 
 			<Resizable.Pane defaultSize={23} minSize={20} class="min-w-0">
-				<section class="flex h-full min-h-0 flex-col" aria-labelledby="inspector-title">
-					<header class="flex h-12 shrink-0 items-center justify-between gap-2 px-3">
-						<div class="min-w-0">
-							<h2 id="inspector-title" class="text-xs font-medium">Inspector</h2>
-							<p class="text-muted-foreground truncate text-[0.625rem]">
-								{editorMode === "create" ? "New connection" : "Human connection editor"}
-							</p>
-						</div>
-						{#if editorMode === "create" || editorView}
-							<Badge variant={editorStatusVariant()}>{editorStatusLabel()}</Badge>
-						{/if}
-					</header>
-
-					<Separator />
-
+				<section class="flex h-full min-h-0 flex-col" aria-label="Inspector">
 					<ScrollArea class="min-h-0 flex-1">
 						<div class="flex flex-col gap-3 p-3">
-							{#if editorLoading}
-								<div class="flex flex-col gap-3" role="status" aria-label="Loading connection editor">
+							{#if inspectorKind === "project"}
+								<Card.Root data-size="sm">
+									<Card.Header>
+										<Card.Title>
+											{projectEditorMode === "create"
+												? "New project"
+												: projectEditorMode === "edit"
+													? "Edit project"
+													: selectedProject?.displayName ?? "Project"}
+										</Card.Title>
+									</Card.Header>
+									<Card.Content class="flex flex-col gap-3">
+										{#if projectError}
+											<Alert.Root variant="destructive">
+												<CircleAlertIcon />
+												<Alert.Title class="sr-only">Project error</Alert.Title>
+												<Alert.Description>
+													{projectError}
+													{#if projectConflict}
+														<span class="block">Reload to use the latest project details.</span>
+													{/if}
+												</Alert.Description>
+												{#if projectConflict}
+													<Alert.Action>
+														<Button
+															variant="ghost"
+															size="xs"
+															disabled={isLoading}
+															aria-busy={isLoading}
+															onclick={reloadSelectedProject}
+														>Reload</Button>
+													</Alert.Action>
+												{/if}
+											</Alert.Root>
+										{/if}
+										<form
+											id="project-editor-form"
+											onsubmit={(event) => {
+												event.preventDefault();
+												void saveProjectEditor();
+											}}
+										>
+											<Field.Group>
+												<Field.Field
+													data-disabled={projectEditorMode === "view" || isLoading}
+													data-invalid={projectValidationVisible && Boolean(projectNameError)}
+												>
+													<Field.Label for="project-display-name">Name</Field.Label>
+													<Input
+														bind:ref={projectNameInput}
+														id="project-display-name"
+														bind:value={projectDraftName}
+														disabled={projectEditorMode === "view" || projectSaving || isLoading}
+														aria-invalid={projectValidationVisible && Boolean(projectNameError)}
+													/>
+													{#if projectValidationVisible && projectNameError}
+														<Field.Error>{projectNameError}</Field.Error>
+													{/if}
+												</Field.Field>
+											</Field.Group>
+										</form>
+									</Card.Content>
+									<Card.Footer class="flex gap-2">
+										{#if projectEditorMode === "view"}
+											<Button
+												size="sm"
+												disabled={!selectedProject || workspaceMutationBusy}
+												onclick={() => void beginProjectEdit()}
+											>
+												<PencilIcon data-icon="inline-start" />
+												Edit
+											</Button>
+											<Button
+												variant="destructive"
+												size="sm"
+												disabled={!selectedProject || workspaceMutationBusy}
+												onclick={() => (projectDeleteDialogOpen = true)}
+											>
+												<Trash2Icon data-icon="inline-start" />
+												Delete
+											</Button>
+										{:else}
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												disabled={projectSaving || isLoading}
+												onclick={() => void cancelProjectEditor()}
+											>Cancel</Button>
+											<Button
+												type="submit"
+												form="project-editor-form"
+												size="sm"
+												disabled={!projectDirty || projectSaving || projectConflict || isLoading}
+											>
+												<SaveIcon data-icon="inline-start" />
+												{projectSaving ? "Saving…" : "Save"}
+											</Button>
+										{/if}
+									</Card.Footer>
+								</Card.Root>
+							{:else if inspectorKind === "server" && selectedServer}
+								<Card.Root data-size="sm">
+									<Card.Header>
+										<Card.Title>
+											{serverEditorMode === "edit" ? "Edit server" : selectedServer.displayName}
+										</Card.Title>
+									</Card.Header>
+									<Card.Content class="flex flex-col gap-3">
+										{#if serverError}
+											<Alert.Root variant="destructive">
+												<CircleAlertIcon />
+												<Alert.Title class="sr-only">Server error</Alert.Title>
+												<Alert.Description>
+													{serverError}
+													{#if serverConflict}
+														<span class="block">Reload to use the latest server details.</span>
+													{/if}
+												</Alert.Description>
+												{#if serverConflict}
+													<Alert.Action>
+														<Button
+															variant="ghost"
+															size="xs"
+															disabled={isLoading}
+															aria-busy={isLoading}
+															onclick={reloadSelectedServer}
+														>Reload</Button>
+													</Alert.Action>
+												{/if}
+											</Alert.Root>
+										{/if}
+										<form
+											id="server-editor-form"
+											onsubmit={(event) => {
+												event.preventDefault();
+												void saveServerEditor();
+											}}
+										>
+											<Field.Group>
+												<Field.Field
+													data-disabled={serverEditorMode === "view" || isLoading}
+													data-invalid={serverValidationVisible && Boolean(serverNameError)}
+												>
+													<Field.Label for="server-display-name">Name</Field.Label>
+													<Input
+														bind:ref={serverNameInput}
+														id="server-display-name"
+														bind:value={serverDraftName}
+														disabled={serverEditorMode === "view" || serverSaving || isLoading}
+														aria-invalid={serverValidationVisible && Boolean(serverNameError)}
+													/>
+													{#if serverValidationVisible && serverNameError}
+														<Field.Error>{serverNameError}</Field.Error>
+													{/if}
+												</Field.Field>
+												<Field.Field data-disabled={serverEditorMode === "view" || isLoading}>
+													<Field.Label for="server-project">Project</Field.Label>
+													<NativeSelect.Root
+														id="server-project"
+														class="w-full"
+														bind:value={serverDraftProjectId}
+														disabled={serverEditorMode === "view" || serverSaving || isLoading}
+													>
+														<NativeSelect.Option value="">No project</NativeSelect.Option>
+														{#each projects as project (project.projectId)}
+															<NativeSelect.Option value={project.projectId}>
+																{project.displayName}
+															</NativeSelect.Option>
+														{/each}
+													</NativeSelect.Root>
+												</Field.Field>
+											</Field.Group>
+										</form>
+										<p class="text-muted-foreground text-xs">
+											{selectedServerConnections.length === 1
+												? "1 connection"
+												: `${selectedServerConnections.length} connections`}
+										</p>
+									</Card.Content>
+									<Card.Footer class="flex flex-wrap gap-2">
+										{#if serverEditorMode === "view"}
+											<Button
+												size="sm"
+												disabled={workspaceMutationBusy}
+												onclick={() => void beginServerEdit()}
+											>
+												<PencilIcon data-icon="inline-start" />
+												Edit
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												disabled={workspaceMutationBusy}
+												onclick={() => void beginCreate(selectedServer.serverId)}
+											>
+												<PlusIcon data-icon="inline-start" />
+												Add connection
+											</Button>
+											<Button
+												variant="destructive"
+												size="sm"
+												disabled={selectedServerConnections.length > 0 || workspaceMutationBusy}
+												onclick={() => (serverDeleteDialogOpen = true)}
+											>
+												<Trash2Icon data-icon="inline-start" />
+												Delete
+											</Button>
+										{:else}
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												disabled={serverSaving || isLoading}
+												onclick={() => void cancelServerEditor()}
+											>Cancel</Button>
+											<Button
+												type="submit"
+												form="server-editor-form"
+												size="sm"
+												disabled={!serverDirty || serverSaving || serverConflict || isLoading}
+											>
+												<SaveIcon data-icon="inline-start" />
+												{serverSaving ? "Saving…" : "Save"}
+											</Button>
+										{/if}
+									</Card.Footer>
+								</Card.Root>
+							{:else if editorLoading}
+								<div class="flex flex-col gap-3" role="status" aria-label="Loading connection details">
 									<Skeleton class="h-24 w-full" />
 									<Skeleton class="h-48 w-full" />
 								</div>
@@ -1558,37 +2226,35 @@
 										<Card.Title>
 											{editorMode === "create"
 												? "New connection"
-												: editorMode === "edit"
-													? "Edit connection"
-													: editorView?.displayName}
-										</Card.Title>
-										<Card.Description class="break-all">
-											{editorView?.profileId ?? "Identifiers are generated when the connection is saved."}
-										</Card.Description>
-									</Card.Header>
-								<Card.Content class="flex flex-col gap-3">
-									{#if editorError}
-										<Alert.Root variant="destructive">
-											<CircleAlertIcon />
-											<Alert.Title class="sr-only">Connection error</Alert.Title>
-											<Alert.Description>
-												{editorError}
+													: editorMode === "edit"
+														? "Edit connection"
+														: editorView?.displayName}
+											</Card.Title>
+										</Card.Header>
+									<Card.Content class="flex flex-col gap-3">
+										{#if editorError}
+											<Alert.Root variant="destructive">
+												<CircleAlertIcon />
+												<Alert.Title class="sr-only">Connection error</Alert.Title>
+												<Alert.Description>
+													{editorError}
+													{#if editorConflict}
+														<span class="block">
+															Your input is preserved. Reload this connection before editing again.
+														</span>
+													{/if}
+												</Alert.Description>
 												{#if editorConflict}
-													<span class="block">
-														Your input is preserved. Reload the current record before editing again.
-													</span>
+													<Alert.Action>
+														<Button variant="ghost" size="xs" onclick={reloadSelectedEditor}>Reload</Button>
+													</Alert.Action>
 												{/if}
-											</Alert.Description>
-											{#if editorConflict}
-												<Alert.Action>
-													<Button variant="ghost" size="xs" onclick={reloadSelectedEditor}>Reload</Button>
-												</Alert.Action>
-											{/if}
-										</Alert.Root>
-										<Separator />
+											</Alert.Root>
+											<Separator />
 										{/if}
 
 										<form
+											id="connection-editor-form"
 											onsubmit={(event) => {
 												event.preventDefault();
 												void saveEditor();
@@ -1600,7 +2266,7 @@
 														data-invalid={editorValidationVisible && Boolean(editorDraftErrors.displayName)}
 														data-disabled={editorInputsDisabled}
 													>
-														<Field.Label for="connection-display-name">Display name</Field.Label>
+													<Field.Label for="connection-display-name">Name</Field.Label>
 														<Input
 															bind:ref={displayNameInput}
 															bind:value={editorDraft.displayName}
@@ -1688,54 +2354,52 @@
 											</Field.Set>
 										</form>
 
-									{#if editorView}
-										<Separator />
-										<div class="flex flex-col gap-1">
-											<span class="text-muted-foreground text-[0.625rem]">Server identifier</span>
-											<code class="break-all text-xs">{editorView.serverId}</code>
-										</div>
-										<div class="flex items-center justify-between gap-2">
-											<span class="text-muted-foreground text-xs">Record version</span>
-											<Badge variant="outline">{editorView.recordVersion}</Badge>
-										</div>
-									{/if}
-								</Card.Content>
-								<Card.Footer class="flex flex-wrap gap-2">
-									{#if editorMode === "view"}
-										<Button
-											size="sm"
-											onclick={() => void beginEdit()}
-											disabled={!editorView || isInteractionActionInFlight}
-										>
-											<PencilIcon data-icon="inline-start" />
-											Edit
-										</Button>
-										<Button
-											variant="destructive"
-											size="sm"
-											disabled={editorProfileHasSession ||
-												editorDeleting ||
-												isInteractionActionInFlight}
-											onclick={() => void openDeleteConnectionDialog()}
-										>
-											<Trash2Icon data-icon="inline-start" />
-											Delete
-										</Button>
-									{:else}
-										<Button variant="outline" size="sm" disabled={editorSaving} onclick={cancelEditor}>
-											Cancel
-										</Button>
-										<Button size="sm" disabled={!canSaveEditor} onclick={() => void saveEditor()}>
-											<SaveIcon data-icon="inline-start" />
-											{editorSaving ? "Saving…" : editorMode === "create" ? "Create" : "Save"}
-										</Button>
-									{/if}
-								</Card.Footer>
-							</Card.Root>
+									</Card.Content>
+									<Card.Footer class="flex flex-wrap gap-2">
+										{#if editorMode === "view"}
+											<Button
+												size="sm"
+												disabled={!editorView || workspaceMutationBusy}
+												onclick={() => void beginEdit()}
+											>
+												<PencilIcon data-icon="inline-start" />
+												Edit
+											</Button>
+											<Button
+												variant="destructive"
+												size="sm"
+												disabled={editorProfileHasSession || workspaceMutationBusy}
+												onclick={() => void openDeleteConnectionDialog()}
+											>
+												<Trash2Icon data-icon="inline-start" />
+												Delete
+											</Button>
+										{:else}
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												disabled={editorSaving}
+												onclick={() => void cancelEditor()}
+											>
+												Cancel
+											</Button>
+											<Button
+												type="submit"
+												form="connection-editor-form"
+												size="sm"
+												disabled={!canSaveEditor}
+											>
+												<SaveIcon data-icon="inline-start" />
+												{editorSaving ? "Saving…" : editorMode === "create" ? "Create" : "Save"}
+											</Button>
+										{/if}
+									</Card.Footer>
+								</Card.Root>
 
-								{#if editorProfileHasSession}
-									<p class="text-muted-foreground text-[0.625rem]">
-										Close this connection's terminal tabs before deleting it.
+							{#if editorProfileHasSession}
+								<p class="text-muted-foreground text-[0.625rem]">
+									Close this connection's terminal tabs before deleting it.
 								</p>
 							{/if}
 
@@ -1749,7 +2413,8 @@
 									actionKind={hostTrustAction.profileId === editorView.profileId
 										? hostTrustAction.kind
 										: null}
-									disabled={isInteractionActionInFlight ||
+									disabled={isLoading ||
+										isInteractionActionInFlight ||
 										editorSaving ||
 										editorDeleting ||
 										openingProfileId !== null}
@@ -1766,7 +2431,7 @@
 									<Card.Header>
 										<Card.Title class="flex items-center gap-1">
 											<KeyRoundIcon data-icon="inline-start" />
-											Password credential
+											Password
 										</Card.Title>
 										<Card.Description>
 											{passwordStatusDescription(passwordStatusForProfile(selectedConnection.profileId))}
@@ -1774,7 +2439,7 @@
 									</Card.Header>
 									<Card.Content class="flex flex-col gap-2">
 										<div class="flex items-center justify-between gap-2">
-											<span class="text-muted-foreground text-[0.625rem]">Password status</span>
+											<span class="text-muted-foreground text-[0.625rem]">Status</span>
 											<Badge
 												variant={passwordStatusVariant(
 													passwordStatusForProfile(selectedConnection.profileId),
@@ -1788,7 +2453,8 @@
 											<Button
 												variant="outline"
 												size="sm"
-												disabled={isInteractionActionInFlight ||
+											disabled={isLoading ||
+												isInteractionActionInFlight ||
 													editorMode !== "view" ||
 													editorSaving ||
 													editorDeleting}
@@ -1802,7 +2468,8 @@
 											<Button
 												variant="destructive"
 												size="sm"
-												disabled={isInteractionActionInFlight ||
+											disabled={isLoading ||
+												isInteractionActionInFlight ||
 													editorMode !== "view" ||
 													editorSaving ||
 													editorDeleting ||
@@ -1819,62 +2486,13 @@
 									</Card.Content>
 								</Card.Root>
 
-								<Card.Root data-size="sm">
-									<Card.Header>
-										<Card.Title>Active session</Card.Title>
-										<Card.Description>Opaque runtime reference</Card.Description>
-									</Card.Header>
-									<Card.Content class="flex flex-col gap-3">
-										{#if activeSession}
-											<div class="flex flex-col gap-1">
-												<span class="text-muted-foreground text-[0.625rem]">Session identifier</span>
-												<code class="break-all text-xs">{activeSession.sessionId}</code>
-											</div>
-											<Separator />
-											<div class="flex flex-col gap-1">
-												<span class="text-muted-foreground text-[0.625rem]">Server identifier</span>
-												<code class="break-all text-xs">{activeSession.serverId}</code>
-											</div>
-											<div class="flex flex-col gap-1">
-												<span class="text-muted-foreground text-[0.625rem]">Profile identifier</span>
-												<code class="break-all text-xs">{activeSession.profileId}</code>
-											</div>
-											<Separator />
-											<div class="flex items-center justify-between gap-2">
-												<span class="text-muted-foreground text-xs">Lifecycle</span>
-												<Badge variant={terminalPhaseVariant(activeSession)}>
-													{terminalPhaseLabel(activeSession)}
-												</Badge>
-											</div>
-											{#if activeSession.exitStatus !== undefined}
-												<div class="flex items-center justify-between gap-2">
-													<span class="text-muted-foreground text-xs">Exit status</span>
-													<Badge variant="outline">{activeSession.exitStatus}</Badge>
-												</div>
-											{/if}
-											{#if activeSession.exitSignal}
-												<div class="flex items-center justify-between gap-2">
-													<span class="text-muted-foreground text-xs">Exit signal</span>
-													<Badge variant="outline">{activeSession.exitSignal}</Badge>
-												</div>
-											{/if}
-											{#if activeSession.controlError}
-												<Alert.Root variant="destructive">
-													<CircleAlertIcon />
-													<Alert.Title class="sr-only">Terminal error</Alert.Title>
-													<Alert.Description>{activeSession.controlError}</Alert.Description>
-												</Alert.Root>
-											{/if}
-										{:else}
-											<span class="text-muted-foreground text-xs">No active terminal</span>
-										{/if}
-									</Card.Content>
-									<Card.Footer>
-										<Badge variant={activeSession ? "secondary" : "outline"}>
-											{activeSession ? terminalPhaseLabel(activeSession) : "None"}
-										</Badge>
-									</Card.Footer>
-								</Card.Root>
+								{#if activeSession?.controlError}
+									<Alert.Root variant="destructive">
+										<CircleAlertIcon />
+										<Alert.Title class="sr-only">Terminal error</Alert.Title>
+										<Alert.Description>{activeSession.controlError}</Alert.Description>
+									</Alert.Root>
+								{/if}
 								{/if}
 							{:else if editorError && selectedProfileId}
 								<Empty.Root>
@@ -1893,12 +2511,12 @@
 										<Empty.Media variant="icon"><ServerIcon /></Empty.Media>
 										<Empty.Title>No connection selected</Empty.Title>
 										<Empty.Description>
-											Select a catalog item or create a new connection.
+											Select a project, server, or connection, or create a new connection.
 										</Empty.Description>
 									</Empty.Header>
 									<Empty.Content>
-									<Button
-										disabled={editorSaving || editorDeleting || isInteractionActionInFlight}
+										<Button
+											disabled={workspaceMutationBusy}
 											onclick={() => void beginCreate()}
 										>
 											<PlusIcon data-icon="inline-start" />
@@ -1920,7 +2538,7 @@
 				<AlertDialog.Media><Trash2Icon /></AlertDialog.Media>
 				<AlertDialog.Title>Delete {editorView?.displayName ?? "this connection"}?</AlertDialog.Title>
 				<AlertDialog.Description>
-					This permanently deletes the connection, removes its locally stored password credential,
+					This permanently deletes the connection, removes its saved password,
 					and removes its Host Trust record. This action cannot be undone.
 				</AlertDialog.Description>
 			</AlertDialog.Header>
@@ -1937,15 +2555,47 @@
 		</AlertDialog.Content>
 	</AlertDialog.Root>
 
-	<Separator />
+	<AlertDialog.Root bind:open={projectDeleteDialogOpen}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Media><Trash2Icon /></AlertDialog.Media>
+				<AlertDialog.Title>Delete {selectedProject?.displayName ?? "this project"}?</AlertDialog.Title>
+				<AlertDialog.Description>
+					Its servers will move to No project. Connections, credentials, and Host Trust remain unchanged.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel disabled={projectSaving}>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Action
+					variant="destructive"
+					disabled={!selectedProject || projectSaving}
+					onclick={() => void deleteSelectedProject()}
+				>
+					{projectSaving ? "Deleting…" : "Delete project"}
+				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
 
-	<footer
-		class="text-muted-foreground flex h-6 shrink-0 items-center justify-between gap-4 px-3 text-[0.625rem]"
-		aria-label="Workbench status"
-		aria-live="polite"
-	>
-		<span>Connection catalog: {isLoading ? "loading" : loadError ? "unavailable" : "loaded"}</span>
-		<span>Terminal availability: {terminalAvailable ? "available" : "unavailable"}</span>
-		<span>Terminal tabs: {sessions.length}</span>
-	</footer>
+	<AlertDialog.Root bind:open={serverDeleteDialogOpen}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Media><Trash2Icon /></AlertDialog.Media>
+				<AlertDialog.Title>Delete {selectedServer?.displayName ?? "this server"}?</AlertDialog.Title>
+				<AlertDialog.Description>
+					This permanently removes the empty server. It cannot be undone.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel disabled={serverSaving}>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Action
+					variant="destructive"
+					disabled={!selectedServer || selectedServerConnections.length > 0 || serverSaving}
+					onclick={() => void deleteSelectedServer()}
+				>
+					{serverSaving ? "Deleting…" : "Delete server"}
+				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
 </div>

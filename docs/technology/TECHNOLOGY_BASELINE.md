@@ -19,10 +19,19 @@ composition root. Domain code does not own Tauri handles or runtime setup.
   surface. It remains an adapter and never an authority boundary.
 - SQLite is the private durable-state store. Platform credential providers hold
   secrets; SQLite and the renderer retain opaque references only.
-- `ts-rs` generates declarations for explicit renderer-safe Rust DTOs. Tauri
-  adapters retain command, permission, error-mapping, and runtime ownership.
+- `ts-rs` 12.0.1, pinned exactly under its MIT license, generates declarations
+  only for explicit renderer-safe Rust DTOs. Its serde-compatible output is kept
+  deterministic and checked for drift. Tauri adapters retain command, permission,
+  error-mapping, and runtime ownership; generated declarations do not expose
+  domain records, secrets, native handles, or unrestricted invocation primitives.
 
-The initial macOS Human credential adapter uses Security.framework directly
+The SQLite adapter uses bundled SQLite through `rusqlite`, one process-local
+Mutex-protected connection, WAL, FULL synchronous durability, foreign keys,
+untrusted-schema protection, cell-size checking, and a bounded busy timeout.
+An application ID and storage-generation record distinguish the current Fresh
+Schema from the accepted one-time legacy v1-v3 inputs.
+
+The macOS Human credential adapter uses Security.framework directly
 through `security-framework` 3.7 with its `OSX_10_15` feature. It stores SSH
 passwords as non-synchronizing generic-password items in the data-protection
 Keychain. The app identifier-derived service is
@@ -34,9 +43,12 @@ Password capture uses AppKit `NSSecureTextField` through the safe generated APIs
 in `objc2` 0.6 and `objc2-app-kit`/`objc2-foundation` 0.3. This platform adapter
 runs only on the macOS main thread and returns no secret value to Tauri IPC.
 Secret buffers use `zeroize` and are consumed by the trusted transport boundary.
-The initial adapter deliberately does not use a cross-platform credential-store
-facade, iCloud synchronization, a renderer password field, or a file-backed
-fallback.
+The Windows adapter uses `windows-sys` bindings for the native password-only
+credential prompt and Current-User DPAPI. It forbids DPAPI UI and machine-wide
+protection, stores only versioned ciphertext envelopes under the verified
+private-data root, and binds each file to the digest of the existing opaque
+`CredentialRef`. Neither platform uses a renderer password field, cloud
+synchronization, or a plaintext file fallback.
 
 Trusted native identifiers for new Managed Servers, Connection Profiles, and
 Credential references use UUID v4 from `uuid` 1.24 with only the `v4` feature.

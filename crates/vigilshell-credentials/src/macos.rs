@@ -18,8 +18,8 @@ use vigilshell_core::connection::CredentialRef;
 use zeroize::Zeroizing;
 
 use crate::{
-    CredentialProviderError, KEYCHAIN_SERVICE, NativePasswordPrompt, PasswordConfigurationStatus,
-    PasswordPromptSettlement, PasswordStore,
+    CredentialProviderError, KEYCHAIN_SERVICE, MAX_PASSWORD_BYTES, NativePasswordPrompt,
+    PasswordConfigurationStatus, PasswordPromptSettlement, PasswordStore,
 };
 
 const KEYCHAIN_ITEM_LABEL: &str = "VigilShell SSH password";
@@ -135,7 +135,7 @@ impl PasswordStore for SystemKeychainStore {
         credential_ref: &CredentialRef,
         password: &[u8],
     ) -> Result<(), CredentialProviderError> {
-        if password.is_empty() {
+        if password.is_empty() || password.len() > MAX_PASSWORD_BYTES {
             return Err(CredentialProviderError::InvalidSecret);
         }
 
@@ -147,8 +147,13 @@ impl PasswordStore for SystemKeychainStore {
     }
 
     fn password(&self, credential_ref: &CredentialRef) -> Result<Vec<u8>, CredentialProviderError> {
-        generic_password(KeychainQuery::for_credential(credential_ref).identity_options())
-            .map_err(map_keychain_error)
+        let password =
+            generic_password(KeychainQuery::for_credential(credential_ref).identity_options())
+                .map_err(map_keychain_error)?;
+        if password.is_empty() || password.len() > MAX_PASSWORD_BYTES {
+            return Err(CredentialProviderError::InvalidSecret);
+        }
+        Ok(password)
     }
 
     fn remove_password(

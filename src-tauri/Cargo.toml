@@ -8,6 +8,9 @@ publish = false
 name = "vigilshell_desktop"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+desktop-test-support = []
+
 [lints]
 workspace = true
 
@@ -17,16 +20,15 @@ tauri-build = { version = "2.6.3", features = [] }
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+dirs = "6.0.0"
 tauri = { version = "2.11.3", features = ["tray-icon"] }
+ts-rs = { version = "=12.0.1", default-features = false, features = ["serde-compat"] }
 uuid = { version = "1.24.0", default-features = false, features = ["v4"] }
 vigilshell-core = { path = "../crates/vigilshell-core" }
-vigilshell-credentials-macos = { path = "../crates/vigilshell-credentials-macos" }
+vigilshell-credentials = { path = "../crates/vigilshell-credentials" }
 vigilshell-lifecycle-macos = { path = "../crates/vigilshell-lifecycle-macos" }
 vigilshell-storage-sqlite = { path = "../crates/vigilshell-storage-sqlite" }
 vigilshell-transport-russh = { path = "../crates/vigilshell-transport-russh" }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-dirs = "6.0.0"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-single-instance = { version = "=2.4.3", default-features = false }

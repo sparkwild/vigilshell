@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, path::PathBuf};
 
 #[cfg(debug_assertions)]
 use std::{
@@ -12,26 +12,36 @@ use vigilshell_core::{
     connection::CredentialRef,
     human_terminal::{CredentialBroker, CredentialBrokerError, HumanCredentialLease},
 };
-use vigilshell_credentials_macos::{
+use vigilshell_credentials::{
     ConfigurePasswordSettlement, CredentialProviderError, HumanPasswordCredentialProvider,
-    MacOsHumanPasswordCredentialProvider, PasswordConfigurationStatus, RemovePasswordSettlement,
+    PasswordConfigurationStatus, PlatformHumanPasswordCredentialProvider, RemovePasswordSettlement,
 };
 
 #[derive(Clone)]
-pub(crate) struct HumanCredentialRuntime<P = MacOsHumanPasswordCredentialProvider> {
+pub(crate) struct HumanCredentialRuntime<P = PlatformHumanPasswordCredentialProvider> {
     production: P,
     #[cfg(debug_assertions)]
     development_fixtures: Option<DevelopmentFixtureCredentials>,
 }
 
 impl HumanCredentialRuntime {
-    pub(crate) fn production() -> Self {
-        Self::from_production_provider(MacOsHumanPasswordCredentialProvider::new())
+    pub(crate) fn production(
+        secure_credentials_root: Option<PathBuf>,
+    ) -> Result<Self, CredentialProviderError> {
+        Ok(Self::from_production_provider(
+            PlatformHumanPasswordCredentialProvider::new(secure_credentials_root)?,
+        ))
     }
 
     #[cfg(debug_assertions)]
-    pub(crate) fn development(fixture_refs: impl IntoIterator<Item = CredentialRef>) -> Self {
-        Self::with_development_provider(MacOsHumanPasswordCredentialProvider::new(), fixture_refs)
+    pub(crate) fn development(
+        secure_credentials_root: Option<PathBuf>,
+        fixture_refs: impl IntoIterator<Item = CredentialRef>,
+    ) -> Result<Self, CredentialProviderError> {
+        Ok(Self::with_development_provider(
+            PlatformHumanPasswordCredentialProvider::new(secure_credentials_root)?,
+            fixture_refs,
+        ))
     }
 }
 

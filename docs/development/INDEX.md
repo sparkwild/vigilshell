@@ -13,6 +13,6 @@ reviewing, and maintaining VigilShell.
 
 ## Current Documents
 
-- [ENGINEERING_STANDARDS.md](ENGINEERING_STANDARDS.md) — implementation, test, UI-validation, and review rules.
+- [ENGINEERING_STANDARDS.md](ENGINEERING_STANDARDS.md) — local commands, implementation, test, UI-validation, and review rules.
 - [RELEASE_DISTRIBUTION.md](RELEASE_DISTRIBUTION.md) — artifact, signing, update, and publication standards.
 - [DOCUMENTATION_STANDARDS.md](DOCUMENTATION_STANDARDS.md) — durable-document ownership and maintenance rules.

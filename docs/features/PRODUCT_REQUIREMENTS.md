@@ -8,6 +8,14 @@ files and transfers, tunnels and diagnostics, server insights, logs, services,
 controlled changes, settings, artifacts, and portability. Human interaction is
 not reduced to the capability set exposed to an Agent.
 
+The initial Human product scope covers M01 through M11 and M15. M12 through M14
+remain outside this delivery scope until the Agent Lane is explicitly resumed.
+The initial professional terminal scope includes the real password-backed SSH
+and Host Trust loop, safe copy and paste, bounded scrollback and search, split
+panes, keyboard shortcuts, and Unicode/IME behavior. Command snippets, terminal
+broadcast, selectable encodings, and session logging remain later product
+capabilities rather than initial-version acceptance requirements.
+
 ## Connection Configuration
 
 The initial editable Connection Profile contains a Human-visible display name,
@@ -18,6 +26,24 @@ created profile starts with security revision 1 and an unconfigured credential
 reference, then launches the native credential flow as a separate settlement.
 Cancelling password capture retains the profile in an explicitly unconfigured
 state instead of inventing a credential or rolling back unrelated metadata.
+
+A Managed Server is an independent, stable server identity and may own multiple
+Connection Profiles for different routes, accounts, or credentials. Projects
+organize Managed Servers and Connection Profiles for Human navigation; they do
+not merge those identities or create authority semantics.
+
+Each Managed Server has its own Human-visible name and optimistic record version.
+The global New action creates one Server and its first Connection atomically;
+the initial Server name copies the first Connection name but remains independently
+editable. Adding another Connection is an explicit action in the active Server
+Workspace. VigilShell never infers Server identity from host, username, or route.
+
+A Managed Server may belong to at most one Project, and its Connections inherit
+that navigation placement. Servers without a Project appear under a virtual
+`No project` group. Deleting a Project unassigns its Servers and deletes no Server,
+Connection, credential, trust record, or remote state. Deleting the last Connection
+retains the empty Server; Server deletion is a separate explicit action and is
+allowed only when the Server has no Connections.
 
 The Human may view and edit the display name, host, port, username, and enabled
 state in the Human Lane. Host and username are sensitive Human configuration
@@ -67,31 +93,13 @@ Session narrowing is allowed; expansion is not automatic.
 
 Every Agent request remains subject to policy, risk validation, execution guards,
 redaction, and audit. The global Agent switch, Scope mutation, Session revocation,
-and in-flight settlement must immediately constrain unused authority. Multiple
-independent Direct invocations may run concurrently when real capacity and
-resource-conflict rules allow them; the App must not add a hidden batch queue.
+and in-flight settlement must immediately constrain unused authority.
 
-## Scope Configuration
-
-- Diagnostic Access, Routine Operations Access, and Full Access resolve to
-  versioned explicit capability sets; any template edit becomes Custom Access.
-- New Scope UI may preselect Diagnostic Access only as an uncommitted draft.
-- High-risk capabilities default off. Enabling or expanding them requires a
-  consequence warning and a second confirmation bound to the exact Scope.
-- Resource-range selection is independent from the access-template choice.
-- Directory grants are recursive canonical-root boundaries. They never grant a
-  parent, sibling, symbolic-link escape, exclusion rule, or inferred discovery.
-
-## Agent File Retrieval
-
-The single typed file-retrieval capability supports `auto`, `inline`, and
-`download` delivery. Inline content is bounded and redacted. Download preserves
-original remote bytes only in the App-created `${user_home}/VigilShell` resource
-root or a Human-selected custom directory; the Agent never chooses a local path.
-Successful downloads return an ArtifactId and their exact final absolute path,
-without duplicating original bytes in the result. Built-in file type, encoding,
-size, and transfer defaults are versioned Rust policy, not request or Settings
-overrides.
+Access-template resolution, Scope semantics, stable Capability identities,
+invocation concurrency, file grants, governed retrieval, and runtime availability
+gates are defined once in [AGENT_CAPABILITIES.md](AGENT_CAPABILITIES.md).
+Documenting one of those contracts does not make it available before its
+production handler and every registration gate are complete.
 
 ## Product Quality Baseline
 

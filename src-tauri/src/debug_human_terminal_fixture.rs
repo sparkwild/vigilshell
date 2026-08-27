@@ -88,7 +88,7 @@ pub(crate) trait DebugTerminalOutputSink: Send + 'static {
 
 pub(crate) fn fixture_enabled(
     requested: Option<OsString>,
-    database_override: Option<&OsString>,
+    data_root_override: Option<&OsString>,
 ) -> Result<bool, &'static str> {
     let Some(requested) = requested else {
         return Ok(false);
@@ -96,8 +96,8 @@ pub(crate) fn fixture_enabled(
     if requested != "1" {
         return Err("debug terminal fixture switch must be exactly 1");
     }
-    if database_override.is_none() {
-        return Err("debug terminal fixture requires an isolated database override");
+    if data_root_override.is_none() {
+        return Err("debug terminal fixture requires an isolated data root override");
     }
     Ok(true)
 }
@@ -456,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn fixture_opt_in_requires_exact_switch_and_database_override() {
+    fn fixture_opt_in_requires_exact_switch_and_data_root_override() {
         let path = OsString::from("/tmp/fixture.sqlite3");
         assert_eq!(fixture_enabled(None, Some(&path)), Ok(false));
         assert_eq!(

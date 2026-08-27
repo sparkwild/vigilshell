@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-add-connection-profile-to-server"
+description = "Enables the add_connection_profile_to_server command without any pre-configured scope."
+commands.allow = ["add_connection_profile_to_server"]
+
+[[permission]]
+identifier = "deny-add-connection-profile-to-server"
+description = "Denies the add_connection_profile_to_server command without any pre-configured scope."
+commands.deny = ["add_connection_profile_to_server"]

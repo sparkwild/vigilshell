@@ -30,10 +30,27 @@ are `system`, `light`, and `dark`; language choices are `system`, `zh-CN`, and
   explanations when location and controls already communicate their purpose.
   Terms such as `Human Lane` and `Connection catalog` do not appear as visible
   header copy; concise user-facing accessibility names remain available.
+- Default product surfaces omit internal UUIDs, Profile and Server identifiers,
+  record or security revision numbers, opaque runtime or session terms, and raw
+  lifecycle or status telemetry. Debug-only diagnostics may expose bounded,
+  non-secret opaque values when needed for development. Human-useful SSH hosts,
+  ports, Host Key fingerprints, changed-key warnings, security decisions, and
+  actionable connection or terminal states remain visible.
 - VigilShell remains resident when the last management window closes; on macOS
   the menu-bar item is the persistent product presence.
 - The initial product has one primary workbench. Terminal and server concurrency
   use tabs and split panes rather than separate workbench windows.
+- The left catalogue keeps its existing workbench location and expands into a
+  compact `Project → Server → Connection` hierarchy. Selecting a Connection
+  activates its Server Workspace in place in the centre pane. The right Inspector
+  is contextual: selecting a Project or Server shows its Human management fields
+  without implicitly activating a Connection, while selecting a Connection shows
+  its editor, Host Trust, credential, and terminal actions.
+- A Server Workspace shows only implemented product surfaces. The initial slice
+  keeps Terminal central and does not render placeholder navigation for Files,
+  Insights, Logs, Services, or other later modules. Human-visible Server and
+  Connection names label the workspace and terminal tabs; internal identifiers
+  are never fallback copy.
 - Normal primary-window close always hides and retains its WebView; it does not
   stop the resident Core. An active Human terminal remains owned by that hidden
   display context. Unexpected renderer loss is reported as display-context loss
@@ -47,24 +64,10 @@ are `system`, `light`, and `dark`; language choices are `system`, `zh-CN`, and
   instance. It restores, unminimizes, and focuses that instance's existing
   workbench; it never creates a second Core, workbench, menu-bar controller,
   SQLite owner, or Keychain owner.
-- Secondary-launch arguments and the secondary working directory are discarded.
-  They never enter the renderer, logs, persistence, or an authority decision.
-  The secondary sends only an empty activation signal to the primary.
-- A synchronous per-user primary-instance claim completes before desktop runtime
-  and business setup. After obtaining the claim, the primary removes any stale
-  official-listener socket before constructing the desktop runtime; cleanup
-  failure stops startup.
-- Before any window or business setup, a native readiness gate sends an empty
-  payload through the official listener and requires its acknowledgement. If the
-  owner crashes during startup, another launch may recover the claim within the
-  same bounded five-second window; readiness timeout or I/O failure stops startup
-  without creating a partial second instance.
-- A secondary performs listener connect, empty-payload write, and notification
-  inside one worker governed by that same deadline, so a blocked native I/O call
-  cannot extend startup beyond the bound.
-- Activation acquires the same resident operation admission used to linearize
-  `Running` to `Quitting`. `Quitting` and `ExitReady` reject it rather than
-  reopening the workbench or delaying settlement.
+- Activation is accepted only while the trusted lifecycle is Running; shutdown
+  never reopens the workbench. The primary-instance claim, listener readiness,
+  bounded activation, and recovery mechanics are owned by
+  [SYSTEM_ARCHITECTURE.md](../architecture/SYSTEM_ARCHITECTURE.md).
 - Native menus, notifications, keyboard focus, dialogs, and accessibility must
   use trustworthy Core state. A notification may navigate or request attention;
   it never grants authority or settles an operation.

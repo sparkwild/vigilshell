@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/vigilshell-credentials-macos",
+    "crates/vigilshell-credentials",
     "crates/vigilshell-core",
     "crates/vigilshell-lifecycle-macos",
     "crates/vigilshell-storage-sqlite",

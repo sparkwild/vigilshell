@@ -14,7 +14,7 @@ behavior, data ownership, and trust boundaries.
 ## Current Documents
 
 - [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md) — resident desktop topology, local IPC, and lifecycle.
-- [MODULE_ARCHITECTURE.md](MODULE_ARCHITECTURE.md) — layer ownership, service families, and dependency direction.
+- [MODULE_ARCHITECTURE.md](MODULE_ARCHITECTURE.md) — repository map, layer ownership, service families, and dependency direction.
 - [AGENT_CONTROL_PLANE.md](AGENT_CONTROL_PLANE.md) — MCP containment, Heimdall enforcement, and Agent execution flow.
 - [TRANSPORT_AND_TERMINAL.md](TRANSPORT_AND_TERMINAL.md) — SSH/SFTP, PTY, renderer, and connection boundaries.
 - [LOCAL_PERSISTENCE.md](LOCAL_PERSISTENCE.md) — private storage, credentials, durability, and recovery boundaries.
