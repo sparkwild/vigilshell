@@ -60,6 +60,7 @@ jobs:
           npx vitest run
       - name: Create disposable Dev signing identity
         id: signing
+        timeout-minutes: 3
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         run: bash scripts/ci-macos-signing.sh setup
       - name: Build and verify native Dev application
@@ -82,5 +83,6 @@ jobs:
             ${{ runner.temp }}/vigilshell-ci-evidence/
             release/dev/mac*/signing-report.json
       - name: Remove disposable signing identity
+        timeout-minutes: 2
         if: always()
         run: bash scripts/ci-macos-signing.sh cleanup

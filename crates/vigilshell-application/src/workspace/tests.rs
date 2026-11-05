@@ -505,6 +505,23 @@ impl Fixture {
             "previous database still retained outside the fixture"
         );
         drop(closing_database);
+        let lock = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(self.path.join("runtime.lock"))
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(3), async {
+            loop {
+                if lock.try_lock().is_ok() {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("previous database file lock was not released");
+        lock.unlock().unwrap();
+        drop(lock);
         let database = Arc::new(Database(
             Mutex::new(SqlitePreferences::open(&self.path).unwrap()),
             Mutex::new(None),

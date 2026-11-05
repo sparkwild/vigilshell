@@ -33,8 +33,10 @@ CONF
     security set-keychain-settings -lut 21600 "$CI_KEYCHAIN"
     security unlock-keychain -p "$CI_PASSWORD" "$CI_KEYCHAIN"
     security import "$CI_SIGNING_ROOT/identity.p12" -k "$CI_KEYCHAIN" -P "$CI_PASSWORD" -T /usr/bin/codesign
+    echo "Authorizing disposable signing key"
     security set-key-partition-list -S apple-tool:,apple: -s -k "$CI_PASSWORD" "$CI_KEYCHAIN" >/dev/null
-    security add-trusted-cert -r trustRoot -p codeSign -k "$CI_KEYCHAIN" "$CI_SIGNING_ROOT/certificate.pem"
+    echo "Trusting disposable signing certificate"
+    sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$CI_KEYCHAIN" "$CI_SIGNING_ROOT/certificate.pem"
     CI_IDENTITY="$(openssl x509 -in "$CI_SIGNING_ROOT/certificate.pem" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')"
     security list-keychains -d user -s "$CI_KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
     echo "VIGILSHELL_DEV_SIGNING_IDENTITY=$CI_IDENTITY" >> "$GITHUB_ENV"
@@ -43,7 +45,7 @@ CONF
   cleanup)
     if [[ ! -d "$CI_SIGNING_ROOT" ]]; then exit 0; fi
     if [[ -f "$CI_SIGNING_ROOT/certificate.pem" ]]; then
-      security remove-trusted-cert "$CI_SIGNING_ROOT/certificate.pem" || true
+      sudo security remove-trusted-cert -d "$CI_SIGNING_ROOT/certificate.pem" || true
     fi
     if [[ -f "$CI_KEYCHAIN" ]]; then security delete-keychain "$CI_KEYCHAIN"; fi
     if [[ -f "$CI_SIGNING_ROOT/keychains-before.txt" ]]; then
