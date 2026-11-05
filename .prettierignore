@@ -1,0 +1,14 @@
+.agents/
+node_modules/
+.pnpm-store/
+target/
+build/
+release/
+apps/desktop/out/
+src/shared/i18n/generated/
+src/contracts/generated/
+
+.cache/
+out/
+package-lock.json
+Cargo.lock

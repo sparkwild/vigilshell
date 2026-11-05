@@ -1,0 +1,20 @@
+//! 能力端口按调用方职责归属；实现由 Backend 在启动时注入。
+mod agent;
+mod execution;
+pub use execution::*;
+mod credentials;
+pub use agent::*;
+mod events;
+mod preferences;
+mod storage;
+mod tools;
+mod transport;
+pub use credentials::*;
+pub use events::*;
+pub use preferences::*;
+use std::{future::Future, pin::Pin};
+pub use storage::*;
+pub use tools::*;
+pub use transport::*;
+use vigilshell_domain::workspace::WorkspaceError;
+pub type FutureResult<'a, T> = Pin<Box<dyn Future<Output = Result<T, WorkspaceError>> + Send + 'a>>;

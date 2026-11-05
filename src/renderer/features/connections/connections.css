@@ -1,0 +1,85 @@
+.connection-navigation {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 0;
+}
+.connection-navigation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.connection-filter-indicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  pointer-events: none;
+}
+.connection-chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 26px;
+}
+.connection-tree-empty {
+  flex: 1;
+  padding: 16px;
+}
+.connection-tree-hidden {
+  display: none;
+}
+.connection-group-heading {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.connection-group-heading-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+}
+.connection-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.connection-drag-handle {
+  display: inline-flex;
+  width: 16px;
+  min-width: 16px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+.connection-drag-handle,
+.connection-group-create {
+  opacity: 0;
+}
+.connection-tree-item:hover .connection-drag-handle,
+.connection-tree-item[data-focus-visible] .connection-drag-handle,
+.connection-tree-item:has(:focus-visible) .connection-drag-handle,
+.connection-tree-item:hover .connection-group-create,
+.connection-tree-item[data-focus-visible] .connection-group-create,
+.connection-tree-item:has(:focus-visible) .connection-group-create {
+  opacity: 1;
+}
+.connection-group-empty {
+  width: 100%;
+}
+.connection-group-end {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: var(--muted-foreground);
+}

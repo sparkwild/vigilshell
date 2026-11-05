@@ -1,0 +1,27 @@
+[package]
+publish.workspace = true
+name = "vigilshell-backend"
+default-run = "vigilshell-backend"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+vigilshell-local-files = { path = "../vigilshell-local-files" }
+tokio-util.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+vigilshell-domain = { path = "../vigilshell-domain" }
+vigilshell-application = { path = "../vigilshell-application" }
+vigilshell-desktop-protocol = { path = "../vigilshell-desktop-protocol" }
+vigilshell-storage-sqlite = { path = "../vigilshell-storage-sqlite" }
+serde_json.workspace = true
+tokio.workspace = true
+
+vigilshell-credentials = { path = "../vigilshell-credentials" }
+vigilshell-transport-russh = { path = "../vigilshell-transport-russh" }
+libc = "0.2"
+
+[dev-dependencies]
+rusqlite.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+tempfile.workspace = true

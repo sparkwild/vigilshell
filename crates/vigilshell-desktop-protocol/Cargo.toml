@@ -1,0 +1,14 @@
+[package]
+publish.workspace = true
+name = "vigilshell-desktop-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+vigilshell-application-contracts = { path = "../vigilshell-application-contracts" }
+serde.workspace = true
+serde_json.workspace = true
+schemars = "=1.2.2"
+vigilshell-domain = { path = "../vigilshell-domain", features = ["schema"] }
+
+uuid = "=1.26.1"
