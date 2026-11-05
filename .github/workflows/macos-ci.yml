@@ -1,7 +1,8 @@
 name: macOS release validation
-on:
+'on':
   pull_request:
-    branches: [main]
+    branches:
+      - main
 permissions:
   contents: read
 concurrency:
@@ -17,9 +18,6 @@ jobs:
           - runner: macos-15
             arch: arm64
             rust: aarch64-apple-darwin
-          - runner: macos-15-intel
-            arch: x64
-            rust: x86_64-apple-darwin
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     defaults:

@@ -7,11 +7,16 @@ CI_KEYCHAIN="$CI_SIGNING_ROOT/ci.keychain-db"
 case "${1:-}" in
   setup|setup-release)
     if [[ "$1" == setup-release ]]; then
-      [[ "${GITHUB_REPOSITORY:-}" == sparkwild/vigilshell && "${GITHUB_REF:-}" == refs/heads/main ]]
-      [[ "${GITHUB_EVENT_NAME:-}" == push || "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+      [[ "${GITHUB_REPOSITORY:-}" == sparkwild/vigilshell ]]
+      if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]; then
+        [[ "${GITHUB_REF:-}" == refs/heads/main || "${GITHUB_REF:-}" == refs/heads/develop ]]
+      else
+        [[ "${GITHUB_EVENT_NAME:-}" == push && "${GITHUB_REF:-}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-beta\.[1-9][0-9]*$ ]]
+      fi
       : "${CERTIFICATE_BASE64:?Configure MACOS_SIGNING_P12_BASE64 in macos-release}"
       : "${CERTIFICATE_PASSWORD:?Configure MACOS_SIGNING_P12_PASSWORD in macos-release}"
-      : "${VIGILSHELL_RELEASE_SIGNING_IDENTITY:?Configure MACOS_SIGNING_IDENTITY in macos-release}"
+      : "${VIGILSHELL_RELEASE_SIGNING_IDENTITY:?Configure MACOS_SIGNING_IDENTITY in the selected storage}"
+      node scripts/release-policy.mjs --source
     fi
     mkdir -m 700 "$CI_SIGNING_ROOT"
     umask 077

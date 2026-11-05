@@ -162,6 +162,14 @@ npm run package:release -- --arch arm64
 
 `npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据；GitHub Actions 只使用显式注入的签名配置，不读取开发机器的持久化配置。
 
+### ARM64 Beta 分发
+
+当前 Beta 面向 Apple Silicon Mac。标签格式为 `vX.Y.Z-beta.N`，手动 CI 只验证构建、不发布。安装包采用自签名，未经过 Apple 公证，不提供自动更新；只有实际发布后才有可下载的版本。
+
+在没有既有 VigilShell 数据的独立测试 Mac／账号中，从同一 Release 下载 DMG 与校验文件，执行 `shasum -a 256 -c <文件>.dmg.sha256`，再拖入“应用程序”。如系统因开发者无法验证而阻止打开，应先核对来源，再使用“隐私与安全性 → 仍要打开”的单应用允许方式，不全局关闭 Gatekeeper。
+
+手动升级先完全退出 VigilShell，再用新版替换应用，验证设置保留、凭据访问及再次启动。首次下载安装、授权提示和 `beta.1 → beta.2` 升级需要在独立环境实际验收，不能以 CI 启动检查代替；现有正式数据不参与测试。
+
 ## 数据与凭据
 
 连接配置和凭据加密保存在本机，解锁密钥由 macOS Keychain 管理。默认数据目录按应用通道分开：

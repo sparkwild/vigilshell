@@ -1,117 +1,119 @@
 name: macOS signed packages
-on:
+'on':
+  workflow_dispatch: {}
   push:
-    branches: [main]
-  workflow_dispatch:
+    tags:
+      - v*-beta.*
 permissions:
   contents: read
 concurrency:
-  group: macos-signing-${{ github.workflow }}-${{ github.ref }}
+  group: macos-signing-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  native:
-    if: github.repository == 'sparkwild/vigilshell' && github.ref == 'refs/heads/main'
-    environment: macos-release
-    name: macOS ${{ matrix.arch }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            arch: arm64
-            rust: aarch64-apple-darwin
-          - runner: macos-15-intel
-            arch: x64
-            rust: x86_64-apple-darwin
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
-    defaults:
-      run:
-        shell: bash
-    env:
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      CARGO_PROFILE_TEST_DEBUG: '0'
-      EXPECTED_ARCH: ${{ matrix.arch }}
-      EXPECTED_RUST: ${{ matrix.rust }}
+  policy:
+    runs-on: ubuntu-24.04
+    outputs:
+      storage: ${{ steps.storage.outputs.storage }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
           node-version-file: .nvmrc
-          package-manager-cache: false
-      - name: Require fixed release signing configuration
+      - run: node scripts/release-policy.mjs --source
         env:
+          GH_TOKEN: ${{ github.token }}
+      - id: storage
+        env:
+          STORAGE: ${{ vars.MACOS_SIGNING_STORAGE }}
+        run: >-
+          case "$STORAGE" in environment|repository) echo "storage=$STORAGE" >> "$GITHUB_OUTPUT" ;; *) echo
+          "Missing signing storage configuration" >&2; exit 1 ;; esac
+  frontend:
+    needs: policy
+    uses: ./.github/workflows/frontend.yml
+  backend:
+    needs: policy
+    uses: ./.github/workflows/backend.yml
+  package-environment:
+    needs:
+      - policy
+      - frontend
+      - backend
+    if: ${{ needs.policy.outputs.storage == 'environment' }}
+    environment: macos-release
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_ARCH: arm64
+      EXPECTED_RUST: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/macos-package
+        env:
+          GH_TOKEN: ${{ github.token }}
           CERTIFICATE_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
           VIGILSHELL_RELEASE_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
-        run: |
-          : "${CERTIFICATE_BASE64:?Configure MACOS_SIGNING_P12_BASE64 in macos-release}"
-          : "${CERTIFICATE_PASSWORD:?Configure MACOS_SIGNING_P12_PASSWORD in macos-release}"
-          : "${VIGILSHELL_RELEASE_SIGNING_IDENTITY:?Configure MACOS_SIGNING_IDENTITY in macos-release}"
-      - name: Install and verify native toolchains
-        id: toolchain
-        run: |
-          test "$(node -p process.arch)" = "$EXPECTED_ARCH"
-          rustup show active-toolchain
-          node scripts/check-rust-toolchain.mjs
-          test "$(rustc -vV | sed -n 's/^host: //p')" = "$EXPECTED_RUST"
-          npm install --global "$(node -p "require('./package.json').packageManager")"
-          npm ci
-      - name: Backend checks
-        run: npm run backend:check
-      - name: Frontend and platform tests
-        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-        run: |
-          npm run contracts:check
-          npm run typecheck
-          npm run test:signing
-          npm run test:dev-session
-          node --test tests/development/ci-macos-startup.test.mjs
-          npx vitest run
-      - name: Import fixed release signing identity
-        id: signing
-        timeout-minutes: 3
-        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+  package-repository:
+    needs:
+      - policy
+      - frontend
+      - backend
+    if: ${{ needs.policy.outputs.storage == 'repository' }}
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_ARCH: arm64
+      EXPECTED_RUST: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/macos-package
         env:
+          GH_TOKEN: ${{ github.token }}
           CERTIFICATE_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
           VIGILSHELL_RELEASE_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
-        run: bash scripts/ci-macos-signing.sh setup-release
-      - name: Build and verify release application and DMG
-        id: build
-        if: ${{ !cancelled() && steps.signing.outcome == 'success' }}
-        run: npm run package:release -- --arch "$EXPECTED_ARCH"
-      - name: Verify application startup and shutdown
-        id: startup
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/vigilshell-ci-evidence"
-          npm run test:ci-macos 2>&1 | tee "$RUNNER_TEMP/vigilshell-ci-evidence/startup.log"
-      - name: Remove disposable signing identity
-        timeout-minutes: 2
-        if: always()
-        run: bash scripts/ci-macos-signing.sh cleanup
-      - name: Upload verified release packages
-        if: ${{ success() && steps.startup.outcome == 'success' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+  publish:
+    needs:
+      - policy
+      - frontend
+      - backend
+      - package-environment
+      - package-repository
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && needs.frontend.result == 'success' &&
+      needs.backend.result == 'success' && (needs.package-environment.result == 'success' ||
+      needs.package-repository.result == 'success') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          name: VigilShell-macos-${{ matrix.arch }}
-          if-no-files-found: error
-          retention-days: 7
-          path: |
-            release/*.dmg
-            release/*.dmg.sha256
-            release/mac*/signing-report.json
-      - name: Upload diagnostic evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          name: macos-ci-${{ matrix.arch }}-${{ github.run_attempt }}
-          if-no-files-found: ignore
-          retention-days: 7
-          path: |
-            ${{ runner.temp }}/vigilshell-ci-evidence/
-            release/mac*/signing-report.json
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: VigilShell-macos-arm64
+          path: release-assets
+      - run: node scripts/publish-beta.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}

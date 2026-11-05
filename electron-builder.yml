@@ -1,5 +1,6 @@
 appId: com.sparkwild.vigilshell.electron
 productName: VigilShell
+artifactName: 'VigilShell-${version}-macos-${arch}.${ext}'
 directories:
   output: release
   buildResources: resources/icons

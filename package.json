@@ -1,7 +1,7 @@
 {
   "name": "vigilshell",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "type": "module",
   "packageManager": "npm@11.19.1",
   "engines": {
@@ -52,7 +52,8 @@
     "test:foundation": "node scripts/test-foundation.mjs",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.mjs\" \"*.json\" \"*.mjs\" \"*.ts\" \".github/**/*.yml\" \"tests/**/*.{ts,tsx,mjs}\"",
     "test:icons": "node --test tests/development/icons.test.mjs",
-    "dev:migrate-agent-policy": "node scripts/migrate-agent-policy.mjs"
+    "dev:migrate-agent-policy": "node scripts/migrate-agent-policy.mjs",
+    "release:check": "node scripts/release-policy.mjs"
   },
   "devDependencies": {
     "@electron/osx-sign": "1.3.3",

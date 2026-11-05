@@ -1,4 +1,5 @@
-import { writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadSigningConfig, verifyApplicationLayout, verifyBundle } from './macos-signing.mjs';
 
@@ -14,6 +15,8 @@ export default async function verifyPackage(context) {
     join(context.appOutDir, 'signing-report.json'),
     JSON.stringify(
       {
+        version: JSON.parse(readFileSync('package.json', 'utf8')).version,
+        sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
         profile: config.profile,
         arch: process.arch,
         identity: config.identity,

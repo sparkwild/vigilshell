@@ -131,7 +131,7 @@ test('main fixed signing fails explicitly on missing configuration', async (t) =
       RUNNER_TEMP: root,
       GITHUB_REPOSITORY: 'sparkwild/vigilshell',
       GITHUB_REF: 'refs/heads/main',
-      GITHUB_EVENT_NAME: 'push',
+      GITHUB_EVENT_NAME: 'workflow_dispatch',
       CERTIFICATE_BASE64: '',
       CERTIFICATE_PASSWORD: '',
       VIGILSHELL_RELEASE_SIGNING_IDENTITY: '',
