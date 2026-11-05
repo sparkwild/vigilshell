@@ -1,0 +1,1 @@
+ALTER TABLE preferences DROP COLUMN task_completion_notification_enabled;

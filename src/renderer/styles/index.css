@@ -1,0 +1,41 @@
+@import '@xterm/xterm/css/xterm.css';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import './fonts.css';
+@import './tokens.css';
+@import '../components/ui/variants.css';
+@import '../components/ui/data-view.css';
+@import './layout.css';
+@import '../features/connections/connections.css';
+@custom-variant dark (&:is(.dark *));
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: transparent;
+  }
+  body {
+    font-family: var(--font-ui);
+    font-size: var(--font-size-body);
+    line-height: 22px;
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --sidebar-glass-background: var(--sidebar);
+  }
+}
+:root[data-platform='other'] {
+  --sidebar-glass-background: var(--sidebar);
+}

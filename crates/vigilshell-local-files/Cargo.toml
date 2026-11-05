@@ -1,0 +1,14 @@
+[package]
+name = "vigilshell-local-files"
+publish.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+cap-std = "=4.0.3"
+libc = "0.2"
+vigilshell-application-contracts = { path = "../vigilshell-application-contracts" }
+vigilshell-domain = { path = "../vigilshell-domain" }
+tokio = { workspace = true, features = ["fs"] }
+[dev-dependencies]
+tempfile.workspace = true

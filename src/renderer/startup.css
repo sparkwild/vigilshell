@@ -1,0 +1,117 @@
+/* This render-blocking stylesheet intentionally has no renderer or font dependencies. */
+#startup-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: transparent;
+  color: #737373;
+  font:
+    13px/20px system-ui,
+    sans-serif;
+  transition: opacity 150ms ease-out;
+  -webkit-app-region: drag;
+}
+.dark #startup-screen {
+  color: #a3a3a3;
+}
+#startup-screen .startup-logo {
+  --startup-symbol: url('../../resources/icons/vigilshell-symbol-layer.png?inline');
+  position: relative;
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 -0.5px 0 rgb(255 255 255 / 60%)) drop-shadow(0 1px 0.5px rgb(0 0 0 / 28%));
+}
+#startup-screen .startup-logo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    145deg,
+    rgb(255 255 255 / 45%) 0%,
+    rgb(255 255 255 / 12%) 38%,
+    rgb(35 45 55 / 18%) 65%,
+    rgb(255 255 255 / 30%) 100%
+  );
+  backdrop-filter: blur(8px) saturate(1.15);
+  mask: var(--startup-symbol) center / contain no-repeat;
+}
+#startup-screen .startup-logo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    155deg,
+    rgb(255 255 255 / 65%),
+    rgb(255 255 255 / 18%) 42%,
+    rgb(0 0 0 / 30%) 80%,
+    rgb(255 255 255 / 30%)
+  );
+  mask-image: var(--startup-symbol), var(--startup-symbol);
+  mask-size: contain;
+  mask-position:
+    center,
+    center 1px;
+  mask-repeat: no-repeat;
+  mask-composite: exclude;
+}
+.dark #startup-screen .startup-logo::before {
+  background: linear-gradient(
+    145deg,
+    rgb(255 255 255 / 46%) 0%,
+    rgb(255 255 255 / 16%) 38%,
+    rgb(255 255 255 / 7%) 65%,
+    rgb(255 255 255 / 28%) 100%
+  );
+}
+@media (prefers-reduced-transparency: reduce) {
+  #startup-screen .startup-logo::before {
+    background: #525b64;
+    backdrop-filter: none;
+  }
+  .dark #startup-screen .startup-logo::before {
+    background: #d4d4d4;
+  }
+}
+#startup-screen svg {
+  width: 20px;
+  height: 20px;
+  animation: startup-spin 1s linear infinite;
+}
+#startup-screen::after {
+  content: var(--startup-label, '');
+  position: absolute;
+  top: calc(50% + 84px);
+  opacity: 0;
+  animation: startup-label 0s 2s forwards;
+}
+#startup-screen.startup-finished {
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes startup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes startup-label {
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #startup-screen {
+    transition: none;
+  }
+  #startup-screen svg {
+    animation: none;
+  }
+  #startup-screen::after {
+    opacity: 1;
+    animation: none;
+  }
+}
