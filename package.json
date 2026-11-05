@@ -19,6 +19,7 @@
     "package": "node scripts/package-macos.mjs",
     "test:e2e": "node tests/e2e/dev-smoke.mjs",
     "dev:app": "npm run prepare:dev && node scripts/dev-app.mjs",
+    "test:ci-macos": "node tests/e2e/ci-macos-startup.mjs",
     "test:dev-app": "node tests/development/dev-app.mjs",
     "test:dev-session": "node --test tests/development/dev-session.test.mjs",
     "test:mcp-discovery": "node --test tests/development/mcp-discovery.test.mjs",
