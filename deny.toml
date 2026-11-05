@@ -11,6 +11,7 @@ ignore = [{ id = "RUSTSEC-2023-0071", reason = "No RSA decryption or depadding e
 allow = ["MIT", "Apache-2.0", "Unicode-3.0", "Zlib", "BSD-3-Clause", "ISC"]
 confidence-threshold = 0.9
 private = { ignore = true }
+exceptions = [{ name = "winx", version = "=0.36.4", allow = ["Apache-2.0 WITH LLVM-exception"] }]
 
 [bans]
 multiple-versions = "warn"
