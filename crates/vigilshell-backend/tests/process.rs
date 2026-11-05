@@ -9,7 +9,9 @@ use std::{
 
 use serde_json::{Value, json};
 use tempfile::tempdir;
-use vigilshell_desktop_protocol::{MAX_FRAME_BYTES, PROTOCOL_VERSION};
+use vigilshell_desktop_protocol::{
+    MAX_FRAME_BYTES, PROTOCOL_VERSION, workspace::WORKSPACE_PROTOCOL_VERSION,
+};
 
 struct Runtime {
     child: Child,
@@ -355,28 +357,31 @@ fn oversized_agent_envelope_is_validated_without_killing_the_rpc_process() {
 }
 
 #[test]
-fn workspace_rejects_v11_and_negotiates_v12_without_restarting_backend() {
+fn workspace_rejects_previous_version_and_negotiates_current_without_restarting_backend() {
     let dir = tempdir().unwrap();
     let mut runtime = Runtime::start(dir.path());
     hello(&mut runtime);
     let owner = "11111111-1111-4111-8111-111111111111";
     let previous = runtime.send(json!({
         "jsonrpc":"2.0", "id":"old-workspace", "owner":owner,
-        "method":"workspace.negotiate", "params":{"version":11}
+        "method":"workspace.negotiate", "params":{"version":WORKSPACE_PROTOCOL_VERSION - 1}
     }));
     assert_eq!(previous["error"]["data"]["code"], "invalid_input");
     let current = runtime.send(json!({
         "jsonrpc":"2.0", "id":"current-workspace", "owner":owner,
-        "method":"workspace.negotiate", "params":{"version":12}
+        "method":"workspace.negotiate", "params":{"version":WORKSPACE_PROTOCOL_VERSION}
     }));
     assert_eq!(current["result"]["result"]["kind"], "ready");
-    assert_eq!(current["result"]["result"]["version"], 12);
+    assert_eq!(
+        current["result"]["result"]["version"],
+        WORKSPACE_PROTOCOL_VERSION
+    );
     drop(runtime.child.stdin.take());
     assert!(runtime.wait().success());
 }
 
 #[test]
-fn workspace_v12_keeps_group_and_proxy_results_and_rejects_retired_commands() {
+fn workspace_keeps_group_and_proxy_results_and_rejects_retired_commands() {
     let dir = tempdir().unwrap();
     let mut runtime = Runtime::start(dir.path());
     hello(&mut runtime);
@@ -387,7 +392,11 @@ fn workspace_v12_keeps_group_and_proxy_results_and_rejects_retired_commands() {
         }))
     };
     assert_eq!(
-        call("ready", "workspace.negotiate", json!({"version":12}))["result"]["result"]["kind"],
+        call(
+            "ready",
+            "workspace.negotiate",
+            json!({"version":WORKSPACE_PROTOCOL_VERSION})
+        )["result"]["result"]["kind"],
         "ready"
     );
     let group = call("create-group", "groups.create", json!({"name":"group"}))["result"]["result"]

@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RuntimeRequest, WorkspaceCommand } from '@contracts';
 import { BackendClient } from './client';
+import {
+  desktopProtocolVersion,
+  workspaceProtocolVersion,
+} from '../../contracts/generated/protocol-versions';
 
 const fixtures: {
   client: BackendClient;
@@ -32,7 +36,10 @@ async function setup(mode: string, timeoutMs = 500) {
   await writeFile(executable, `#!${process.execPath}\n${source}`, {
     mode: 0o700,
   });
-  await writeFile(join(directory, 'scenario.json'), JSON.stringify({ mode }));
+  await writeFile(
+    join(directory, 'scenario.json'),
+    JSON.stringify({ mode, desktopProtocolVersion, workspaceProtocolVersion }),
+  );
   const client = new BackendClient(executable, directory, timeoutMs);
   const fixture = { client, directory, pids: new Set<number>() };
   fixtures.push(fixture);
@@ -94,7 +101,7 @@ describe('BackendClient private process protocol', () => {
     expect(await client.start()).toMatchObject({
       runtimeId: 'runtime-初始',
       kind: 'ready',
-      contractVersion: 10,
+      contractVersion: desktopProtocolVersion,
     });
     await pid();
     expect(await client.request({ method: 'preferences.get', params: {} })).toMatchObject({
@@ -218,7 +225,10 @@ it('uses ordinary RPC deadlines while key availability travels as explicit state
   const owner = crypto.randomUUID();
   const timers = vi.spyOn(globalThis, 'setTimeout');
   await expect(
-    client.workspaceCall(owner, { method: 'workspace.negotiate', params: { version: 16 } }).result,
+    client.workspaceCall(owner, {
+      method: 'workspace.negotiate',
+      params: { version: workspaceProtocolVersion },
+    }).result,
   ).resolves.toMatchObject({ kind: 'ready', connectionAccess: { phase: 'unlocking' } });
   await expect(client.request({ method: 'preferences.get', params: {} })).resolves.toMatchObject({
     kind: 'preferences',
@@ -244,7 +254,10 @@ it('retains generic late handshake ownership without treating it as a key unlock
   const recovered = vi.fn();
   client.on('negotiationRecovered', recovered);
   await expect(
-    client.workspaceCall(owner, { method: 'workspace.negotiate', params: { version: 16 } }).result,
+    client.workspaceCall(owner, {
+      method: 'workspace.negotiate',
+      params: { version: workspaceProtocolVersion },
+    }).result,
   ).rejects.toThrow('timeout');
   await expect.poll(() => recovered.mock.calls.length).toBe(1);
   expect(recovered.mock.calls[0]).toEqual([

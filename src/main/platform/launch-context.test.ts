@@ -141,10 +141,14 @@ describe('launch context', () => {
       applicationName: 'VigilShell Dev',
       nativeDevelopment: false,
       dataDirectory: join(root, 'Application Support/VigilShell-dev'),
-      backendExecutable: join(
-        resources,
-        '../Helpers/VigilShell Dev.app/Contents/MacOS/vigilshell-backend',
-      ),
+      backendExecutable:
+        process.platform === 'darwin'
+          ? join(resources, '../Helpers/VigilShell Dev.app/Contents/MacOS/vigilshell-backend')
+          : join(
+              resources,
+              'backend',
+              process.platform === 'win32' ? 'vigilshell-backend.exe' : 'vigilshell-backend',
+            ),
       developmentUrl: undefined,
     });
   });
