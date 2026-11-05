@@ -1,9 +1,7 @@
-name: macOS CI
+name: macOS release validation
 on:
   pull_request:
-  push:
-    branches: [main, develop]
-  workflow_dispatch:
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -31,7 +29,6 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      RUSTUP_TOOLCHAIN: 1.96.0
       EXPECTED_ARCH: ${{ matrix.arch }}
       EXPECTED_RUST: ${{ matrix.rust }}
     steps:
@@ -40,15 +37,16 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version: '24.21.0'
+          node-version-file: .nvmrc
           package-manager-cache: false
       - name: Install and verify native toolchains
         id: toolchain
         run: |
           test "$(node -p process.arch)" = "$EXPECTED_ARCH"
-          rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+          rustup show active-toolchain
+          node scripts/check-rust-toolchain.mjs
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$EXPECTED_RUST"
-          npm install --global npm@11.19.1
+          npm install --global "$(node -p "require('./package.json').packageManager")"
           npm ci
       - name: Backend checks
         run: npm run backend:check
@@ -61,17 +59,17 @@ jobs:
           npm run test:dev-session
           node --test tests/development/ci-macos-startup.test.mjs
           npx vitest run
-      - name: Create disposable Dev signing identity
+      - name: Create disposable signing identity for release validation
         id: signing
         timeout-minutes: 3
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         run: bash scripts/ci-macos-signing.sh setup
-      - name: Build and verify native Dev application
+      - name: Build and verify release application and DMG
         id: build
         if: ${{ !cancelled() && steps.signing.outcome == 'success' }}
         env:
           CSC_FOR_PULL_REQUEST: 'true'
-        run: npm run package:dev -- --arch "$EXPECTED_ARCH"
+        run: npm run package:release -- --arch "$EXPECTED_ARCH"
       - name: Verify application startup and shutdown
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
@@ -90,4 +88,4 @@ jobs:
           retention-days: 7
           path: |
             ${{ runner.temp }}/vigilshell-ci-evidence/
-            release/dev/mac*/signing-report.json
+            release/mac*/signing-report.json

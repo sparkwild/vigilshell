@@ -1,4 +1,5 @@
 import { packageArchitecture } from './package-policy.mjs';
+import { packageBuildEnvironment } from './build-context.mjs';
 import { verifyDmg } from './verify-dmg.mjs';
 import { mkdir, mkdtemp, rm, readdir } from 'node:fs/promises';
 import { publishArtifacts } from './publish-artifacts.mjs';
@@ -26,6 +27,7 @@ if (rustHost !== target.rust) throw Error('Rust host does not match package arch
 const config = loadSigningConfig(values.profile);
 const ids = identifiers(config.profile);
 const name = config.profile === 'dev' ? 'VigilShell Dev' : 'VigilShell';
+const buildEnvironment = packageBuildEnvironment(config.profile);
 execFileSync(process.execPath, ['scripts/dev-preflight.mjs', '--process-only'], {
   cwd: projectRoot,
   stdio: 'inherit',
@@ -46,7 +48,7 @@ execFileSync(
   {
     cwd: projectRoot,
     stdio: 'inherit',
-    env: { ...process.env, VIGILSHELL_PACKAGE_PROFILE: config.profile },
+    env: buildEnvironment,
   },
 );
 await mkdir(join(projectRoot, '.cache/packaging'), { recursive: true });
@@ -70,8 +72,7 @@ try {
       cwd: join(projectRoot, '.'),
       stdio: 'inherit',
       env: {
-        ...process.env,
-        VIGILSHELL_PACKAGE_PROFILE: config.profile,
+        ...buildEnvironment,
         CSC_IDENTITY_AUTO_DISCOVERY: 'false',
         CSC_KEYCHAIN: config.keychain,
       },

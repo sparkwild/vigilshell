@@ -15,7 +15,7 @@
     "i18n:check": "node scripts/check-i18n.mjs",
     "check": "node scripts/check-rust-toolchain.mjs && npm run deps:check && npm run foundation:check && npm run boundaries:check && npm run lint && npm run format:check && npm run ui:check && npm run contracts:check && npm run i18n:check && npm run typecheck && cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings",
     "test": "npm run backend:build && npm run test:signing && vitest run && cargo test --workspace",
-    "build": "node scripts/dev-preflight.mjs --process-only && npm run backend:build -- --release && npm run contracts:generate && npm run i18n:generate && node scripts/build-notification-bridge.mjs && electron-vite build",
+    "build": "node scripts/build-application.mjs",
     "package": "node scripts/package-macos.mjs",
     "test:e2e": "node tests/e2e/dev-smoke.mjs",
     "dev:app": "npm run prepare:dev && node scripts/dev-app.mjs",

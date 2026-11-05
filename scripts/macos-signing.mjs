@@ -48,7 +48,7 @@ export function loadSigningConfig(
   directory = signingConfigDirectory(),
 ) {
   identifiers(profile);
-  if (directory === signingConfigDirectory())
+  if (environment.GITHUB_ACTIONS !== 'true' && directory === signingConfigDirectory())
     migrateSigningConfig(profile, projectRoot, directory, preflight);
   return readSigningConfig(profile, environment, directory);
 }

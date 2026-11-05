@@ -37,7 +37,7 @@ Tokio 固定为 `1.53.3`；加密依赖的锁文件包含 `crypto-bigint 0.7.10`
 | `check` | 依赖、边界、lint、格式、合同、国际化、类型与 Rust 静态检查 |
 | `contracts:generate` / `contracts:check` | 生成／核对通信类型与 Schema |
 | `i18n:generate` / `i18n:check` | 生成本地化代码／核对消息资源 |
-| `build` | 编译 Rust、原生桥及前端 |
+| `build` | 使用 release 身份编译 Rust、原生桥及 production 前端 |
 | `package:dev` / `package:release` | 打包 Dev 应用／正式 DMG |
 
 ## 签名准备
@@ -52,10 +52,22 @@ npm run signing:check -- --profile dev
 
 正式打包使用 `--profile release`。配置位于 `~/Library/Application Support/VigilShell Signing/`；证书与私钥留在仓库外，已有配置沿用当前身份。实现见[签名配置](../scripts/signing/config.mjs)与[打包脚本](../scripts/package-macos.mjs)。
 
+本地热更新沿用现有 Dev 身份、`out/`、`target/debug/` 和 `.cache/{notification-native,mcp-native}/`。打包构建通过统一上下文把前端、原生桥、后端资源和 Cargo 输出放到 `.cache/build/<dev|release>/<arm64|x64>/` 的 `out/`、`native/`、`backend/`、`cargo/`，不覆盖热更新产物。`package:dev` 使用 Dev 签名和 `development-package` 模式，`package:release` 使用 release 签名和 `production` 模式；构建模式与身份不匹配时失败。原生桥在编译阶段即采用所选身份，不要求 release 构建配置 Dev 证书。
+
+打包入口移除继承的开发页面、启动器及数据目录环境变量；本地已有 Dev 应用运行时仍拒绝完整重建。安装包内的 `out/`、`Resources/native/` 和 `Helpers/` 布局、Dev／正式应用数据目录保持独立。最终产物仍输出到 `release/dev/` 或 `release/`。
+
 ## 持续集成
 
-Ubuntu 工作流保留前后端静态检查、测试和依赖审计。`macos-ci.yml` 在 PR、`main`／`develop` 推送及手动触发时，分别使用 `macos-15`（ARM64）和 `macos-15-intel`（x64）进行原生构建与测试。
+Ubuntu 的 `frontend.yml` 和 `backend.yml` 在 `main`／`develop` 推送及面向这两个分支的 PR 中运行静态检查、测试和依赖审计。`develop` 推送不再额外触发 macOS 打包；面向 `main` 的 PR 由 `macos-ci.yml` 执行正式版原生验证，`main` 推送由 `macos-signing.yml` 自动构建正式包，该工作流也支持在 `main` 手动执行。两个 macOS 工作流均使用 `macos-15`（ARM64）和 `macos-15-intel`（x64），运行完整 Rust 检查及前端、平台测试。
 
-macOS CI 运行完整 Rust 检查、前端类型与测试、签名逻辑和开发会话测试，再构建签名的 Dev 应用。任务临时生成代码签名证书，保存在独立钥匙串中；仅 Dev 打包步骤设置 `CSC_FOR_PULL_REQUEST=true`，PR 与 push 均执行同一套严格验签，不读取 release 签名 Secrets，也不生成 Release。导入后立即删除导出的私钥与 P12；任务结束时逐项限时移除证书信任、删除钥匙串、恢复并核对搜索列表及删除临时文件。单项失败不阻止剩余清理，但会使清理步骤失败，并在诊断附件中保留 `signing-cleanup.json`。
+CI 的 Node 版本读取 `.nvmrc`，npm 版本读取 `package.json` 的 `packageManager`，Rust 版本与组件读取 `rust-toolchain.toml` 并通过项目脚本核对，不在工作流重复维护版本号。
 
-`npm run test:ci-macos` 仅允许 GitHub 托管的 macOS runner 执行，并拒绝已有 Dev 或正式应用数据目录。它使用 runner 上一次性的 Dev 数据，限时等待原生窗口可见，检查 Renderer IPC、真实 Rust 后端进程和正常退出，进程退出后清理数据。工作流显式使用带 `pipefail` 的 Bash，日志经过 `tee` 时仍保留探针失败状态；`result.json` 同时记录原始异常和清理异常。截图、启动日志、签名报告和清理报告作为保留 7 天的 Actions 诊断附件。该检查不执行真实 SSH 操作，也不代替钥匙串交互、Touch ID 或首次下载安装的人工验收。
+CI 签名只接受所选 profile 的 `VIGILSHELL_<DEV|RELEASE>_SIGNING_IDENTITY` 和 `VIGILSHELL_<DEV|RELEASE>_SIGNING_KEYCHAIN` 显式配置，不读取或迁移机器上的持久化签名配置。PR 临时证书与发行固定证书都注入 release profile：两者验证相同的 production 构建路径，区别只在签名凭据来源。`test:signing` 同时检查 profile、构建目录、打包资源映射和 CI 配置隔离。
+
+所有 macOS CI 打包都执行 `npm run package:release`，使用 `production` 构建模式、正式应用身份 `VigilShell.app`，生成并严格验证 `.app` 和 DMG；DMG 会只读挂载以核验内部应用。PR 仅使用临时证书，并在打包步骤设置 `CSC_FOR_PULL_REQUEST=true`，不读取发行凭据。`main` 使用 `macos-release` 环境的 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` Secrets 及 `MACOS_SIGNING_IDENTITY` 变量，校验导入证书指纹后构建；缺失配置会明确失败，不回退到临时证书。正式构建模式与发行信任分开验证：当前仍为固定证书自签名、无 Apple 公证。
+
+两条打包路径共用独立临时钥匙串及清理流程。导入后立即删除导出的私钥与 P12；结束时逐项限时移除证书信任、删除钥匙串、恢复并核对搜索列表及删除临时文件。单项失败不阻止剩余清理，但会使步骤失败，并在诊断附件中保留 `signing-cleanup.json`。
+
+`npm run test:ci-macos` 仅允许 GitHub 托管的 macOS runner 执行，并拒绝已有 Dev 或正式应用数据目录。它先核对正式版签名报告，再启动 `release/mac*/VigilShell.app`，使用一次性 runner 的全新 `VigilShell` 数据目录，验证正式应用名称、原生窗口可见性、Renderer IPC、真实 Rust 后端和正常退出，确认没有创建 Dev 数据并在进程退出后清理测试数据；不在开发者机器上运行正式版验收。工作流显式使用带 `pipefail` 的 Bash，`tee` 不吞掉失败状态；`result.json` 同时记录原始异常和清理异常。
+
+诊断附件保留 7 天。`main` 仅在原生测试、打包验签、启动验证和签名清理全部通过后上传 DMG、SHA256 及签名报告；PR 不上传可分发安装包。工作流不创建 GitHub Release，也不修改仓库可见性。启动检查不执行真实 SSH 操作，不代替钥匙串交互、Touch ID 或首次下载安装的人工验收。

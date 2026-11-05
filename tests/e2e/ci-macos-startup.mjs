@@ -1,32 +1,26 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { _electron as electron } from 'playwright';
 import { closeApplication, waitUntil, withCleanup } from './ci-macos-lifecycle.mjs';
+import { releaseStartupContext } from './ci-macos-context.mjs';
 
-// This owns fresh Dev data only on disposable hosted runners, never a developer's Mac.
-assert(
-  process.env.GITHUB_ACTIONS === 'true' &&
-    process.env.RUNNER_ENVIRONMENT === 'github-hosted' &&
-    process.platform === 'darwin',
-  'Startup smoke requires a disposable GitHub-hosted macOS runner',
-);
-assert(process.env.RUNNER_TEMP);
-assert.equal(process.arch, process.env.EXPECTED_ARCH);
-const data = join(homedir(), 'Library/Application Support/VigilShell-dev');
-const productionData = join(homedir(), 'Library/Application Support/VigilShell');
-assert(!existsSync(data), 'Refusing to use existing Dev data');
-assert(!existsSync(productionData), 'Refusing to run alongside production data');
-const evidence = join(process.env.RUNNER_TEMP, 'vigilshell-ci-evidence');
+const { data, developmentData, bundle, signingReport, evidence } = releaseStartupContext({
+  environment: process.env,
+  platform: process.platform,
+  arch: process.arch,
+  home: homedir(),
+  workspace: process.cwd(),
+  exists: existsSync,
+});
+const report = JSON.parse(readFileSync(signingReport, 'utf8'));
+assert.equal(report.profile, 'release');
+assert.equal(report.arch, process.arch);
+assert.equal(report.identity, process.env.VIGILSHELL_RELEASE_SIGNING_IDENTITY);
 await mkdir(evidence, { recursive: true });
-const bundle = resolve(
-  'release/dev',
-  process.arch === 'arm64' ? 'mac-arm64' : 'mac',
-  'VigilShell Dev.app',
-);
 const executable = execFileSync(
   'plutil',
   ['-extract', 'CFBundleExecutable', 'raw', '-o', '-', join(bundle, 'Contents/Info.plist')],
@@ -49,7 +43,15 @@ function alive(pid) {
   }
 }
 const environment = { ...process.env };
-delete environment.ELECTRON_RUN_AS_NODE;
+for (const name of [
+  'ELECTRON_RUN_AS_NODE',
+  'ELECTRON_RENDERER_URL',
+  'VIGILSHELL_DATA_DIR',
+  'VIGILSHELL_DEV_APP',
+  'VIGILSHELL_DEV_PACKAGE_BUILD',
+  'VIGILSHELL_DEVELOPMENT_BUILD',
+])
+  delete environment[name];
 try {
   await withCleanup(
     async () => {
@@ -86,7 +88,7 @@ try {
         data: app.getPath('userData'),
         visible: BrowserWindow.getAllWindows().some((window) => window.isVisible()),
       }));
-      assert.deepEqual(identity, { name: 'VigilShell Dev', packaged: true, data, visible: true });
+      assert.deepEqual(identity, { name: 'VigilShell', packaged: true, data, visible: true });
       const snapshot = await page.evaluate(() => window.vigilshell.getSnapshot());
       assert(snapshot.preferences, 'Preferences IPC must respond');
       assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
@@ -110,7 +112,7 @@ try {
       assert.deepEqual(errors, []);
       await closeApplication(application, applicationProcess);
       await waitUntil(() => !alive(backendPid), 'backend process exit');
-      assert(!existsSync(productionData), 'Production data must remain untouched');
+      assert(!existsSync(developmentData), 'Release application must not create Dev data');
     },
     async () => {
       if (applicationProcess?.exitCode === null && applicationProcess.signalCode === null)
@@ -134,4 +136,4 @@ try {
     JSON.stringify({ passed, errors, failures }, null, 2),
   );
 }
-console.log('Native Dev startup, Renderer IPC, backend identity and normal shutdown verified');
+console.log('Native release startup, Renderer IPC, backend identity and normal shutdown verified');

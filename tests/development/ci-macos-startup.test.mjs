@@ -2,6 +2,57 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { closeApplication, waitUntil, withCleanup } from '../e2e/ci-macos-lifecycle.mjs';
+import { releaseStartupContext } from '../e2e/ci-macos-context.mjs';
+
+function hostedContext(arch = 'arm64', exists = () => false) {
+  return {
+    environment: {
+      GITHUB_ACTIONS: 'true',
+      RUNNER_ENVIRONMENT: 'github-hosted',
+      RUNNER_OS: 'macOS',
+      RUNNER_TEMP: '/runner/temp',
+      EXPECTED_ARCH: arch,
+    },
+    platform: 'darwin',
+    arch,
+    home: '/runner/home',
+    workspace: '/runner/work',
+    exists,
+  };
+}
+
+for (const [arch, folder] of [
+  ['arm64', 'mac-arm64'],
+  ['x64', 'mac'],
+]) {
+  test(`release startup selects the actual ${arch} package and release data directory`, () => {
+    const context = releaseStartupContext(hostedContext(arch));
+    assert.equal(context.bundle, `/runner/work/release/${folder}/VigilShell.app`);
+    assert.equal(context.signingReport, `/runner/work/release/${folder}/signing-report.json`);
+    assert.equal(context.data, '/runner/home/Library/Application Support/VigilShell');
+  });
+}
+
+for (const existing of ['VigilShell', 'VigilShell-dev']) {
+  test(`release startup refuses existing ${existing} data`, () => {
+    assert.throws(
+      () =>
+        releaseStartupContext(
+          hostedContext(
+            'arm64',
+            (path) => path === `/runner/home/Library/Application Support/${existing}`,
+          ),
+        ),
+      /Refusing/,
+    );
+  });
+}
+
+test('release startup refuses an architecture mismatch', () => {
+  const options = hostedContext();
+  options.environment.EXPECTED_ARCH = 'x64';
+  assert.throws(() => releaseStartupContext(options));
+});
 
 test('native visibility waits for the asynchronous window event', async () => {
   let observations = 0;

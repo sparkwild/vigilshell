@@ -160,6 +160,8 @@ npm run package:release -- --arch arm64
 
 脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成构建、签名与 DMG 校验后才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
 
+`npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据；GitHub Actions 只使用显式注入的签名配置，不读取开发机器的持久化配置。
+
 ## 数据与凭据
 
 连接配置和凭据加密保存在本机，解锁密钥由 macOS Keychain 管理。默认数据目录按应用通道分开：

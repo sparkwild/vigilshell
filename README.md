@@ -160,6 +160,8 @@ npm run package:release -- --arch arm64
 
 The target architecture must match the macOS host process and Rust toolchain. The script builds, signs, and verifies the DMG before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
 
+`npm run build` defaults to the release signing profile. Packaged builds keep their frontend, native bridges, backend resources, and Cargo output under `.cache/build/<dev|release>/<architecture>/`, separate from the live Dev application. Release builds require only the release signing configuration; they do not fall back to Dev credentials. GitHub Actions uses explicitly injected signing settings rather than persistent configuration from a developer machine.
+
 ## Data and credentials
 
 Connection settings and credentials are encrypted and stored locally. Unlock keys are managed by macOS Keychain. The default data directories are separate for each application channel:

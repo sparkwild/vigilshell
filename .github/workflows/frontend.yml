@@ -1,8 +1,12 @@
 name: Frontend
 on:
   pull_request:
+    branches: [main, develop]
   push:
     branches: [main, develop]
+concurrency:
+  group: frontend-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -15,12 +19,14 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
-          node-version: '24.21.0'
+          node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --global npm@11.19.1
+      - run: npm install --global "$(node -p "require('./package.json').packageManager")"
       - run: npm ci
       - name: Install protocol generator toolchain
-        run: rustup toolchain install 1.96.0 --profile minimal
+        run: |
+          rustup show active-toolchain
+          node scripts/check-rust-toolchain.mjs
       - run: npm run deps:check
       - run: npm run foundation:check
       - run: npm run contracts:check
@@ -28,6 +34,7 @@ jobs:
       - run: npm run format:check
       - run: npm run test:signing
       - run: npm run test:dev-session
+      - run: node --test tests/development/ci-macos-startup.test.mjs
       - run: npm run boundaries:check
       - run: npm run ui:check
       - run: node --test tests/development/ui-boundaries.test.mjs

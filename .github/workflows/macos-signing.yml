@@ -1,15 +1,18 @@
 name: macOS signed packages
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: macos-signing-${{ github.ref }}
+  group: macos-signing-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  package:
+  native:
     if: github.repository == 'sparkwild/vigilshell' && github.ref == 'refs/heads/main'
     environment: macos-release
+    name: macOS ${{ matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
@@ -21,75 +24,94 @@ jobs:
             arch: x64
             rust: x86_64-apple-darwin
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_ARCH: ${{ matrix.arch }}
+      EXPECTED_RUST: ${{ matrix.rust }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version: '24.21.0'
+          node-version-file: .nvmrc
           package-manager-cache: false
-      - name: Install locked toolchains and dependencies
-        env:
-          EXPECTED_ARCH: ${{ matrix.arch }}
-          EXPECTED_RUST: ${{ matrix.rust }}
-        run: |
-          test "$(node -p process.arch)" = "$EXPECTED_ARCH"
-          rustup toolchain install 1.96.0 --profile minimal
-          test "$(rustc +1.96.0 -vV | sed -n 's/^host: //p')" = "$EXPECTED_RUST"
-          npm install --global npm@11.19.1
-          npm ci
-          npm run test:signing
-      - name: Import the fixed release identity
+      - name: Require fixed release signing configuration
         env:
           CERTIFICATE_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
           VIGILSHELL_RELEASE_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
         run: |
-          set -euo pipefail
-          umask 077
-          test -n "$CERTIFICATE_BASE64"
-          test -n "$CERTIFICATE_PASSWORD"
-          test -n "$VIGILSHELL_RELEASE_SIGNING_IDENTITY"
-          SIGNING_KEYCHAIN="$RUNNER_TEMP/vigilshell-release.keychain-db"
-          SIGNING_PASSWORD="$(openssl rand -hex 32)"
-          echo "::add-mask::$SIGNING_PASSWORD"
-          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/vigilshell-release.p12"
-          security create-keychain -p "$SIGNING_PASSWORD" "$SIGNING_KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$SIGNING_KEYCHAIN"
-          security unlock-keychain -p "$SIGNING_PASSWORD" "$SIGNING_KEYCHAIN"
-          security import "$RUNNER_TEMP/vigilshell-release.p12" -k "$SIGNING_KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$SIGNING_PASSWORD" "$SIGNING_KEYCHAIN" >/dev/null
-          security export -k "$SIGNING_KEYCHAIN" -t certs -f pemseq -o "$RUNNER_TEMP/vigilshell-release.cer"
-          security add-trusted-cert -r trustRoot -p codeSign -k "$SIGNING_KEYCHAIN" "$RUNNER_TEMP/vigilshell-release.cer"
-          security list-keychains -d user > "$RUNNER_TEMP/vigilshell-keychains-before.txt"
-          security list-keychains -d user -s "$SIGNING_KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
-          echo "VIGILSHELL_RELEASE_SIGNING_KEYCHAIN=$SIGNING_KEYCHAIN" >> "$GITHUB_ENV"
-          echo "VIGILSHELL_RELEASE_SIGNING_IDENTITY=$VIGILSHELL_RELEASE_SIGNING_IDENTITY" >> "$GITHUB_ENV"
-          export VIGILSHELL_RELEASE_SIGNING_KEYCHAIN="$SIGNING_KEYCHAIN"
-          npm run signing:check -- --profile release
-      - name: Build and verify signed DMG
+          : "${CERTIFICATE_BASE64:?Configure MACOS_SIGNING_P12_BASE64 in macos-release}"
+          : "${CERTIFICATE_PASSWORD:?Configure MACOS_SIGNING_P12_PASSWORD in macos-release}"
+          : "${VIGILSHELL_RELEASE_SIGNING_IDENTITY:?Configure MACOS_SIGNING_IDENTITY in macos-release}"
+      - name: Install and verify native toolchains
+        id: toolchain
+        run: |
+          test "$(node -p process.arch)" = "$EXPECTED_ARCH"
+          rustup show active-toolchain
+          node scripts/check-rust-toolchain.mjs
+          test "$(rustc -vV | sed -n 's/^host: //p')" = "$EXPECTED_RUST"
+          npm install --global "$(node -p "require('./package.json').packageManager")"
+          npm ci
+      - name: Backend checks
+        run: npm run backend:check
+      - name: Frontend and platform tests
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        run: |
+          npm run contracts:check
+          npm run typecheck
+          npm run test:signing
+          npm run test:dev-session
+          node --test tests/development/ci-macos-startup.test.mjs
+          npx vitest run
+      - name: Import fixed release signing identity
+        id: signing
+        timeout-minutes: 3
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         env:
-          PACKAGE_ARCH: ${{ matrix.arch }}
-        run: npm run package:release -- --arch "$PACKAGE_ARCH"
-      - name: Upload verified packages
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+          CERTIFICATE_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
+          VIGILSHELL_RELEASE_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
+        run: bash scripts/ci-macos-signing.sh setup-release
+      - name: Build and verify release application and DMG
+        id: build
+        if: ${{ !cancelled() && steps.signing.outcome == 'success' }}
+        run: npm run package:release -- --arch "$EXPECTED_ARCH"
+      - name: Verify application startup and shutdown
+        id: startup
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/vigilshell-ci-evidence"
+          npm run test:ci-macos 2>&1 | tee "$RUNNER_TEMP/vigilshell-ci-evidence/startup.log"
+      - name: Remove disposable signing identity
+        timeout-minutes: 2
+        if: always()
+        run: bash scripts/ci-macos-signing.sh cleanup
+      - name: Upload verified release packages
+        if: ${{ success() && steps.startup.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: VigilShell-macos-${{ matrix.arch }}
           if-no-files-found: error
+          retention-days: 7
           path: |
             release/*.dmg
             release/*.dmg.sha256
             release/mac*/signing-report.json
-      - name: Remove signing material
+      - name: Upload diagnostic evidence
         if: always()
-        run: |
-          if test -f "$RUNNER_TEMP/vigilshell-release.cer"; then
-            security remove-trusted-cert "$RUNNER_TEMP/vigilshell-release.cer" || true
-          fi
-          security delete-keychain "$RUNNER_TEMP/vigilshell-release.keychain-db" || true
-          rm -f "$RUNNER_TEMP/vigilshell-release.p12" "$RUNNER_TEMP/vigilshell-release.cer"
-          if test -f "$RUNNER_TEMP/vigilshell-keychains-before.txt"; then
-            python3 -c 'import os,shlex,subprocess; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"vigilshell-keychains-before.txt"; subprocess.run(["security","list-keychains","-d","user","-s",*shlex.split(p.read_text())],check=True); p.unlink()'
-          fi
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: macos-ci-${{ matrix.arch }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/vigilshell-ci-evidence/
+            release/mac*/signing-report.json

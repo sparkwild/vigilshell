@@ -92,3 +92,54 @@ test('cleanup refuses a developer machine before touching keychains', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /requires a disposable GitHub-hosted macOS runner/);
 });
+
+for (const [event, ref] of [
+  ['pull_request', 'refs/heads/main'],
+  ['push', 'refs/heads/develop'],
+]) {
+  test(`fixed signing refuses ${event} on ${ref} before accessing certificates`, async (t) => {
+    const { root } = await fixture(t, []);
+    const result = spawnSync('/bin/bash', ['scripts/ci-macos-signing.sh', 'setup-release'], {
+      env: {
+        ...process.env,
+        PATH: '/nonexistent',
+        GITHUB_ACTIONS: 'true',
+        RUNNER_ENVIRONMENT: 'github-hosted',
+        RUNNER_OS: 'macOS',
+        RUNNER_TEMP: root,
+        GITHUB_REPOSITORY: 'sparkwild/vigilshell',
+        GITHUB_REF: ref,
+        GITHUB_EVENT_NAME: event,
+      },
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    assert.equal(result.status, 1);
+    assert(!existsSync(join(root, 'vigilshell-ci-signing')));
+  });
+}
+
+test('main fixed signing fails explicitly on missing configuration', async (t) => {
+  const { root } = await fixture(t, []);
+  const result = spawnSync('/bin/bash', ['scripts/ci-macos-signing.sh', 'setup-release'], {
+    env: {
+      ...process.env,
+      PATH: '/nonexistent',
+      GITHUB_ACTIONS: 'true',
+      RUNNER_ENVIRONMENT: 'github-hosted',
+      RUNNER_OS: 'macOS',
+      RUNNER_TEMP: root,
+      GITHUB_REPOSITORY: 'sparkwild/vigilshell',
+      GITHUB_REF: 'refs/heads/main',
+      GITHUB_EVENT_NAME: 'push',
+      CERTIFICATE_BASE64: '',
+      CERTIFICATE_PASSWORD: '',
+      VIGILSHELL_RELEASE_SIGNING_IDENTITY: '',
+    },
+    encoding: 'utf8',
+    timeout: 10000,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Configure MACOS_SIGNING_P12_BASE64/);
+  assert(!existsSync(join(root, 'vigilshell-ci-signing')));
+});

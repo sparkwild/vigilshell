@@ -4,21 +4,24 @@ directories:
   output: release
   buildResources: resources/icons
 files:
-  - out/**
+  - from: '${env.VIGILSHELL_BUILD_ROOT}/out'
+    to: out
+    filter:
+      - '**/*'
   - package.json
 extraResources:
-  - from: .cache/mcp-native/authorization.node
+  - from: '${env.VIGILSHELL_BUILD_ROOT}/native/mcp-native/authorization.node'
     to: native/mcp-identity.node
-  - from: .cache/notification-native/authorization.node
+  - from: '${env.VIGILSHELL_BUILD_ROOT}/native/notification-native/authorization.node'
     to: native/authorization.node
-  - from: build/backend/manifest.json
+  - from: '${env.VIGILSHELL_BUILD_ROOT}/backend/manifest.json'
     to: backend/manifest.json
   - from: resources/icons
     to: icons
   - from: resources/licenses
     to: licenses
 extraFiles:
-  - from: build/backend
+  - from: '${env.VIGILSHELL_BUILD_ROOT}/backend'
     to: Helpers
     filter:
       - VigilShell.app/**

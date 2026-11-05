@@ -23,7 +23,8 @@ function validate(profile, value) {
 }
 const read = (path) => (existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null);
 export function readSigningConfig(profile, environment, directory = signingConfigDirectory()) {
-  const saved = read(join(directory, `${profile}.json`)) ?? {};
+  const saved =
+    environment.GITHUB_ACTIONS === 'true' ? {} : (read(join(directory, `${profile}.json`)) ?? {});
   const prefix = `VIGILSHELL_${profile.toUpperCase()}_SIGNING_`;
   if (!(environment[`${prefix}IDENTITY`] ?? saved.identity))
     throw Error(
