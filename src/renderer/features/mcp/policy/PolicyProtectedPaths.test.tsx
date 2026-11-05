@@ -42,7 +42,7 @@ it('starts without an error and updates format validation when switching type', 
   await user.tab();
   expect(screen.getByRole('textbox')).toHaveValue('/srv/data');
   await user.click(screen.getByRole('combobox', { name: 'Path type' }));
-  await user.click(screen.getByRole('option', { name: 'File' }));
+  await user.click(await screen.findByRole('option', { name: 'File' }));
   const input = screen.getByRole('textbox', { name: 'File path' });
   await user.clear(input);
   await user.type(input, '/srv/data/');

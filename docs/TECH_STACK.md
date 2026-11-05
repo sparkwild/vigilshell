@@ -56,6 +56,6 @@ npm run signing:check -- --profile dev
 
 Ubuntu 工作流保留前后端静态检查、测试和依赖审计。`macos-ci.yml` 在 PR、`main`／`develop` 推送及手动触发时，分别使用 `macos-15`（ARM64）和 `macos-15-intel`（x64）进行原生构建与测试。
 
-macOS CI 运行完整 Rust 检查、前端类型与测试、签名逻辑和开发会话测试，再构建签名的 Dev 应用。任务临时生成代码签名证书，保存在独立钥匙串中，结束时移除；不读取 release 签名 Secrets，也不生成 Release。
+macOS CI 运行完整 Rust 检查、前端类型与测试、签名逻辑和开发会话测试，再构建签名的 Dev 应用。任务临时生成代码签名证书，保存在独立钥匙串中；仅 Dev 打包步骤设置 `CSC_FOR_PULL_REQUEST=true`，PR 与 push 均执行同一套严格验签，不读取 release 签名 Secrets，也不生成 Release。导入后立即删除导出的私钥与 P12；任务结束时逐项限时移除证书信任、删除钥匙串、恢复并核对搜索列表及删除临时文件。单项失败不阻止剩余清理，但会使清理步骤失败，并在诊断附件中保留 `signing-cleanup.json`。
 
-`npm run test:ci-macos` 仅允许 GitHub 托管的 macOS runner 执行，并拒绝已有 Dev 或正式应用数据目录。它使用 runner 上一次性的 Dev 数据，检查打包应用的窗口、Renderer IPC、真实 Rust 后端进程和正常退出，完成后清理数据。截图、启动日志和签名报告作为保留 7 天的 Actions 诊断附件。该检查不执行真实 SSH 操作，也不代替钥匙串交互、Touch ID 或首次下载安装的人工验收。
+`npm run test:ci-macos` 仅允许 GitHub 托管的 macOS runner 执行，并拒绝已有 Dev 或正式应用数据目录。它使用 runner 上一次性的 Dev 数据，限时等待原生窗口可见，检查 Renderer IPC、真实 Rust 后端进程和正常退出，进程退出后清理数据。工作流显式使用带 `pipefail` 的 Bash，日志经过 `tee` 时仍保留探针失败状态；`result.json` 同时记录原始异常和清理异常。截图、启动日志、签名报告和清理报告作为保留 7 天的 Actions 诊断附件。该检查不执行真实 SSH 操作，也不代替钥匙串交互、Touch ID 或首次下载安装的人工验收。

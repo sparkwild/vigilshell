@@ -8,6 +8,8 @@ case "${1:-}" in
   setup)
     mkdir -m 700 "$CI_SIGNING_ROOT"
     umask 077
+    # Exported keys are never needed after import, including on setup failure.
+    trap 'rm -f "$CI_SIGNING_ROOT/key.pem" "$CI_SIGNING_ROOT/identity.p12"' EXIT
     security list-keychains -d user > "$CI_SIGNING_ROOT/keychains-before.txt"
     CI_PASSWORD="$(openssl rand -hex 32)"
     echo "::add-mask::$CI_PASSWORD"
@@ -33,28 +35,18 @@ CONF
     security set-keychain-settings -lut 21600 "$CI_KEYCHAIN"
     security unlock-keychain -p "$CI_PASSWORD" "$CI_KEYCHAIN"
     security import "$CI_SIGNING_ROOT/identity.p12" -k "$CI_KEYCHAIN" -P "$CI_PASSWORD" -T /usr/bin/codesign
+    rm -f "$CI_SIGNING_ROOT/key.pem" "$CI_SIGNING_ROOT/identity.p12"
     echo "Authorizing disposable signing key"
     security set-key-partition-list -S apple-tool:,apple: -s -k "$CI_PASSWORD" "$CI_KEYCHAIN" >/dev/null
     echo "Trusting disposable signing certificate"
-    sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$CI_KEYCHAIN" "$CI_SIGNING_ROOT/certificate.pem"
+    sudo -n security add-trusted-cert -d -r trustRoot -p codeSign -k "$CI_KEYCHAIN" "$CI_SIGNING_ROOT/certificate.pem"
     CI_IDENTITY="$(openssl x509 -in "$CI_SIGNING_ROOT/certificate.pem" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')"
     security list-keychains -d user -s "$CI_KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
     echo "VIGILSHELL_DEV_SIGNING_IDENTITY=$CI_IDENTITY" >> "$GITHUB_ENV"
     echo "VIGILSHELL_DEV_SIGNING_KEYCHAIN=$CI_KEYCHAIN" >> "$GITHUB_ENV"
     ;;
   cleanup)
-    if [[ ! -d "$CI_SIGNING_ROOT" ]]; then exit 0; fi
-    if [[ -f "$CI_SIGNING_ROOT/certificate.pem" ]]; then
-      sudo security remove-trusted-cert -d "$CI_SIGNING_ROOT/certificate.pem" || true
-    fi
-    if [[ -f "$CI_KEYCHAIN" ]]; then security delete-keychain "$CI_KEYCHAIN"; fi
-    if [[ -f "$CI_SIGNING_ROOT/keychains-before.txt" ]]; then
-      python3 - "$CI_SIGNING_ROOT/keychains-before.txt" <<'PY'
-import pathlib, shlex, subprocess, sys
-subprocess.run(['security', 'list-keychains', '-d', 'user', '-s', *shlex.split(pathlib.Path(sys.argv[1]).read_text())], check=True)
-PY
-    fi
-    rm -rf "$CI_SIGNING_ROOT"
+    node "$(dirname "$0")/ci-macos-cleanup.mjs"
     ;;
   *) echo 'Use setup or cleanup' >&2; exit 2 ;;
 esac
