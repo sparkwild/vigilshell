@@ -72,7 +72,8 @@ input.on('line', (line) => {
       kind: 'ready',
       application: 'vigilshell',
       runtimeId: 'runtime-初始',
-      contractVersion: scenario.mode === 'unsupported-version' ? 3 : 10,
+      contractVersion:
+        scenario.mode === 'unsupported-version' ? 3 : scenario.desktopProtocolVersion,
     });
   } else if (
     ['unlock-delayed', 'negotiation-delayed'].includes(scenario.mode) &&
@@ -83,7 +84,7 @@ input.on('line', (line) => {
         kind: 'workspace',
         result: {
           kind: 'ready',
-          version: 16,
+          version: scenario.workspaceProtocolVersion,
           connectionAccess: { phase: 'unlocking', revision: 1, code: null },
         },
       });
