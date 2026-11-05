@@ -1,0 +1,196 @@
+{
+  "valid": [
+    {
+      "method": "workspace.negotiate",
+      "params": {
+        "version": 16
+      }
+    },
+    {
+      "method": "credentialDrafts.configure",
+      "params": {
+        "draftId": "11111111-1111-4111-8111-111111111111",
+        "auth": "privateKey"
+      }
+    },
+    {
+      "method": "terminals.open",
+      "params": {
+        "connectionId": "11111111-1111-4111-8111-111111111111",
+        "columns": 80,
+        "rows": 24
+      }
+    },
+    {
+      "method": "connections.delete",
+      "params": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "version": 1,
+        "disconnectSessions": true,
+        "sessionIds": []
+      }
+    },
+    {
+      "method": "credentialDrafts.clear",
+      "params": {
+        "draftId": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "method": "connections.create",
+      "params": {
+        "connectionId": null,
+        "expectedVersion": null,
+        "groupId": null,
+        "draftId": null,
+        "config": {
+          "name": "fixture",
+          "host": "localhost",
+          "port": 22,
+          "username": "fixture",
+          "auth": "password"
+        }
+      }
+    },
+    {
+      "method": "catalogue.list",
+      "params": {
+        "kind": "connections",
+        "query": "",
+        "offset": 0,
+        "version": null
+      }
+    },
+    {
+      "method": "catalogue.list",
+      "params": {
+        "kind": "groups",
+        "query": "group",
+        "offset": 0,
+        "version": null
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "method": "credentialDrafts.configure",
+      "params": {
+        "draftId": "11111111-1111-4111-8111-111111111111",
+        "auth": "password",
+        "password": "synthetic-never-crosses-boundary"
+      }
+    },
+    {
+      "method": "terminals.open",
+      "params": {
+        "connectionId": "11111111-1111-4111-8111-111111111111",
+        "columns": "80",
+        "rows": 24
+      }
+    },
+    {
+      "method": "shell.execute",
+      "params": {
+        "command": "example"
+      }
+    },
+    {
+      "method": "projects.create",
+      "params": {
+        "name": "Example",
+        "owner": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "method": "credentials.clear",
+      "params": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "version": 1
+      }
+    },
+    {
+      "method": "connections.create",
+      "params": {
+        "connectionId": null,
+        "expectedVersion": null,
+        "groupId": null,
+        "draftId": null,
+        "config": {
+          "name": "fixture",
+          "host": "localhost",
+          "port": 22,
+          "username": "fixture",
+          "auth": "password",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "method": "connections.create",
+      "params": {
+        "connectionId": null,
+        "expectedVersion": null,
+        "groupId": null,
+        "draftId": null,
+        "config": {
+          "name": "fixture",
+          "host": "localhost",
+          "port": 22,
+          "username": "fixture",
+          "auth": "password",
+          "enabled": true
+        }
+      }
+    },
+    {
+      "method": "catalogue.search",
+      "params": {
+        "kind": "connections",
+        "query": "",
+        "offset": 0,
+        "version": null
+      }
+    },
+    {
+      "method": "groups.get",
+      "params": {
+        "id": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "method": "proxies.get",
+      "params": {
+        "id": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "method": "catalogue.list",
+      "params": {
+        "kind": "connections",
+        "query": "",
+        "offset": 0,
+        "version": null,
+        "parent": null
+      }
+    },
+    {
+      "method": "catalogue.list",
+      "params": {
+        "kind": "connections",
+        "query": "",
+        "offset": 0,
+        "version": null,
+        "parent": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "method": "catalogue.list",
+      "params": {
+        "kind": "search",
+        "query": "",
+        "offset": 0,
+        "version": null
+      }
+    }
+  ]
+}

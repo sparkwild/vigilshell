@@ -1,0 +1,342 @@
+[
+  {
+    "name": "hello",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "runtime.hello",
+      "params": {
+        "application": "app",
+        "contractVersion": 12
+      }
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "read",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.get",
+      "params": {}
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "update",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "themeMode": "dark"
+        },
+        "base": {
+          "themeMode": "system"
+        },
+        "expectedRevision": 0
+      }
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "reconcile",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.reconcile",
+      "params": {
+        "requestId": "write",
+        "runtimeId": "runtime"
+      }
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "status",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "requests.getStatus",
+      "params": {
+        "requestId": "write"
+      }
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "cancel",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "requests.cancel",
+      "params": {
+        "requestId": "write"
+      }
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "shutdown",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "runtime.shutdown",
+      "params": {}
+    },
+    "valid": true,
+    "error": null
+  },
+  {
+    "name": "empty patch",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.update",
+      "params": {
+        "patch": {},
+        "base": {},
+        "expectedRevision": 0
+      }
+    },
+    "valid": false,
+    "error": -32602
+  },
+  {
+    "name": "null patch",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "themeMode": null
+        },
+        "base": {
+          "themeMode": "system"
+        },
+        "expectedRevision": 0
+      }
+    },
+    "valid": false,
+    "error": -32602
+  },
+  {
+    "name": "different base keys",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "themeMode": "dark"
+        },
+        "base": {
+          "localeMode": "system"
+        },
+        "expectedRevision": 0
+      }
+    },
+    "valid": false,
+    "error": -32602
+  },
+  {
+    "name": "unsafe revision",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "themeMode": "dark"
+        },
+        "base": {
+          "themeMode": "system"
+        },
+        "expectedRevision": 9007199254740992
+      }
+    },
+    "valid": false,
+    "error": -32602
+  },
+  {
+    "name": "unknown field",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.get",
+      "params": {
+        "unknown": true
+      }
+    },
+    "valid": false,
+    "error": -32602
+  },
+  {
+    "name": "unknown method",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "unrecognized",
+      "params": {}
+    },
+    "valid": false,
+    "error": -32601
+  },
+  {
+    "name": "wrong version",
+    "request": {
+      "jsonrpc": "1.0",
+      "id": "test",
+      "method": "preferences.get",
+      "params": {}
+    },
+    "valid": false,
+    "error": -32600
+  },
+  {
+    "name": "empty ID",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "",
+      "method": "preferences.get",
+      "params": {}
+    },
+    "valid": false,
+    "error": -32600
+  },
+  {
+    "name": "multibyte ID too large",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界",
+      "method": "preferences.get",
+      "params": {}
+    },
+    "valid": false,
+    "error": -32600
+  },
+  {
+    "name": "unknown envelope field",
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "test",
+      "method": "preferences.get",
+      "params": {},
+      "extra": true
+    },
+    "valid": false,
+    "error": -32600
+  },
+  {
+    "name": "removed ui scale field is rejected",
+    "valid": false,
+    "error": -32602,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "removed-scale",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "uiScale": 125
+        },
+        "base": {
+          "uiScale": 100
+        },
+        "expectedRevision": 0
+      }
+    }
+  },
+  {
+    "name": "six additional preferences",
+    "valid": true,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "six additional preferences",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "terminalCopyOnSelect": true,
+          "terminalThemeMode": "dark",
+          "terminalFontFamily": "menlo",
+          "sidebarHoverPreview": false,
+          "filesAutoOpen": false,
+          "remoteDirectoryMode": "initial"
+        },
+        "base": {
+          "terminalCopyOnSelect": false,
+          "terminalThemeMode": "inherit",
+          "terminalFontFamily": "jetbrains-mono",
+          "sidebarHoverPreview": true,
+          "filesAutoOpen": true,
+          "remoteDirectoryMode": "last"
+        },
+        "expectedRevision": 0
+      }
+    }
+  },
+  {
+    "name": "reject non-monospaced font candidate",
+    "valid": false,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "reject non-monospaced font candidate",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "terminalFontFamily": "arial"
+        },
+        "base": {
+          "terminalFontFamily": "jetbrains-mono"
+        },
+        "expectedRevision": 0
+      }
+    },
+    "error": -32602
+  },
+  {
+    "name": "reject unknown terminal theme mode",
+    "valid": false,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "reject unknown terminal theme mode",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "terminalThemeMode": "system"
+        },
+        "base": {
+          "terminalThemeMode": "inherit"
+        },
+        "expectedRevision": 0
+      }
+    },
+    "error": -32602
+  },
+  {
+    "name": "reject unknown remote directory mode",
+    "valid": false,
+    "request": {
+      "jsonrpc": "2.0",
+      "id": "reject unknown remote directory mode",
+      "method": "preferences.update",
+      "params": {
+        "patch": {
+          "remoteDirectoryMode": "custom"
+        },
+        "base": {
+          "remoteDirectoryMode": "last"
+        },
+        "expectedRevision": 0
+      }
+    },
+    "error": -32602
+  }
+]

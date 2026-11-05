@@ -1,0 +1,40 @@
+appId: com.sparkwild.vigilshell.electron
+productName: VigilShell
+directories:
+  output: release
+  buildResources: resources/icons
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: .cache/mcp-native/authorization.node
+    to: native/mcp-identity.node
+  - from: .cache/notification-native/authorization.node
+    to: native/authorization.node
+  - from: build/backend/manifest.json
+    to: backend/manifest.json
+  - from: resources/icons
+    to: icons
+  - from: resources/licenses
+    to: licenses
+extraFiles:
+  - from: build/backend
+    to: Helpers
+    filter:
+      - VigilShell.app/**
+      - VigilShell Dev.app/**
+      - VigilShell Credential Input.app/**
+afterSign: ./scripts/verify-package.mjs
+artifactBuildCompleted: ./scripts/sign-artifact.mjs
+mac:
+  category: public.app-category.developer-tools
+  icon: resources/icons/icon.icns
+  sign: ./scripts/sign-package.mjs
+  forceCodeSigning: true
+  notarize: false
+  hardenedRuntime: false
+  signIgnore:
+    - '\.(png|icns|ico|svg)$'
+  target: dmg
+dmg:
+  sign: false

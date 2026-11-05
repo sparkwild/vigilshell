@@ -1,0 +1,31 @@
+name: Backend
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+permissions:
+  contents: read
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+      - name: Install project Rust
+        run: rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+      - name: Native fixture request and startup checks
+        run: python3 -B -m unittest discover -s tests/development -p 'test_native_fixtures.py' -v
+      - name: Backend checks
+        env:
+          RUSTUP_TOOLCHAIN: 1.96.0
+        run: node scripts/check-backend.mjs
+      - name: Dependency checks
+        env:
+          RUSTUP_TOOLCHAIN: 1.96.0
+        run: node scripts/check-rust-dependencies.mjs

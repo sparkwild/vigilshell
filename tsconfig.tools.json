@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["electron.vite.config.ts", "vitest.config.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}

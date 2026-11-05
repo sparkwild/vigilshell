@@ -1,0 +1,17 @@
+node_modules/
+target/
+build/
+release/
+.cache/
+.specs/
+.idea/
+out/
+src/shared/i18n/generated/
+*.tsbuildinfo
+.DS_Store
+.pnpm-store/
+# Signing private identities and keychains stay outside source control.
+*.p12
+*.pfx
+*.keychain
+*.keychain-db
