@@ -481,6 +481,9 @@ impl Fixture {
         o.connection.unwrap()
     }
     async fn reopen(&mut self) {
+        // Keep the final database drop on this thread so its file lock is released
+        // before reopening; a zero Arc count alone does not await destruction.
+        let closing_database = self.database.upgrade().unwrap();
         self.service.shutdown().await.unwrap();
         let previous_service = Arc::downgrade(&self.service);
         let previous_database = Arc::downgrade(&self.service.database);
@@ -498,9 +501,10 @@ impl Fixture {
         );
         assert_eq!(
             previous_database.strong_count(),
-            0,
-            "previous database still retained"
+            1,
+            "previous database still retained outside the fixture"
         );
+        drop(closing_database);
         let database = Arc::new(Database(
             Mutex::new(SqlitePreferences::open(&self.path).unwrap()),
             Mutex::new(None),
