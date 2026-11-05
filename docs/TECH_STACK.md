@@ -25,6 +25,8 @@
 
 字体、图标、文案随应用分发，不依赖运行时 CDN。基础依赖约束见 [foundation-dependencies.json](../scripts/foundation-dependencies.json)，Rust 来源及许可证约束见 [deny.toml](../deny.toml)。组件使用方式见 [UI 组件与设计规范](UI_DESIGN.md)。
 
+Tokio 固定为 `1.53.3`；加密依赖的锁文件包含 `crypto-bigint 0.7.10` 与 `ctutils 0.4.8`。`cap-std` 的 Windows 间接依赖 `winx 0.36.4` 使用 `Apache-2.0 WITH LLVM-exception`，许可证许可仅限定该包和版本，其他依赖继续按通用清单检查。
+
 ## 工具入口
 
 使用 `npm run <命令>`，脚本定义见 [package.json](../package.json)。
