@@ -12,6 +12,7 @@ pub mod ui_state;
 
 #[derive(schemars::JsonSchema)]
 pub struct DesktopContract {
+    pub application: updates::ApplicationContract,
     pub file_editors: file_editing::FileEditorContract,
     pub agent: agent::AgentContract,
     pub system_notifications: notifications::SystemNotificationContract,
@@ -32,3 +33,5 @@ pub mod agent;
 pub mod notifications;
 
 pub mod file_editing;
+
+pub mod updates;

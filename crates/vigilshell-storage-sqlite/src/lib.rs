@@ -15,7 +15,7 @@ use vigilshell_domain::{
 };
 pub const DATABASE_FILENAME: &str = "app.sqlite3";
 const APPLICATION_ID: u32 = 0x5653_4831;
-const SCHEMA_VERSION: u32 = 6;
+const SCHEMA_VERSION: u32 = 7;
 #[cfg(test)]
 const PREFERENCES_SCHEMA: &str = "CREATE TABLE preferences (id INTEGER PRIMARY KEY CHECK(id=1), theme_mode TEXT NOT NULL CHECK(theme_mode IN ('system','light','dark')), locale_mode TEXT NOT NULL CHECK(locale_mode IN ('system','en','zh-CN')), revision INTEGER NOT NULL CHECK(revision >= 0 AND revision <= 9007199254740991)) STRICT";
 
@@ -31,6 +31,7 @@ fn migrations() -> rusqlite_migration::Migrations<'static> {
         rusqlite_migration::M::up(include_str!(
             "migrations/006_remove_completion_notifications.sql"
         )),
+        rusqlite_migration::M::up(include_str!("migrations/007_updates.sql")),
     ])
 }
 
@@ -168,6 +169,7 @@ fn validate_schema(connection: &Connection) -> rusqlite::Result<bool> {
     expected.execute_batch(include_str!(
         "migrations/006_remove_completion_notifications.sql"
     ))?;
+    expected.execute_batch(include_str!("migrations/007_updates.sql"))?;
     if !validate_against(connection, &expected)? {
         return Ok(false);
     }
@@ -208,7 +210,7 @@ fn validate_against(connection: &Connection, expected: &Connection) -> rusqlite:
 }
 
 fn read(connection: &Connection) -> Result<Preferences, SettingsError> {
-    let value=connection.query_row("SELECT theme_mode,locale_mode,revision,terminal_font_size,terminal_line_height,terminal_scrollback,terminal_cursor_style,terminal_cursor_blink,connection_open_behavior,files_show_hidden,files_show_tree,files_columns,download_mode,download_directory,monitor_sample_seconds,monitor_full_seconds,terminal_copy_on_select,terminal_theme_mode,terminal_font_family,sidebar_hover_preview,files_auto_open,remote_directory_mode,system_notification_mode,attention_required_notification_enabled,file_editor_application,monitor_display,execution_issue_notification_enabled FROM preferences WHERE id=1",[],|r| {
+    let value=connection.query_row("SELECT theme_mode,locale_mode,revision,terminal_font_size,terminal_line_height,terminal_scrollback,terminal_cursor_style,terminal_cursor_blink,connection_open_behavior,files_show_hidden,files_show_tree,files_columns,download_mode,download_directory,monitor_sample_seconds,monitor_full_seconds,terminal_copy_on_select,terminal_theme_mode,terminal_font_family,sidebar_hover_preview,files_auto_open,remote_directory_mode,system_notification_mode,attention_required_notification_enabled,file_editor_application,monitor_display,execution_issue_notification_enabled,auto_check_updates FROM preferences WHERE id=1",[],|r| {
         Ok(Preferences {
             theme:match r.get::<_,String>(0)?.as_str() {"system"=>ThemeMode::System,"light"=>ThemeMode::Light,"dark"=>ThemeMode::Dark,_=>return Err(rusqlite::Error::InvalidQuery)},
             locale:match r.get::<_,String>(1)?.as_str() {"system"=>LocaleMode::System,"en"=>LocaleMode::English,"zh-CN"=>LocaleMode::Chinese,_=>return Err(rusqlite::Error::InvalidQuery)},
@@ -235,6 +237,7 @@ fn read(connection: &Connection) -> Result<Preferences, SettingsError> {
             system_notification_mode: NotificationMode::parse(&r.get::<_,String>(22)?).ok_or(rusqlite::Error::InvalidQuery)?,
             attention_required_notification_enabled: r.get(23)?,
             execution_issue_notification_enabled: r.get(26)?,
+            auto_check_updates: r.get(27)?,
             file_editor_application: r.get(24)?,
             monitor_display: r.get(25)?,
 
@@ -289,7 +292,7 @@ impl PreferencesRepository for SqlitePreferences {
             LocaleMode::English => "en",
             LocaleMode::Chinese => "zh-CN",
         };
-        tx.execute("UPDATE preferences SET theme_mode=?1,locale_mode=?2,revision=?3,terminal_font_size=?4,terminal_line_height=?5,terminal_scrollback=?6,terminal_cursor_style=?7,terminal_cursor_blink=?8,connection_open_behavior=?9,files_show_hidden=?10,files_show_tree=?11,files_columns=?12,download_mode=?13,download_directory=?14,monitor_sample_seconds=?15,monitor_full_seconds=?16,terminal_copy_on_select=?17,terminal_theme_mode=?18,terminal_font_family=?19,sidebar_hover_preview=?20,files_auto_open=?21,remote_directory_mode=?22,system_notification_mode=?23,attention_required_notification_enabled=?24,file_editor_application=?25,monitor_display=?26,execution_issue_notification_enabled=?27 WHERE id=1", params![theme,locale,result.preferences.revision as i64,&result.preferences.terminal_font_size,&result.preferences.terminal_line_height,&result.preferences.terminal_scrollback,&result.preferences.terminal_cursor_style,&result.preferences.terminal_cursor_blink,&result.preferences.connection_open_behavior,&result.preferences.files_show_hidden,&result.preferences.files_show_tree,serde_json::to_string(&result.preferences.files_columns).map_err(|_|SettingsError::InvalidRequest)?,&result.preferences.download_mode,&result.preferences.download_directory,&result.preferences.monitor_sample_seconds,&result.preferences.monitor_full_seconds,&result.preferences.terminal_copy_on_select,&result.preferences.terminal_theme_mode,&result.preferences.terminal_font_family,&result.preferences.sidebar_hover_preview,&result.preferences.files_auto_open,&result.preferences.remote_directory_mode,result.preferences.system_notification_mode.as_str(),result.preferences.attention_required_notification_enabled,&result.preferences.file_editor_application,&result.preferences.monitor_display,result.preferences.execution_issue_notification_enabled]).map_err(|_|SettingsError::StorageUnavailable)?;
+        tx.execute("UPDATE preferences SET theme_mode=?1,locale_mode=?2,revision=?3,terminal_font_size=?4,terminal_line_height=?5,terminal_scrollback=?6,terminal_cursor_style=?7,terminal_cursor_blink=?8,connection_open_behavior=?9,files_show_hidden=?10,files_show_tree=?11,files_columns=?12,download_mode=?13,download_directory=?14,monitor_sample_seconds=?15,monitor_full_seconds=?16,terminal_copy_on_select=?17,terminal_theme_mode=?18,terminal_font_family=?19,sidebar_hover_preview=?20,files_auto_open=?21,remote_directory_mode=?22,system_notification_mode=?23,attention_required_notification_enabled=?24,file_editor_application=?25,monitor_display=?26,execution_issue_notification_enabled=?27,auto_check_updates=?28 WHERE id=1", params![theme,locale,result.preferences.revision as i64,&result.preferences.terminal_font_size,&result.preferences.terminal_line_height,&result.preferences.terminal_scrollback,&result.preferences.terminal_cursor_style,&result.preferences.terminal_cursor_blink,&result.preferences.connection_open_behavior,&result.preferences.files_show_hidden,&result.preferences.files_show_tree,serde_json::to_string(&result.preferences.files_columns).map_err(|_|SettingsError::InvalidRequest)?,&result.preferences.download_mode,&result.preferences.download_directory,&result.preferences.monitor_sample_seconds,&result.preferences.monitor_full_seconds,&result.preferences.terminal_copy_on_select,&result.preferences.terminal_theme_mode,&result.preferences.terminal_font_family,&result.preferences.sidebar_hover_preview,&result.preferences.files_auto_open,&result.preferences.remote_directory_mode,result.preferences.system_notification_mode.as_str(),result.preferences.attention_required_notification_enabled,&result.preferences.file_editor_application,&result.preferences.monitor_display,result.preferences.execution_issue_notification_enabled,result.preferences.auto_check_updates]).map_err(|_|SettingsError::StorageUnavailable)?;
         tx.commit().map_err(|_| SettingsError::StorageUnavailable)?;
         Ok(result)
     }
@@ -317,6 +320,31 @@ mod tests {
             expected_revision,
         }
     }
+    #[test]
+    fn update_check_preference_migrates_and_survives_reopen() {
+        let root = TestDirectory::new();
+        let mut db = SqlitePreferences::open(root.path()).unwrap();
+        let original = db.get().unwrap();
+        assert!(original.auto_check_updates);
+        db.update(UpdatePreferencesRequest {
+            expected_revision: original.revision,
+            patch: PreferencesPatch {
+                auto_check_updates: Some(false),
+                ..Default::default()
+            },
+            base: PreferencesPatch {
+                auto_check_updates: Some(true),
+                ..Default::default()
+            },
+        })
+        .unwrap();
+        drop(db);
+        let reopened = SqlitePreferences::open(root.path()).unwrap().get().unwrap();
+        assert!(!reopened.auto_check_updates);
+        assert_eq!(reopened.theme, original.theme);
+        assert_eq!(reopened.revision, original.revision + 1);
+    }
+
     #[test]
     fn removing_completion_notifications_preserves_preferences_and_encrypted_data() {
         let mut connection = Connection::open_in_memory().unwrap();
@@ -413,6 +441,7 @@ mod tests {
             M::up(include_str!(
                 "migrations/006_remove_completion_notifications.sql"
             )),
+            M::up(include_str!("migrations/007_updates.sql")),
             M::up("CREATE TABLE transient(value TEXT); THIS IS NOT SQL;"),
         ]);
         assert!(broken.to_latest(&mut connection).is_err());
@@ -628,7 +657,7 @@ mod tests {
             "PRAGMA application_id=0x57444731",
             "PRAGMA user_version=1",
             "PRAGMA user_version=2",
-            "PRAGMA user_version=7",
+            "PRAGMA user_version=8",
             "DELETE FROM schema_baseline",
             "CREATE TABLE extra(value TEXT)",
             "ALTER TABLE preferences ADD COLUMN extra TEXT",

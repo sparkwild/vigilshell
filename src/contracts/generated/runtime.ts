@@ -1387,6 +1387,42 @@ export type PolicyLimitKey =
   | "concurrentTransfers"
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ApplicationRequest".
+ */
+export type ApplicationRequest =
+  | {
+      action: "info"
+    }
+  | {
+      action: "state"
+    }
+  | {
+      action: "check"
+    }
+  | {
+      action: "openRelease"
+    }
+  | {
+      action: "project"
+    }
+  | {
+      action: "issues"
+    }
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UpdatePhase".
+ */
+export type UpdatePhase =
+  | "idle"
+  | "checking"
+  | "current"
+  | "available"
+  | "empty"
+  | "networkError"
+  | "rateLimited"
+  | "invalidResponse"
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "ResolvedLocale".
  */
 export type ResolvedLocale = "en" | "zh-CN"
@@ -3267,6 +3303,7 @@ export type WorkspaceRequest1 =
 
 export interface DesktopContract {
   agent: AgentContract
+  application: ApplicationContract
   desktop: DesktopSnapshot
   error_code: ErrorCode
   file_editors: FileEditorContract
@@ -3836,6 +3873,40 @@ export interface PolicyLimitPatch {
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ApplicationContract".
+ */
+export interface ApplicationContract {
+  info: ApplicationInfo
+  request: ApplicationRequest
+  state: UpdateSnapshot
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ApplicationInfo".
+ */
+export interface ApplicationInfo {
+  name: string
+  version: string
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UpdateSnapshot".
+ */
+export interface UpdateSnapshot {
+  phase: UpdatePhase
+  release?: AvailableRelease | null
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "AvailableRelease".
+ */
+export interface AvailableRelease {
+  notes: string
+  tag: string
+  version: string
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "DesktopSnapshot".
  */
 export interface DesktopSnapshot {
@@ -3861,6 +3932,7 @@ export interface Appearance {
  */
 export interface Preferences {
   attentionRequiredNotificationEnabled: boolean
+  autoCheckUpdates: boolean
   connectionOpenBehavior: "ask" | "reuse" | "new"
   downloadDirectory: string
   downloadMode: "ask" | "directory"
@@ -3985,6 +4057,7 @@ export interface UpdatePreferencesRequest {
  */
 export interface PreferencesPatch {
   attentionRequiredNotificationEnabled?: boolean
+  autoCheckUpdates?: boolean
   connectionOpenBehavior?: "ask" | "reuse" | "new"
   downloadDirectory?: string
   downloadMode?: "ask" | "directory"
