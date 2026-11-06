@@ -17,7 +17,7 @@ const state = vi.hoisted(() => ({
   diagnostics: vi.fn(),
   tab: vi.fn(),
   navigate: null as ((v: McpNavigation) => void) | null,
-  settings: null as (() => void) | null,
+  settings: null as ((section?: 'notifications' | 'about' | 'updates') => void) | null,
   command: null as ((v: string) => void) | null,
   notification: null as ((v: NotificationTarget) => void) | null,
 }));
@@ -136,9 +136,21 @@ vi.mock('../features/mcp/AgentActivity', () => ({
   ),
 }));
 vi.mock('../features/settings/SettingsView', () => ({
-  SettingsView: ({ onBack }: { onBack(): void }) => (
+  SettingsView: ({
+    onBack,
+    initialCategory,
+    checkUpdates,
+  }: {
+    onBack(): void;
+    initialCategory: string;
+    checkUpdates: boolean;
+  }) => (
     <div>
       <h1>Settings page</h1>
+      <output aria-label="Settings route">
+        {initialCategory}
+        {checkUpdates ? ':check' : ''}
+      </output>
       <button onClick={onBack}>Back from settings</button>
     </div>
   ),
@@ -309,4 +321,17 @@ it('returns to the homepage for a notification whose terminal is gone without op
   expect(state.tab).toHaveBeenCalledWith('overview');
   expect(screen.queryByRole('heading', { name: 'Policy page' })).toBeNull();
   expect(state.newConnection).not.toHaveBeenCalled();
+});
+
+it('routes the menu update command to About after the leave guard, with an explicit check intent', async () => {
+  render(<App fontFailed={false} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Policies' }));
+  state.guard.mockResolvedValue(false);
+  await act(async () => state.settings?.('updates'));
+  expect(screen.getByRole('heading', { name: 'Policy page' })).toBeVisible();
+  state.guard.mockResolvedValue(true);
+  await act(async () => state.settings?.('updates'));
+  expect(screen.getByLabelText('Settings route')).toHaveTextContent('about:check');
+  await act(async () => state.settings?.('about'));
+  expect(screen.getByLabelText('Settings route')).toHaveTextContent(/^about$/);
 });

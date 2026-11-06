@@ -39,6 +39,7 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
   const [settingsRoute, setSettingsRoute] = useState({
     category: 'general' as SettingsCategory,
     version: 0,
+    checkUpdates: false,
   });
   const returnFocus = useRef<HTMLElement | null>(null);
   const rememberFocus = useCallback(() => {
@@ -69,12 +70,18 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
     void navigate(restoreWorkbench);
   }, [navigate, restoreWorkbench]);
   const openSettings = useCallback(
-    (section?: 'notifications') => {
+    (section?: 'notifications' | 'about' | 'updates') => {
       void navigate(() => {
         rememberFocus();
         setSettingsRoute((current) => ({
-          category: section === 'notifications' ? 'notifications' : 'general',
+          category:
+            section === 'updates'
+              ? 'about'
+              : section === 'notifications' || section === 'about'
+                ? section
+                : 'general',
           version: current.version + 1,
+          checkUpdates: section === 'updates',
         }));
         setView('settings');
       });
@@ -196,6 +203,7 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
               setSettingsRoute((old) => ({
                 category: target.kind === 'runtime' ? 'general' : 'mcp',
                 version: old.version + 1,
+                checkUpdates: false,
               }));
               setView('settings');
               break;
@@ -299,6 +307,7 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
               registerExitGuard={register}
               initialCategory={settingsRoute.category}
               navigationVersion={settingsRoute.version}
+              checkUpdates={settingsRoute.checkUpdates}
               onBack={goBack}
             />
           ) : null}

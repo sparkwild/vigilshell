@@ -164,7 +164,7 @@ npm run package:release -- --arch arm64
 
 ### ARM64 Beta 分发
 
-当前 Beta 面向 Apple Silicon Mac。标签格式为 `vX.Y.Z-beta.N`，手动 CI 只验证构建、不发布。安装包采用自签名，未经过 Apple 公证，不提供自动更新；只有实际发布后才有可下载的版本。
+当前 Beta 面向 Apple Silicon Mac。标签格式为 `vX.Y.Z-beta.N`，手动 CI 只验证构建、不发布。安装包采用自签名，未经过 Apple 公证，支持检查新版本并打开对应发布页，由用户手动下载安装；只有实际发布后才有可下载的版本。
 
 在没有既有 VigilShell 数据的独立测试 Mac／账号中，从同一 Release 下载 DMG 与校验文件，执行 `shasum -a 256 -c <文件>.dmg.sha256`，再拖入“应用程序”。如系统因开发者无法验证而阻止打开，应先核对来源，再使用“隐私与安全性 → 仍要打开”的单应用允许方式，不全局关闭 Gatekeeper。
 

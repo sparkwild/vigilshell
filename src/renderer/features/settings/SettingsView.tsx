@@ -1,3 +1,4 @@
+import { ApplicationSettings, UpdateBadge } from './ApplicationSettings';
 import { UiStateFeedback } from './UiStateFeedback';
 import { MonitorSettings } from './components/MonitorSettings';
 import { FileEditorSettings } from '../server-tools/FileEditorSettings';
@@ -65,15 +66,18 @@ export function SettingsView({
   onBack,
   initialCategory = 'general',
   navigationVersion = 0,
+  checkUpdates = false,
   registerExitGuard,
 }: {
   onBack(): void;
   initialCategory?: SettingsCategory;
   navigationVersion?: number;
+  checkUpdates?: boolean;
   registerExitGuard?: (guard: LeaveGuard | null) => void;
 }) {
   const model = useSettingsController(initialCategory);
   const leave = useRef<LeaveGuard | null>(null);
+  const [handledUpdateCheck, setHandledUpdateCheck] = useState(0);
   const [footerSlot, setFooterSlot] = useState<HTMLDivElement | null>(null);
   const register = useCallback((guard: LeaveGuard | null) => {
     leave.current = guard;
@@ -137,6 +141,7 @@ export function SettingsView({
                 >
                   {'logo' in c ? <AgentLogo client={c.logo} /> : <c.icon />}
                   <span>{t(c.label)}</span>
+                  {c.id === 'about' ? <UpdateBadge /> : null}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
@@ -152,7 +157,14 @@ export function SettingsView({
                 {title}
               </h1>
             </header>
-            {category === 'mcp' ? (
+            {category === 'about' ? (
+              <ApplicationSettings
+                checkRequest={
+                  checkUpdates && handledUpdateCheck !== navigationVersion ? navigationVersion : 0
+                }
+                onCheckRequestHandled={() => setHandledUpdateCheck(navigationVersion)}
+              />
+            ) : category === 'mcp' ? (
               <McpSettings footer={footerSlot} />
             ) : category === 'agentActivity' ? (
               <AgentActivitySettings footer={footerSlot} register={register} />

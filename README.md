@@ -164,7 +164,7 @@ The target architecture must match the macOS host process and Rust toolchain. Th
 
 ### ARM64 Beta distribution
 
-The Beta target is macOS on Apple Silicon. Tagged releases use `vX.Y.Z-beta.N`; manual CI runs only validate builds and do not publish. Packages are self-signed, not Apple-notarized, and do not include automatic updates. No public installer availability is implied until a release is actually published.
+The Beta target is macOS on Apple Silicon. Tagged releases use `vX.Y.Z-beta.N`; manual CI runs only validate builds and do not publish. Packages are self-signed, not Apple-notarized, and support update discovery and a link to the matching release page; installation is manual. No public installer availability is implied until a release is actually published.
 
 In a separate test Mac/account with no existing VigilShell data, download the DMG and its SHA-256 file from the same release, verify with `shasum -a 256 -c <file>.dmg.sha256`, then drag the application into Applications. If macOS blocks an unverified developer, use the per-app **Privacy & Security → Open Anyway** flow after checking the download source; do not disable Gatekeeper globally.
 

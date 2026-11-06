@@ -1,3 +1,4 @@
+import { registerApplication } from './updates/electron';
 import { observeFileEditingNotifications } from './notifications/file-editing';
 import { observeRuntimeNotifications } from './notifications/runtime';
 import { registerFileEditors } from './file-editing/electron';
@@ -54,7 +55,7 @@ if (!app.requestSingleInstanceLock()) {
     mcp: McpController | undefined;
   let confirmingQuit = false;
   let quitting = false,
-    pendingSettings: boolean | 'notifications' = false,
+    pendingSettings: boolean | 'notifications' | 'about' | 'updates' = false,
     startup: RendererStartup | undefined;
   const icons = launch.iconDirectory;
   const applicationIcon = join(icons, 'app-icon-source.png');
@@ -79,6 +80,11 @@ if (!app.requestSingleInstanceLock()) {
       return false;
     }
   };
+  const updates = registerApplication(senderAllowed);
+  updates.on('changed', (value) => {
+    if (window && !window.isDestroyed()) window.webContents.send('application:changed', value);
+  });
+  let rendererReady = false;
   function setTrayVisible(visible: boolean) {
     if (!visible) {
       tray?.destroy();
@@ -96,7 +102,7 @@ if (!app.requestSingleInstanceLock()) {
   }
   let pendingNotificationNavigation: import('@contracts').NotificationTarget | undefined;
   let pendingTransferNavigation: import('@contracts').TransferNotificationTarget | undefined;
-  function showWindow(settings: boolean | 'notifications' = false) {
+  function showWindow(settings: boolean | 'notifications' | 'about' | 'updates' = false) {
     if (quitting) return;
     if (settings) pendingSettings = settings;
     if (!window) {
@@ -121,7 +127,7 @@ if (!app.requestSingleInstanceLock()) {
     if (pendingSettings) {
       window.webContents.send(
         'desktop:open-settings',
-        pendingSettings === 'notifications' ? 'notifications' : undefined,
+        typeof pendingSettings === 'string' ? pendingSettings : undefined,
       );
       pendingSettings = false;
     }
@@ -274,6 +280,13 @@ if (!app.requestSingleInstanceLock()) {
     };
     const application: Electron.MenuItemConstructorOptions[] = [
       { label: t('show_window'), click: () => showWindow() },
+      { label: t('about_title'), click: () => showWindow('about') },
+      {
+        label: t('updates_check'),
+        click: () => {
+          showWindow('updates');
+        },
+      },
       settings,
       { type: 'separator' },
     ];
@@ -409,6 +422,7 @@ if (!app.requestSingleInstanceLock()) {
       }
     }
     quitting = true;
+    updates.stop();
     stopNotifications?.();
     await fileEditors?.stop();
     startup?.dispose();
@@ -650,8 +664,12 @@ if (!app.requestSingleInstanceLock()) {
       ipcMain.on('desktop:renderer-ready', (event) => {
         if (!senderAllowed(event)) return;
         startup?.rendererReady();
+        rendererReady = true;
+        updates.configure(state?.getSnapshot().preferences?.autoCheckUpdates === true);
       });
       state.on('changed', (snapshot: DesktopSnapshot) => {
+        if (rendererReady && snapshot.preferences)
+          updates.configure(snapshot.preferences.autoCheckUpdates);
         mcp?.displaySettingsChanged();
         workspace?.context(snapshot.appearance);
         if (snapshot.runtime.status === 'ready') void mcp?.refresh().catch(() => undefined);
@@ -683,7 +701,10 @@ if (!app.requestSingleInstanceLock()) {
         }
         state?.refreshSystem();
       });
-      powerMonitor.on('resume', () => state?.refreshSystem());
+      powerMonitor.on('resume', () => {
+        state?.refreshSystem();
+        updates.resume();
+      });
       await state.recover();
       await mcp.refresh().catch(() => undefined);
       setTrayVisible(mcp.showTray);
