@@ -203,4 +203,4 @@ The following technical documents are currently in Chinese:
 
 ## License status
 
-The repository does not yet declare a project-level open-source license. Licenses and notices for third-party resources distributed with the application are in [resources/licenses/](resources/licenses/).
+VigilShell original code is licensed under [Apache-2.0](LICENSE). Licenses and notices for third-party resources distributed with the application are in [resources/licenses/](resources/licenses/).

@@ -1,4 +1,5 @@
 [package]
+license.workspace = true
 name = "vigilshell-application-contracts"
 publish.workspace = true
 version.workspace = true

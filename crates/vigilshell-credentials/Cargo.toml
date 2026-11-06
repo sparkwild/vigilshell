@@ -1,4 +1,5 @@
 [package]
+license.workspace = true
 name = "vigilshell-credentials"
 publish.workspace = true
 version.workspace = true

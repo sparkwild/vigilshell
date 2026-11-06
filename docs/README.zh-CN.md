@@ -201,4 +201,4 @@ npm run package:release -- --arch arm64
 
 ## 许可说明
 
-仓库目前尚未声明项目级开源许可证。随应用分发的第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。
+VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。随应用分发的第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。

@@ -18,6 +18,7 @@ for (const args of [
   ['backend:build', '--', '--release'],
   ['contracts:generate'],
   ['i18n:generate'],
+  ['licenses:check'],
 ])
   execFileSync(process.execPath, [npm, 'run', ...args], options);
 execFileSync(process.execPath, ['scripts/build-notification-bridge.mjs'], options);

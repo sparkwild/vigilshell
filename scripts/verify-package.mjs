@@ -9,6 +9,19 @@ export default async function verifyPackage(context) {
     context.appOutDir,
     config.profile === 'dev' ? 'VigilShell Dev.app' : 'VigilShell.app',
   );
+  for (const name of [
+    'THIRD_PARTY_NOTICES.txt',
+    'index.json',
+    'electron-LICENSE.txt',
+    'LICENSES.chromium.html',
+  ]) {
+    if (
+      !readFileSync(join(app, 'Contents/Resources/licenses', name)).equals(
+        readFileSync(join('resources/licenses', name)),
+      )
+    )
+      throw Error(`Packaged license differs: ${name}`);
+  }
   verifyApplicationLayout(app, process.arch, config.profile);
   const components = verifyBundle(app, config, process.arch);
   writeFileSync(
