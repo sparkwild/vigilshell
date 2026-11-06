@@ -351,9 +351,9 @@ if (!app.requestSingleInstanceLock()) {
     tray?.setContextMenu(
       Menu.buildFromTemplate([
         { label: t('show_window'), click: () => showWindow() },
-        settings,
+        { ...settings, label: t('settings') },
         { type: 'separator' },
-        quit,
+        { ...quit, label: t('tray_quit') },
       ]),
     );
     tray?.setToolTip(launch.applicationName);

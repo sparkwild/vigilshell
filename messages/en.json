@@ -42,6 +42,7 @@
   "renderer_reload": "Reload interface",
   "show_window": "Open VigilShell",
   "quit": "Quit VigilShell",
+  "tray_quit": "Quit",
   "hide": "Hide VigilShell",
   "hide_others": "Hide Others",
   "show_all": "Show All",

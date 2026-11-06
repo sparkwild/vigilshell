@@ -42,6 +42,7 @@
   "renderer_reload": "重新加载界面",
   "show_window": "打开 VigilShell",
   "quit": "退出 VigilShell",
+  "tray_quit": "退出",
   "hide": "隐藏 VigilShell",
   "hide_others": "隐藏其他应用",
   "show_all": "显示全部",
