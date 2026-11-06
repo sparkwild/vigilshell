@@ -19,6 +19,8 @@ fn fixture(c: &Connection) {
         "../migrations/006_remove_completion_notifications.sql"
     ))
     .unwrap();
+    c.execute_batch(include_str!("../migrations/007_updates.sql"))
+        .unwrap();
     c.pragma_update(None, "user_version", crate::SCHEMA_VERSION)
         .unwrap();
     let mut config = AgentConfiguration::default();

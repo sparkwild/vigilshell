@@ -11,7 +11,7 @@ export interface SettingsBridge {
   restartBackend(): Promise<DesktopSnapshot>;
   rendererReady(): void;
   onSnapshotChanged(listener: (snapshot: DesktopSnapshot) => void): () => void;
-  onOpenSettings(listener: (section?: 'notifications') => void): () => void;
+  onOpenSettings(listener: (section?: 'notifications' | 'about' | 'updates') => void): () => void;
 }
 
 export interface UiStateBridge {
@@ -21,6 +21,7 @@ export interface UiStateBridge {
   onUiStateChanged(listener: (notice: UiStateNotice) => void): () => void;
 }
 export interface DesktopApi extends SettingsBridge, UiStateBridge, WorkspaceDesktop {
+  application: import('./application').ApplicationApi;
   fileEditors: import('./file-editors').FileEditorsApi;
   notifications: import('./system-notifications').SystemNotificationsApi;
   mcp: import('./mcp').McpApi;

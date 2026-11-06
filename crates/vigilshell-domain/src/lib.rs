@@ -24,6 +24,7 @@ pub struct Preferences {
     pub system_notification_mode: NotificationMode,
     pub attention_required_notification_enabled: bool,
     pub execution_issue_notification_enabled: bool,
+    pub auto_check_updates: bool,
     pub theme: ThemeMode,
     pub locale: LocaleMode,
     pub terminal_font_size: u16,
@@ -56,6 +57,7 @@ impl Default for Preferences {
             system_notification_mode: NotificationMode::Unfocused,
             attention_required_notification_enabled: true,
             execution_issue_notification_enabled: true,
+            auto_check_updates: true,
             theme: ThemeMode::System,
             locale: LocaleMode::System,
             terminal_font_size: 12,
@@ -91,6 +93,7 @@ pub struct PreferencesPatch {
     pub system_notification_mode: Option<NotificationMode>,
     pub attention_required_notification_enabled: Option<bool>,
     pub execution_issue_notification_enabled: Option<bool>,
+    pub auto_check_updates: Option<bool>,
     pub theme_mode: Option<ThemeMode>,
     pub locale_mode: Option<LocaleMode>,
     pub terminal_font_size: Option<u16>,
@@ -344,6 +347,7 @@ impl UpdatePreferencesRequest {
                 || self.patch.system_notification_mode.is_some()
                 || self.patch.attention_required_notification_enabled.is_some()
                 || self.patch.execution_issue_notification_enabled.is_some()
+                || self.patch.auto_check_updates.is_some()
                 || self.patch.remote_directory_mode.is_some()
                 || self.patch.file_editor_application.is_some()
                 || self.patch.monitor_display.is_some())
@@ -353,6 +357,7 @@ impl UpdatePreferencesRequest {
                 != self.base.attention_required_notification_enabled.is_some())
             || (self.patch.execution_issue_notification_enabled.is_some()
                 != self.base.execution_issue_notification_enabled.is_some())
+            || (self.patch.auto_check_updates.is_some() != self.base.auto_check_updates.is_some())
             || (self.patch.theme_mode.is_some() != self.base.theme_mode.is_some())
             || (self.patch.locale_mode.is_some() != self.base.locale_mode.is_some())
             || (self.patch.terminal_font_size.is_some() != self.base.terminal_font_size.is_some())
@@ -418,6 +423,15 @@ impl UpdatePreferencesRequest {
                 return Err(SettingsError::Conflict(Box::new(current.clone())));
             }
             next.execution_issue_notification_enabled = desired;
+        }
+        if let Some(desired) = self.patch.auto_check_updates {
+            if self.expected_revision < current.revision
+                && self.base.auto_check_updates != Some(current.auto_check_updates)
+                && desired != current.auto_check_updates
+            {
+                return Err(SettingsError::Conflict(Box::new(current.clone())));
+            }
+            next.auto_check_updates = desired;
         }
         if let Some(desired) = self.patch.system_notification_mode {
             if self.expected_revision < current.revision

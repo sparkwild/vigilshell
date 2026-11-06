@@ -73,6 +73,26 @@ mod tests {
     }
     #[test]
     fn log_only_contains_stage_identity_and_comparison_result() {
+        // Callsite interest is process-global; concurrent diagnostic tests can
+        // register this event before the scoped subscriber is installed.
+        if std::env::var_os("VIGILSHELL_DIAGNOSTICS_TEST_CHILD").is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "diagnostics::tests::log_only_contains_stage_identity_and_comparison_result",
+                    "--nocapture",
+                ])
+                .env("VIGILSHELL_DIAGNOSTICS_TEST_CHILD", "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
         #[derive(Clone)]
         struct Output(Arc<std::sync::Mutex<Vec<u8>>>);
         impl std::io::Write for Output {

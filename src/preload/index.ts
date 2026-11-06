@@ -13,6 +13,18 @@ ipcRenderer.on('workspace:terminal-port', (event, value) => {
   if (event.ports.length === 1) window.postMessage(value, '*', event.ports);
 });
 const bridge: DesktopApi = {
+  application: {
+    info: () => ipcRenderer.invoke('application:request', { action: 'info' }),
+    state: () => ipcRenderer.invoke('application:request', { action: 'state' }),
+    check: () => ipcRenderer.invoke('application:request', { action: 'check' }),
+    open: (action) => ipcRenderer.invoke('application:request', { action }),
+    onChanged: (listener) => {
+      const receive = (_: Electron.IpcRendererEvent, value: import('@contracts').UpdateSnapshot) =>
+        listener(value);
+      ipcRenderer.on('application:changed', receive);
+      return () => ipcRenderer.removeListener('application:changed', receive);
+    },
+  },
   fileEditors: {
     request: (request) => ipcRenderer.invoke('file-editors:request', request),
     onChanged: (listener) => {
@@ -139,8 +151,10 @@ const bridge: DesktopApi = {
     return () => ipcRenderer.removeListener('desktop:changed', receive);
   },
   onOpenSettings(listener) {
-    const receive = (_event: Electron.IpcRendererEvent, section?: 'notifications') =>
-      listener(section);
+    const receive = (
+      _event: Electron.IpcRendererEvent,
+      section?: 'notifications' | 'about' | 'updates',
+    ) => listener(section);
     ipcRenderer.on('desktop:open-settings', receive);
     return () => ipcRenderer.removeListener('desktop:open-settings', receive);
   },

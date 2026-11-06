@@ -6,6 +6,9 @@
     "agent": {
       "$ref": "#/definitions/AgentContract"
     },
+    "application": {
+      "$ref": "#/definitions/ApplicationContract"
+    },
     "desktop": {
       "$ref": "#/definitions/DesktopSnapshot"
     },
@@ -26,6 +29,7 @@
     }
   },
   "required": [
+    "application",
     "file_editors",
     "agent",
     "system_notifications",
@@ -5939,11 +5943,146 @@
         "reducedTransparency"
       ]
     },
+    "ApplicationContract": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/ApplicationInfo"
+        },
+        "request": {
+          "$ref": "#/definitions/ApplicationRequest"
+        },
+        "state": {
+          "$ref": "#/definitions/UpdateSnapshot"
+        }
+      },
+      "required": [
+        "info",
+        "state",
+        "request"
+      ]
+    },
+    "ApplicationInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "ApplicationRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "info"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "state"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "check"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "openRelease"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "project"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "issues"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        }
+      ]
+    },
     "AuthenticationMethod": {
       "type": "string",
       "enum": [
         "password",
         "privateKey"
+      ]
+    },
+    "AvailableRelease": {
+      "type": "object",
+      "properties": {
+        "notes": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "tag",
+        "notes"
       ]
     },
     "BackendStatus": {
@@ -9177,6 +9316,9 @@
         "attentionRequiredNotificationEnabled": {
           "type": "boolean"
         },
+        "autoCheckUpdates": {
+          "type": "boolean"
+        },
         "connectionOpenBehavior": {
           "type": "string",
           "enum": [
@@ -9357,6 +9499,7 @@
         "systemNotificationMode",
         "attentionRequiredNotificationEnabled",
         "executionIssueNotificationEnabled",
+        "autoCheckUpdates",
         "themeMode",
         "localeMode",
         "revision",
@@ -9389,6 +9532,9 @@
       "type": "object",
       "properties": {
         "attentionRequiredNotificationEnabled": {
+          "type": "boolean"
+        },
+        "autoCheckUpdates": {
           "type": "boolean"
         },
         "connectionOpenBehavior": {
@@ -13380,6 +13526,19 @@
       ],
       "x-vigil-rule": "uiScope"
     },
+    "UpdatePhase": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "checking",
+        "current",
+        "available",
+        "empty",
+        "networkError",
+        "rateLimited",
+        "invalidResponse"
+      ]
+    },
     "UpdatePreferencesRequest": {
       "type": "object",
       "properties": {
@@ -13403,6 +13562,27 @@
         "expectedRevision"
       ],
       "x-vigil-rule": "preferencesUpdate"
+    },
+    "UpdateSnapshot": {
+      "type": "object",
+      "properties": {
+        "phase": {
+          "$ref": "#/definitions/UpdatePhase"
+        },
+        "release": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AvailableRelease"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "phase"
+      ]
     },
     "VersionedId": {
       "type": "object",

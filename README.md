@@ -160,6 +160,16 @@ npm run package:release -- --arch arm64
 
 The target architecture must match the macOS host process and Rust toolchain. The script builds, signs, and verifies the DMG before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
 
+`npm run build` defaults to the release signing profile. Packaged builds keep their frontend, native bridges, backend resources, and Cargo output under `.cache/build/<dev|release>/<architecture>/`, separate from the live Dev application. Release builds require only the release signing configuration; they do not fall back to Dev credentials. GitHub Actions uses explicitly injected signing settings rather than persistent configuration from a developer machine.
+
+### ARM64 Beta distribution
+
+The Beta target is macOS on Apple Silicon. Tagged releases use `vX.Y.Z-beta.N`; manual CI runs only validate builds and do not publish. Packages are self-signed, not Apple-notarized, and support update discovery and a link to the matching release page; installation is manual. No public installer availability is implied until a release is actually published.
+
+In a separate test Mac/account with no existing VigilShell data, download the DMG and its SHA-256 file from the same release, verify with `shasum -a 256 -c <file>.dmg.sha256`, then drag the application into Applications. If macOS blocks an unverified developer, use the per-app **Privacy & Security → Open Anyway** flow after checking the download source; do not disable Gatekeeper globally.
+
+For manual upgrades, fully quit VigilShell, replace the application with the next Beta, then verify saved settings and credential access. Initial download, first launch, credential prompts and `beta.1 → beta.2` upgrades require actual testing on an independent environment; CI startup checks alone do not establish these results. Never use existing production data for testing.
+
 ## Data and credentials
 
 Connection settings and credentials are encrypted and stored locally. Unlock keys are managed by macOS Keychain. The default data directories are separate for each application channel:
@@ -193,4 +203,4 @@ The following technical documents are currently in Chinese:
 
 ## License status
 
-The repository does not yet declare a project-level open-source license. Licenses and notices for third-party resources distributed with the application are in [resources/licenses/](resources/licenses/).
+VigilShell original code is licensed under [Apache-2.0](LICENSE). Licenses and notices for third-party resources distributed with the application are in [resources/licenses/](resources/licenses/).

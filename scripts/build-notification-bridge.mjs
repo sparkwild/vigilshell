@@ -2,12 +2,21 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
 import { mkdir, rename, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { signTool, loadSigningConfig, identifiers } from './macos-signing.mjs';
+import { nativeBuildContext } from './build-context.mjs';
 
 // Node-API 使用稳定 ABI；构建头文件来自当前受支持的 Node 安装。
-if (process.platform === 'darwin') {
-  const root = resolve('.');
-  const include = resolve(dirname(realpathSync(process.execPath)), '../include/node');
+export async function buildNativeBridges({
+  root = resolve('.'),
+  environment = process.env,
+  include = resolve(dirname(realpathSync(process.execPath)), '../include/node'),
+  execute = execFileSync,
+  readConfig = loadSigningConfig,
+  sign = signTool,
+} = {}) {
+  const context = nativeBuildContext(environment, root);
+  const signing = readConfig(context.profile, environment);
   if (!existsSync(join(include, 'node_api.h')))
     throw new Error('The Node.js installation must include include/node/node_api.h');
   for (const component of [
@@ -24,11 +33,11 @@ if (process.platform === 'darwin') {
       role: 'mcp-identity',
     },
   ]) {
-    const directory = join(root, '.cache', component.directory);
+    const directory = join(context.native, component.directory);
     await mkdir(directory, { recursive: true });
     const temporary = join(directory, `authorization-${process.pid}.node`);
     try {
-      execFileSync(
+      execute(
         'xcrun',
         [
           'clang++',
@@ -56,10 +65,18 @@ if (process.platform === 'darwin') {
         ],
         { stdio: 'inherit' },
       );
-      signTool(temporary, loadSigningConfig('dev'), `${identifiers('dev').app}.${component.role}`);
+      sign(temporary, signing, `${identifiers(context.profile).app}.${component.role}`);
       await rename(temporary, join(directory, 'authorization.node'));
     } finally {
       await rm(temporary, { force: true });
     }
   }
+}
+
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url) &&
+  process.platform === 'darwin'
+) {
+  await buildNativeBridges();
 }

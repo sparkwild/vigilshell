@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 use vigilshell_domain as domain;
 
-pub const PROTOCOL_VERSION: u8 = 12;
+pub const PROTOCOL_VERSION: u8 = 13;
 pub const MAX_FRAME_BYTES: usize = 64 * 1024;
 pub const MAX_AGENT_FRAME_BYTES: usize = 1024 * 1024;
 pub const MAX_REQUEST_ID_CHARS: usize = 128;
@@ -35,6 +35,7 @@ pub struct Preferences {
     pub system_notification_mode: crate::notifications::NotificationMode,
     pub attention_required_notification_enabled: bool,
     pub execution_issue_notification_enabled: bool,
+    pub auto_check_updates: bool,
     #[schemars(extend("enum" = ["system", "light", "dark"]))]
     pub theme_mode: ThemeMode,
     #[schemars(extend("enum" = ["system", "en", "zh-CN"]))]
@@ -107,6 +108,13 @@ pub struct PreferencesPatch {
     )]
     #[schemars(with = "bool")]
     pub execution_issue_notification_enabled: Option<bool>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_value"
+    )]
+    #[schemars(with = "bool")]
+    pub auto_check_updates: Option<bool>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -517,6 +525,7 @@ impl From<domain::Preferences> for Preferences {
             system_notification_mode: value.system_notification_mode.into(),
             attention_required_notification_enabled: value.attention_required_notification_enabled,
             execution_issue_notification_enabled: value.execution_issue_notification_enabled,
+            auto_check_updates: value.auto_check_updates,
 
             theme_mode: match value.theme {
                 domain::ThemeMode::System => ThemeMode::System,
@@ -560,6 +569,7 @@ impl From<PreferencesPatch> for domain::PreferencesPatch {
             system_notification_mode: value.system_notification_mode.map(Into::into),
             attention_required_notification_enabled: value.attention_required_notification_enabled,
             execution_issue_notification_enabled: value.execution_issue_notification_enabled,
+            auto_check_updates: value.auto_check_updates,
 
             theme_mode: value.theme_mode.map(|mode| match mode {
                 ThemeMode::System => domain::ThemeMode::System,

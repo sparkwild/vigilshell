@@ -1,3 +1,4 @@
+import { ApplicationProvider } from './ApplicationProvider';
 import {
   createContext,
   useCallback,
@@ -15,7 +16,11 @@ export function DesktopProvider({ store, children }: { store: DesktopStore; chil
   useLayoutEffect(() => {
     applyDisplay(snapshot.appearance);
   }, [snapshot.appearance]);
-  return <DesktopContext.Provider value={store}>{children}</DesktopContext.Provider>;
+  return (
+    <DesktopContext.Provider value={store}>
+      <ApplicationProvider>{children}</ApplicationProvider>
+    </DesktopContext.Provider>
+  );
 }
 export function applyDisplay(display: ReturnType<DesktopStore['getSnapshot']>['appearance']) {
   document.documentElement.classList.toggle('dark', display.theme === 'dark');

@@ -4,7 +4,13 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { localeDevelopmentPlugin } from './scripts/locale-dev-plugin.mjs';
 import { rustDevelopmentPlugins } from './scripts/rust-dev-plugin.mjs';
+import { packageBuildContext } from './scripts/build-context.mjs';
 export default defineConfig(({ command, mode }) => {
+  const packaged =
+    command === 'build'
+      ? packageBuildContext(process.env.VIGILSHELL_PACKAGE_PROFILE ?? 'release')
+      : undefined;
+  if (packaged && mode !== packaged.mode) throw Error('Build mode must match the package profile');
   const channelDefinitions = {
     'import.meta.env.VIGILSHELL_DEV_PACKAGE_BUILD': JSON.stringify(
       mode === 'development-package' ? '1' : '0',
@@ -25,11 +31,15 @@ export default defineConfig(({ command, mode }) => {
           channelDefinitions['import.meta.env.VIGILSHELL_DEVELOPMENT_BUILD'],
       },
       plugins: rustDevelopment ? [rustDevelopment.main] : [],
-      build: { externalizeDeps: true },
+      build: {
+        externalizeDeps: true,
+        ...(packaged ? { outDir: resolve(packaged.out, 'main') } : {}),
+      },
     },
     preload: {
       build: {
         externalizeDeps: true,
+        ...(packaged ? { outDir: resolve(packaged.out, 'preload') } : {}),
         rollupOptions: {
           output: { format: 'cjs', entryFileNames: '[name].cjs' },
         },
@@ -46,6 +56,7 @@ export default defineConfig(({ command, mode }) => {
         tailwindcss(),
       ],
       build: {
+        ...(packaged ? { outDir: resolve(packaged.out, 'renderer') } : {}),
         assetsInlineLimit: 0,
         minify: true,
         reportCompressedSize: false,

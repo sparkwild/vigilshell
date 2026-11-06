@@ -1,3 +1,4 @@
+import { UpdateBadge } from '../features/settings/ApplicationSettings';
 import { AlertCircleIcon } from 'lucide-react';
 import { useUiStateErrors } from '../shared/platform/ui-state-store';
 import { useMcp } from '../features/mcp/model';
@@ -75,6 +76,7 @@ export function WorkbenchNavigation({
                 <SettingsIcon />
               )}
               <span>{t('settings')}</span>
+              <UpdateBadge />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

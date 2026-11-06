@@ -6,6 +6,7 @@ import {
   NetworkIcon,
   FolderIcon,
   ActivityIcon,
+  BadgeInfoIcon,
 } from 'lucide-react';
 
 export const categories = [
@@ -17,6 +18,7 @@ export const categories = [
   { id: 'monitor', label: 'settings_monitor', icon: ActivityIcon },
   { id: 'mcp', label: 'mcp_title', logo: 'mcp' },
   { id: 'agentActivity', label: 'mcp_activity', icon: HistoryIcon },
+  { id: 'about', label: 'settings_about', icon: BadgeInfoIcon },
 ] as const;
 
 export const columnLabels = {

@@ -1,95 +1,119 @@
 name: macOS signed packages
-on:
-  workflow_dispatch:
+'on':
+  workflow_dispatch: {}
+  push:
+    tags:
+      - v*-beta.*
 permissions:
   contents: read
 concurrency:
   group: macos-signing-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  package:
-    if: github.repository == 'sparkwild/vigilshell' && github.ref == 'refs/heads/main'
-    environment: macos-release
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            arch: arm64
-            rust: aarch64-apple-darwin
-          - runner: macos-15-intel
-            arch: x64
-            rust: x86_64-apple-darwin
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+  policy:
+    runs-on: ubuntu-24.04
+    outputs:
+      storage: ${{ steps.storage.outputs.storage }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+          fetch-depth: 0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version: '24.21.0'
-          package-manager-cache: false
-      - name: Install locked toolchains and dependencies
+          node-version-file: .nvmrc
+      - run: node scripts/release-policy.mjs --source
         env:
-          EXPECTED_ARCH: ${{ matrix.arch }}
-          EXPECTED_RUST: ${{ matrix.rust }}
-        run: |
-          test "$(node -p process.arch)" = "$EXPECTED_ARCH"
-          rustup toolchain install 1.96.0 --profile minimal
-          test "$(rustc +1.96.0 -vV | sed -n 's/^host: //p')" = "$EXPECTED_RUST"
-          npm install --global npm@11.19.1
-          npm ci
-          npm run test:signing
-      - name: Import the fixed release identity
+          GH_TOKEN: ${{ github.token }}
+      - id: storage
         env:
+          STORAGE: ${{ vars.MACOS_SIGNING_STORAGE }}
+        run: >-
+          case "$STORAGE" in environment|repository) echo "storage=$STORAGE" >> "$GITHUB_OUTPUT" ;; *) echo
+          "Missing signing storage configuration" >&2; exit 1 ;; esac
+  frontend:
+    needs: policy
+    uses: ./.github/workflows/frontend.yml
+  backend:
+    needs: policy
+    uses: ./.github/workflows/backend.yml
+  package-environment:
+    needs:
+      - policy
+      - frontend
+      - backend
+    if: ${{ needs.policy.outputs.storage == 'environment' }}
+    environment: macos-release
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_ARCH: arm64
+      EXPECTED_RUST: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/macos-package
+        env:
+          GH_TOKEN: ${{ github.token }}
           CERTIFICATE_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
           VIGILSHELL_RELEASE_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
-        run: |
-          set -euo pipefail
-          umask 077
-          test -n "$CERTIFICATE_BASE64"
-          test -n "$CERTIFICATE_PASSWORD"
-          test -n "$VIGILSHELL_RELEASE_SIGNING_IDENTITY"
-          SIGNING_KEYCHAIN="$RUNNER_TEMP/vigilshell-release.keychain-db"
-          SIGNING_PASSWORD="$(openssl rand -hex 32)"
-          echo "::add-mask::$SIGNING_PASSWORD"
-          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/vigilshell-release.p12"
-          security create-keychain -p "$SIGNING_PASSWORD" "$SIGNING_KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$SIGNING_KEYCHAIN"
-          security unlock-keychain -p "$SIGNING_PASSWORD" "$SIGNING_KEYCHAIN"
-          security import "$RUNNER_TEMP/vigilshell-release.p12" -k "$SIGNING_KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$SIGNING_PASSWORD" "$SIGNING_KEYCHAIN" >/dev/null
-          security export -k "$SIGNING_KEYCHAIN" -t certs -f pemseq -o "$RUNNER_TEMP/vigilshell-release.cer"
-          security add-trusted-cert -r trustRoot -p codeSign -k "$SIGNING_KEYCHAIN" "$RUNNER_TEMP/vigilshell-release.cer"
-          security list-keychains -d user > "$RUNNER_TEMP/vigilshell-keychains-before.txt"
-          security list-keychains -d user -s "$SIGNING_KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
-          echo "VIGILSHELL_RELEASE_SIGNING_KEYCHAIN=$SIGNING_KEYCHAIN" >> "$GITHUB_ENV"
-          echo "VIGILSHELL_RELEASE_SIGNING_IDENTITY=$VIGILSHELL_RELEASE_SIGNING_IDENTITY" >> "$GITHUB_ENV"
-          export VIGILSHELL_RELEASE_SIGNING_KEYCHAIN="$SIGNING_KEYCHAIN"
-          npm run signing:check -- --profile release
-      - name: Build and verify signed DMG
-        env:
-          PACKAGE_ARCH: ${{ matrix.arch }}
-        run: npm run package:release -- --arch "$PACKAGE_ARCH"
-      - name: Upload verified packages
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+  package-repository:
+    needs:
+      - policy
+      - frontend
+      - backend
+    if: ${{ needs.policy.outputs.storage == 'repository' }}
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      EXPECTED_ARCH: arm64
+      EXPECTED_RUST: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          name: VigilShell-macos-${{ matrix.arch }}
-          if-no-files-found: error
-          path: |
-            release/*.dmg
-            release/*.dmg.sha256
-            release/mac*/signing-report.json
-      - name: Remove signing material
-        if: always()
-        run: |
-          if test -f "$RUNNER_TEMP/vigilshell-release.cer"; then
-            security remove-trusted-cert "$RUNNER_TEMP/vigilshell-release.cer" || true
-          fi
-          security delete-keychain "$RUNNER_TEMP/vigilshell-release.keychain-db" || true
-          rm -f "$RUNNER_TEMP/vigilshell-release.p12" "$RUNNER_TEMP/vigilshell-release.cer"
-          if test -f "$RUNNER_TEMP/vigilshell-keychains-before.txt"; then
-            python3 -c 'import os,shlex,subprocess; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"vigilshell-keychains-before.txt"; subprocess.run(["security","list-keychains","-d","user","-s",*shlex.split(p.read_text())],check=True); p.unlink()'
-          fi
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/macos-package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CERTIFICATE_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
+          VIGILSHELL_RELEASE_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
+  publish:
+    needs:
+      - policy
+      - frontend
+      - backend
+      - package-environment
+      - package-repository
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && needs.frontend.result == 'success' &&
+      needs.backend.result == 'success' && (needs.package-environment.result == 'success' ||
+      needs.package-repository.result == 'success') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: VigilShell-macos-arm64
+          path: release-assets
+      - run: node scripts/publish-beta.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
