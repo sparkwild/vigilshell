@@ -1,0 +1,77 @@
+name: Preview package
+'on':
+  workflow_dispatch:
+    inputs:
+      source-sha:
+        description: Full commit SHA in this repository (empty uses selected ref)
+        type: string
+        default: ''
+  workflow_call: {}
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      EXPECTED_ARCH: arm64
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - name: Validate requested commit
+        env:
+          SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          if [[ -n "$SOURCE_SHA" && ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then exit 1; fi
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Toolchain and dependencies
+        run: |
+          test "$(node -p process.arch)" = arm64
+          test "$(rustc -vV | sed -n 's/^host: //p')" = aarch64-apple-darwin
+          npm install --global "$(node -p "require('./package.json').packageManager")"
+          npm ci
+          node scripts/check-rust-toolchain.mjs
+      - id: source
+        run: node scripts/preview-artifacts.mjs capture
+      - name: Check candidate
+        run: |
+          npm run backend:check
+          npm run contracts:check
+          npm run typecheck
+          npm run test:signing
+          npm run test:release
+          npx vitest run
+      - name: Create disposable signing identity
+        run: node scripts/ci-command.mjs 180 bash scripts/ci-macos-signing.sh setup
+      - name: Build package
+        env:
+          CSC_FOR_PULL_REQUEST: 'true'
+        run: npm run package:release -- --arch arm64
+      - name: Verify native startup and shutdown
+        run: npm run test:ci-macos
+      - name: Remove disposable signing identity
+        if: always()
+        run: node scripts/ci-command.mjs 120 bash scripts/ci-macos-signing.sh cleanup
+      - name: Collect verified preview
+        run: node scripts/preview-artifacts.mjs collect
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: preview-macos-arm64-${{ steps.source.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: preview/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/vigilshell-ci-evidence/
+          if-no-files-found: ignore
+          retention-days: 7

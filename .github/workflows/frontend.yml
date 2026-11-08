@@ -1,13 +1,5 @@
 name: Frontend
 'on':
-  pull_request:
-    branches:
-      - main
-      - develop
-  push:
-    branches:
-      - main
-      - develop
   workflow_call: {}
 concurrency:
   group: frontend-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
@@ -49,5 +41,4 @@ jobs:
       - run: npm run test:icons
       - run: npx vitest run src/main src/shared
       - run: npm run release:check
-      - run: node --test tests/development/release-policy.test.mjs
-      - run: python3 -B -m unittest discover -s tests/development -p 'test_release_signing.py'
+      - run: npm run test:release

@@ -160,15 +160,15 @@ npm run package:release -- --arch arm64
 
 脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成构建、签名与 DMG 校验后才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
 
-`npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据；GitHub Actions 只使用显式注入的签名配置，不读取开发机器的持久化配置。
+`npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据。
 
-### ARM64 Beta 分发
+### ARM64 分发与预览
 
-当前 Beta 面向 Apple Silicon Mac。标签格式为 `vX.Y.Z-beta.N`，手动 CI 只验证构建、不发布。安装包采用自签名，未经过 Apple 公证，支持检查新版本并打开对应发布页，由用户手动下载安装；只有实际发布后才有可下载的版本。
+首期打包面向 Apple Silicon Mac，公开版本标签使用 `vX.Y.Z`。当前 Actions 仅构建临时签名预览，不创建或发布 Release。分发包使用固定自签名身份，不经过 Apple 公证；版本发现打开发布页，下载安装由用户手动完成。
 
 在没有既有 VigilShell 数据的独立测试 Mac／账号中，从同一 Release 下载 DMG 与校验文件，执行 `shasum -a 256 -c <文件>.dmg.sha256`，再拖入“应用程序”。如系统因开发者无法验证而阻止打开，应先核对来源，再使用“隐私与安全性 → 仍要打开”的单应用允许方式，不全局关闭 Gatekeeper。
 
-手动升级先完全退出 VigilShell，再用新版替换应用，验证设置保留、凭据访问及再次启动。首次下载安装、授权提示和 `beta.1 → beta.2` 升级需要在独立环境实际验收，不能以 CI 启动检查代替；现有正式数据不参与测试。
+手动升级先完全退出 VigilShell，再用新版替换应用，验证设置保留、凭据访问及再次启动。首次下载安装、授权提示和 已发布版本之间的升级需要在独立环境实际验收；现有正式数据不参与测试。
 
 ## 数据与凭据
 
@@ -202,3 +202,5 @@ npm run package:release -- --arch arm64
 ## 许可说明
 
 VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。随应用分发的第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。
+
+[贡献与预览构建](../CONTRIBUTING.md)

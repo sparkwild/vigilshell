@@ -56,23 +56,17 @@ npm run signing:check -- --profile dev
 
 打包入口移除继承的开发页面、启动器及数据目录环境变量；本地已有 Dev 应用运行时仍拒绝完整重建。安装包内的 `out/`、`Resources/native/` 和 `Helpers/` 布局、Dev／正式应用数据目录保持独立。最终产物仍输出到 `release/dev/` 或 `release/`。
 
-## 持续集成
+## 检查与预览构建
 
-Ubuntu 的 `frontend.yml` 和 `backend.yml` 在 `main`／`develop` 推送及 PR 中运行，也通过 `workflow_call` 为签名工作流提供同一源码 SHA 的前置检查。工作流并发组包含调用工作流名称，避免独立检查与复用检查互相取消。
+Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本。源码可使用正式或已有 Beta 版本；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
 
-macOS CI 仅构建 ARM64（`macos-15`）。PR 使用临时证书验证 production 应用；`macos-signing.yml` 的手动入口允许本仓库 `develop` 或 `main`，只上传 Actions 产物。`vX.Y.Z-beta.N` 标签触发发布，标签必须匹配应用版本且属于远程 `main` 历史。底层 x64 打包能力保留，但不在当前 CI 矩阵中。
+`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。ARM64 安装包命名为 `VigilShell-<version>-macos-arm64.dmg`，同时生成 SHA-256 和包含版本、源码 SHA、证书身份的签名报告，打包入口始终使用 `--publish never`。
 
-Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本。当前 Beta 版本是 `0.1.0-beta.1`。
+GitHub CI 对面向 main 的 PR 和 main 推送运行前后端检查；非纯文档改动调用 macOS ARM64 打包及启动检查。固定汇总检查名为 `CI verified`，仅在所需任务成功时通过。Actions 默认只读，不读取固定签名 secrets。
 
-固定签名通过 `python3 scripts/configure-release-signing.py` 配置。独立 RSA 3072／SHA-256 自签名证书有效期 10 年，加密 P12、证书和指纹备份保存在仓库外的 `~/Library/Application Support/VigilShell Signing/release-backup/`，密码保存在独立钥匙串密码条目中。配置不会导入本机代码签名证书或修改 Dev 身份。重跑复用原备份，不更换证书。
+`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串，清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。当前工作流不处理版本标签、不创建或发布 Release。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
-配置优先使用 `macos-release` 环境，只有 GitHub 明确返回套餐限制才回退仓库级；网络、权限和签名错误均报错。所选作用域包含 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` Secrets 和 `MACOS_SIGNING_IDENTITY` 变量，仓库变量 `MACOS_SIGNING_STORAGE` 记录 `environment` 或 `repository`。两个互斥 Job 使用同一 composite action，仓库模式不声明 GitHub Environment。环境允许 `main`、`develop` 与 `v*-beta.*` 标签；签名脚本另外校验事件、精确版本和源码。固定凭据不会提供给 PR。
-
-CI 仅接受显式注入的 release 签名身份与临时钥匙串路径，不回读本机配置。两种存储方式都使用相同的固定证书和 production 打包路径。临时钥匙串、导出的私钥和 P12 均由 runner 清理，恢复钥匙串搜索列表；清理失败阻止可分发产物上传。
-
-`npm run test:ci-macos` 只在 GitHub 托管 macOS runner 的全新数据目录运行，验证签名报告、应用身份、窗口、Renderer IPC、真实 Rust 后端及正常退出，拒绝已有 Dev 或正式数据。诊断附件保留 7 天；启动探针不代替真实 SSH、钥匙串交互或首次下载安装验证。
-
-安装包命名为 `VigilShell-<version>-macos-arm64.dmg`，同时提供 SHA-256 和包含版本、源码 SHA、证书身份的签名报告。标签发布在检查、打包、启动和清理成功后创建草稿，上传并回读核对资产哈希，再设为 Prerelease，且不标记 Latest。仅允许恢复同标签、同 SHA 的草稿，不覆盖已发布版本或移动标签。手动验证永远不会创建 Release。自签名不等于 Apple 公证；当前提供版本发现与发布页跳转，下载安装由用户手动完成。
+自签名不等于 Apple 公证；当前提供版本发现与发布页跳转，下载安装由用户手动完成。
 
 ## 更新与许可
 

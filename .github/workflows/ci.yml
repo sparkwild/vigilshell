@@ -1,0 +1,61 @@
+name: CI
+'on':
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      native: ${{ steps.paths.outputs.native }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: paths
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python3 - <<'PY'
+          import os, subprocess, re
+          base = os.environ.get('BASE', '')
+          native = True
+          if re.fullmatch('[0-9a-f]{40}', base) and base != '0' * 40:
+              result = subprocess.run(['git', 'diff', '--name-only', base, 'HEAD'], capture_output=True, text=True)
+              if result.returncode == 0:
+                  native = any(not (p.startswith('docs/') or p.endswith('.md')) for p in result.stdout.splitlines())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('native=' + str(native).lower() + '\n')
+          PY
+  frontend:
+    uses: ./.github/workflows/frontend.yml
+  backend:
+    uses: ./.github/workflows/backend.yml
+  native:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    uses: ./.github/workflows/package.yml
+  verify:
+    name: CI verified
+    if: always()
+    needs: [changes, frontend, backend, native]
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          jobs = json.loads(os.environ['RESULTS'])
+          assert all(jobs[n]['result'] == 'success' for n in ['changes', 'frontend', 'backend'])
+          expected = 'success' if jobs['changes']['outputs']['native'] == 'true' else 'skipped'
+          assert jobs['native']['result'] == expected
+          PY
