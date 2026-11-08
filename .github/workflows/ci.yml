@@ -31,7 +31,8 @@ jobs:
           if re.fullmatch('[0-9a-f]{40}', base) and base != '0' * 40:
               result = subprocess.run(['git', 'diff', '--name-only', base, 'HEAD'], capture_output=True, text=True)
               if result.returncode == 0:
-                  native = any(not (p.startswith('docs/') or p.endswith('.md')) for p in result.stdout.splitlines())
+                  pattern = r'^(crates/|scripts/|\.github/|src/(main|preload|contracts)/|resources/|tests/(e2e|development)/|Cargo\.(toml|lock)$|package(-lock)?\.json$|electron[.-]|rust-toolchain\.toml$|\.nvmrc$)'
+                  native = any(re.search(pattern, p) for p in result.stdout.splitlines())
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('native=' + str(native).lower() + '\n')
           PY

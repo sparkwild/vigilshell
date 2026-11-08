@@ -4,7 +4,7 @@ Target `main` with focused pull requests from short-lived `feat/`, `fix/`, or `c
 
 Use the pinned Node, npm and Rust versions in `.nvmrc`, `package.json` and `rust-toolchain.toml`. Run `npm ci`, `npm run check` and the tests relevant to your change. Native work reuses VigilShell Dev; never test against production data. See [the technical stack](docs/TECH_STACK.md) for signing and build commands.
 
-CI checks pull requests and pushes to main. Changes beyond documentation also run an ARM64 macOS package and startup check with a disposable certificate. Preview artifacts are for isolated testing, not distribution: their temporary signing identity is not the fixed release identity. No CI workflow creates or publishes a GitHub Release.
+CI checks pull requests and pushes to main. Native, backend, dependency, packaging and CI changes also run an ARM64 macOS package and startup check with a disposable certificate. Preview artifacts are for isolated testing, not distribution: their temporary signing identity is not the fixed release identity. No CI workflow creates or publishes a GitHub Release.
 
 For an explicit preview, run **Preview package** and optionally supply a full commit SHA. The selected commit must contain the preview tooling. Download the artifact matching its SHA, run ID and attempt; it contains a DMG, SHA-256 checksum, signing report and build manifest. Artifacts expire after 14 days and do not replace release backups.
 
