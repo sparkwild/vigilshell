@@ -40,7 +40,10 @@ jobs:
                   paths = [os.fsdecode(p) for p in result.stdout.split(b'\0') if p]
                   root_docs = {'README.md', 'CONTRIBUTING.md', 'AGENTS.md'}
                   docs_only = bool(paths) and all(
-                      p in root_docs or (p.startswith('docs/') and p.endswith('.md')) for p in paths
+                      p in root_docs
+                      or (p.startswith('docs/') and p.endswith('.md'))
+                      or (p.startswith('docs/images/') and p.endswith(('.jpg', '.jpeg', '.png')))
+                      for p in paths
                   )
                   pattern = r'^(crates/|scripts/|\.github/|src/(main|preload|contracts)/|resources/|tests/(e2e|development)/|Cargo\.(toml|lock)$|package(-lock)?\.json$|electron[.-]|rust-toolchain\.toml$|\.npmrc$|\.nvmrc$|LICENSE$)'
                   native = native and any(re.search(pattern, p) for p in paths)
