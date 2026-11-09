@@ -7,8 +7,8 @@ export function checkVersions(root = '.') {
   const read = (name) => readFileSync(resolve(root, name), 'utf8');
   const pkg = JSON.parse(read('package.json'));
   assert(
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-beta\.[1-9]\d*)?$/.test(pkg.version),
-    'Expected a stable or supported prerelease version',
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(pkg.version),
+    'Expected a stable X.Y.Z version',
   );
   const lock = JSON.parse(read('package-lock.json'));
   assert.equal(lock.version, pkg.version);

@@ -205,4 +205,6 @@ The following technical documents are currently in Chinese:
 
 VigilShell original code is licensed under [Apache-2.0](LICENSE). Licenses and notices for third-party resources distributed with the application are in [resources/licenses/](resources/licenses/).
 
+The source repository includes development skills with separate notices. [Third-party source notices](THIRD_PARTY_NOTICES.md)
+
 [Contributing and preview builds](CONTRIBUTING.md)

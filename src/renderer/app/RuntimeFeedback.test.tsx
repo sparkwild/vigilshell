@@ -10,6 +10,7 @@ import { createDesktopStore, type SettingsBridge } from '../shared/platform/desk
 import { UiProvider } from '../shared/UiProvider';
 
 beforeEach(() => {
+  vi.stubGlobal('vigilshell', {});
   globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
@@ -22,7 +23,10 @@ beforeEach(() => {
     removeEventListener() {},
   })) as unknown as typeof window.matchMedia;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 async function fixture() {
   let current: DesktopSnapshot = {

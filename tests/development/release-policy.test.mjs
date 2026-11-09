@@ -16,7 +16,7 @@ test('all project version sources must match', async (t) => {
     path,
     (await readFile(path, 'utf8')).replace(
       /(name = "vigilshell-[^"]+"\nversion = ")[^"]+/,
-      '$10.1.0-beta.2',
+      '$10.1.1',
     ),
   );
   assert.throws(() => checkVersions(root));
@@ -37,4 +37,16 @@ test('prepare a stable version without touching dependency versions; reject inva
   for (const invalid of ['v0.1.0', '01.2.3', '1.0', '1.0.0-beta.1', '1.0.0\n'])
     assert.throws(() => prepareVersion(invalid, root));
   assert.equal(checkVersions(root), '0.1.0');
+});
+
+test('version checks reject prerelease source versions even when every file agrees', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'vigil-version-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const current = checkVersions();
+  for (const file of ['package.json', 'package-lock.json', 'Cargo.toml', 'Cargo.lock'])
+    await writeFile(
+      join(root, file),
+      (await readFile(file, 'utf8')).replaceAll(current, '0.1.0-beta.1'),
+    );
+  assert.throws(() => checkVersions(root), /Expected a stable X.Y.Z version/);
 });

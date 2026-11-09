@@ -14,25 +14,33 @@ function release(v: string, extra = {}) {
   return {
     tag_name: `v${v}`,
     draft: false,
-    prerelease: v.includes('beta'),
+    prerelease: false,
     body: 'Changes',
     assets: [{ name: `VigilShell-${v}-macos-arm64.dmg`, state: 'uploaded' }],
     ...extra,
   };
 }
 describe('release selection', () => {
-  it('orders numeric beta identifiers and transitions to stable', () => {
-    expect(
-      selectRelease(
-        [release('0.1.0-beta.2'), release('0.1.0-beta.10')],
-        '0.1.0-beta.1',
-        'darwin',
-        'arm64',
-      ).release?.version,
-    ).toBe('0.1.0-beta.10');
-    expect(selectRelease([release('0.1.0')], '0.1.0-beta.10', 'darwin', 'arm64').phase).toBe(
-      'available',
-    );
+  it('orders stable versions numerically across patch, minor and major versions', () => {
+    for (const [older, newer] of [
+      ['0.1.2', '0.1.10'],
+      ['0.2.9', '0.10.0'],
+      ['0.99.9', '1.0.0'],
+    ] as const) {
+      expect(
+        selectRelease([release(newer), release(older)], older, 'darwin', 'arm64').release?.version,
+      ).toBe(newer);
+    }
+  });
+  it('rejects prerelease tags even when marked stable and stable tags marked prerelease', () => {
+    for (const item of [
+      release('0.2.0-beta.1'),
+      release('0.2.0-rc.1'),
+      release('0.2.0', { prerelease: true }),
+      release('0.2.0', { tag_name: '0.2.0' }),
+    ]) {
+      expect(selectRelease([item], '0.1.0', 'darwin', 'arm64').phase).toBe('empty');
+    }
   });
   it('excludes drafts, incompatible assets and prereleases for stable users', () => {
     expect(selectRelease([release('0.2.0-beta.1')], '0.1.0', 'darwin', 'arm64').phase).toBe(
@@ -55,7 +63,7 @@ afterEach(() => {
 });
 it('shares in-flight checks and reports failures without claiming current', async () => {
   const fetcher = vi.fn().mockResolvedValue(new Response('[]', { status: 429 }));
-  const service = new UpdateService('0.1.0-beta.1', 'darwin', 'arm64', fetcher);
+  const service = new UpdateService('0.1.0', 'darwin', 'arm64', fetcher);
   const first = service.check();
   expect(service.check()).toBe(first);
   expect((await first).phase).toBe('rateLimited');
@@ -66,7 +74,7 @@ it('delays startup, cancels scheduling and coalesces resume', async () => {
   featureOverride.automaticChecks = true;
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementation(async () => new Response('[]'));
-  const service = new UpdateService('0.1.0-beta.1', 'darwin', 'arm64', fetcher);
+  const service = new UpdateService('0.1.0', 'darwin', 'arm64', fetcher);
   service.configure(true);
   await vi.advanceTimersByTimeAsync(29999);
   expect(fetcher).not.toHaveBeenCalled();
@@ -82,7 +90,7 @@ it('delays startup, cancels scheduling and coalesces resume', async () => {
 it('keeps automatic checks disabled for saved enabled preferences while manual checks still work', async () => {
   vi.useFakeTimers();
   const fetcher = vi.fn().mockImplementation(async () => new Response('[]'));
-  const service = new UpdateService('0.1.0-beta.1', 'darwin', 'arm64', fetcher);
+  const service = new UpdateService('0.1.0', 'darwin', 'arm64', fetcher);
   service.configure(true);
   await vi.advanceTimersByTimeAsync(30000 + 86400000);
   service.resume();

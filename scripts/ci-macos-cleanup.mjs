@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -13,15 +13,7 @@ export function runCleanupCommand(command, args, timeoutMs = 15000) {
     const timer = setTimeout(() => {
       timedOut = true;
       try {
-        if (command === 'sudo') {
-          execFileSync('/usr/bin/sudo', ['-n', '/bin/kill', '-KILL', '--', `-${child.pid}`], {
-            timeout: 2000,
-            killSignal: 'SIGKILL',
-            stdio: ['ignore', 'inherit', 'inherit'],
-          });
-        } else {
-          process.kill(-child.pid, 'SIGKILL');
-        }
+        process.kill(-child.pid, 'SIGKILL');
       } catch (error) {
         if (error.code !== 'ESRCH')
           console.error('Could not terminate cleanup group:', error.message);
@@ -59,17 +51,14 @@ export async function cleanupSigning(root, evidence, run = runCleanupCommand) {
     await stage('remove exported private keys', async () => {
       for (const name of ['key.pem', 'identity.p12']) await rm(join(root, name), { force: true });
     });
-    const certificate = join(root, 'certificate.pem');
-    if (existsSync(certificate)) {
-      await stage('remove administrator certificate trust', () =>
-        run('sudo', ['-n', 'security', 'remove-trusted-cert', '-d', certificate]),
-      );
-    }
+    // The administrator trust record is confined to the disposable runner VM.
+    // Remove the certificate and private key with their keychain before uploading artifacts.
     const keychain = join(root, 'ci.keychain-db');
     if (existsSync(keychain)) {
-      await stage('delete temporary keychain', () =>
-        run('security', ['delete-keychain', keychain]),
-      );
+      await stage('delete temporary keychain', async () => {
+        await run('security', ['delete-keychain', keychain]);
+        assert(!existsSync(keychain), 'Temporary keychain still exists');
+      });
     }
     const previous = join(root, 'keychains-before.txt');
     if (existsSync(previous)) {
@@ -94,7 +83,7 @@ if actual != expected: raise RuntimeError('Keychain search list was not restored
   await mkdir(evidence, { recursive: true });
   await writeFile(
     join(evidence, 'signing-cleanup.json'),
-    JSON.stringify({ passed, stages }, null, 2),
+    JSON.stringify({ passed, adminTrust: 'runner-lifetime', stages }, null, 2),
   );
   if (!passed) throw new Error('Signing cleanup incomplete; see signing-cleanup.json');
 }

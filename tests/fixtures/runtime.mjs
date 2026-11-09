@@ -9,6 +9,7 @@ let preferences = {
   systemNotificationMode: 'unfocused',
   attentionRequiredNotificationEnabled: true,
   executionIssueNotificationEnabled: true,
+  autoCheckUpdates: true,
   themeMode: 'system',
   localeMode: 'system',
   revision: 0,

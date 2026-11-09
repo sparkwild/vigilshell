@@ -58,18 +58,18 @@ npm run signing:check -- --profile dev
 
 ## 检查与预览构建
 
-Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本。源码可使用正式或已有 Beta 版本；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
+Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
 
 `npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。ARM64 安装包命名为 `VigilShell-<version>-macos-arm64.dmg`，同时生成 SHA-256 和包含版本、源码 SHA、证书身份的签名报告，打包入口始终使用 `--publish never`。
 
 GitHub CI 对面向 main 的 PR 和 main 推送运行前后端检查；原生、后端、依赖、打包与 CI 改动调用 macOS ARM64 打包及启动检查。固定汇总检查名为 `CI verified`，仅在所需任务成功时通过。Actions 默认只读，不读取固定签名 secrets。
 
-`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串，清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。当前工作流不处理版本标签、不创建或发布 Release。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。当前工作流不处理版本标签、不创建或发布 Release。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 自签名不等于 Apple 公证；当前提供版本发现与发布页跳转，下载安装由用户手动完成。
 
 ## 更新与许可
 
-Main 在用户手动检查时通过公开 GitHub Releases 列表匿名查询兼容的稳定／Beta 发行包；自动检查由共享功能开关停用，启动、周期与睡眠恢复调度实现保留。更新不下载或替换应用。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
+Main 在用户手动检查时通过公开 GitHub Releases 列表匿名查询标签为 `vX.Y.Z` 且含兼容安装包的正式发行版本，过滤草稿和 GitHub 标记为预发布的 Release；自动检查由共享功能开关停用，启动、周期与睡眠恢复调度实现保留。更新不下载或替换应用。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
 
 自有代码采用 Apache-2.0。`npm run licenses:generate` 根据锁定依赖和上游补充生成第三方声明；已声明许可但未附正文的依赖保留包声明与来源，仅提示，不阻止打包，也不补写未知版权人。`npm run licenses:check` 核对清单与许可资源；未声明许可、清单过期、资源缺失或内容不一致仍会失败。正式打包要求许可检查通过，并逐字节核对包内资源。
