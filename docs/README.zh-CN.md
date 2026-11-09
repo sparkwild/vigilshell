@@ -1,10 +1,20 @@
-# VigilShell
+<div align="center">
+  <img src="../resources/icons/128x128@2x.png" width="104" height="104" alt="VigilShell 应用图标" />
+  <h1>VigilShell</h1>
+  <p><strong>你和 Agent 的 SSH 工作区。</strong></p>
+  <p>连上服务器，开终端、传文件、看监控。需要协助时，通过 MCP 让 Agent 在你授权的连接上查日志、跑命令。它做了什么、返回了什么，都能在 VigilShell 里查看。</p>
+  <p>
+    <a href="#安装与运行"><img src="https://img.shields.io/badge/platform-macOS-24292f?logo=apple&amp;logoColor=white" alt="平台：macOS" /></a>
+    <a href="../LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="许可：Apache-2.0" /></a>
+  </p>
+  <p><a href="../README.md">English</a> · <strong>简体中文</strong></p>
+</div>
 
-[English](../README.md) | **简体中文**
-
-VigilShell 是面向 macOS 的 SSH 与服务器管理桌面应用，将终端、远程文件、服务器监控和智能体操作放在同一个工作区中。
-
-你可以手动连接服务器，也可以通过内置的 MCP 服务，让智能体在配置的权限范围内使用连接、执行任务，并在应用中查看操作过程和结果。
+<p align="center">
+  <img src="images/vigilshell-workspace.jpg" alt="VigilShell 的 SSH 终端演示输出与下方打开 /usr 的远程文件区" />
+  <br />
+  <sub>VigilShell Dev 英文界面 · 终端示例输出与远程 /usr 目录</sub>
+</p>
 
 ## 功能
 

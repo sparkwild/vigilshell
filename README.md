@@ -1,10 +1,20 @@
-# VigilShell
+<div align="center">
+  <img src="resources/icons/128x128@2x.png" width="104" height="104" alt="VigilShell app icon" />
+  <h1>VigilShell</h1>
+  <p><strong>One SSH workspace for you and your agents.</strong></p>
+  <p>Open terminals, transfer files, and monitor your servers. Give agents access to specific connections through MCP so they can inspect logs and run commands. See what they did and what came back, right in VigilShell.</p>
+  <p>
+    <a href="#installation-and-running"><img src="https://img.shields.io/badge/platform-macOS-24292f?logo=apple&amp;logoColor=white" alt="Platform: macOS" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache-2.0" /></a>
+  </p>
+  <p><strong>English</strong> · <a href="docs/README.zh-CN.md">简体中文</a></p>
+</div>
 
-**English** | [简体中文](docs/README.zh-CN.md)
-
-VigilShell is an SSH and server management desktop application for macOS. It brings terminals, remote files, server monitoring, and agent operations into one workspace.
-
-Connect to servers yourself, or use the built-in MCP service to let an agent work with your connections and run tasks under configured permissions. You can inspect its activity and results in the application.
+<p align="center">
+  <img src="docs/images/vigilshell-workspace.jpg" alt="VigilShell SSH terminal with sample output above the remote file browser open to /usr" />
+  <br />
+  <sub>VigilShell Dev with sample terminal output and the remote file browser open to /usr.</sub>
+</p>
 
 ## Features
 
