@@ -21,6 +21,12 @@ export function checkVersions(root = '.') {
   return pkg.version;
 }
 
+export function checkReleaseTag(tag, root = '.') {
+  const version = checkVersions(root);
+  assert.equal(tag, `v${version}`, 'Release tag must match the stable project version');
+  return version;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   console.log({ version: checkVersions() });
 }

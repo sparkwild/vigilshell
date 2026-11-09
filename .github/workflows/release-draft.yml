@@ -1,0 +1,85 @@
+name: Release draft
+'on':
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release-draft-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualify:
+    if: github.event.created && !github.event.deleted && !github.event.forced
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      source: ${{ steps.source.outputs.source }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-draft.mjs qualify
+  draft:
+    needs: qualify
+    runs-on: macos-15
+    timeout-minutes: 60
+    environment: macos-release
+    permissions:
+      contents: write
+    env:
+      EXPECTED_ARCH: arm64
+      CARGO_INCREMENTAL: '0'
+      RELEASE_SOURCE: ${{ needs.qualify.outputs.source }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ fromJSON(needs.qualify.outputs.source).sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Toolchain and dependencies
+        run: |
+          test "$(node -p process.arch)" = arm64
+          test "$(rustc -vV | sed -n 's/^host: //p')" = aarch64-apple-darwin
+          npm install --global "$(node -p "require('./package.json').packageManager")"
+          npm ci
+          node scripts/check-rust-toolchain.mjs
+      - name: Import fixed release identity
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
+          MACOS_SIGNING_P12_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
+          MACOS_SIGNING_P12_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
+        run: node scripts/ci-command.mjs 180 bash scripts/ci-macos-signing.sh setup-release
+      - name: Build and verify ARM64 disk image
+        run: npm run package:release -- --arch arm64
+      - name: Verify native startup and shutdown
+        run: npm run test:ci-macos
+      - name: Remove temporary signing material
+        if: always()
+        run: node scripts/ci-command.mjs 120 bash scripts/ci-macos-signing.sh cleanup
+      - name: Create and verify the Release draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
+        run: node scripts/release-draft.mjs draft
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/vigilshell-ci-evidence/
+          if-no-files-found: ignore
+          retention-days: 7

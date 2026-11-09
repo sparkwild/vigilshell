@@ -164,7 +164,7 @@ The target architecture must match the macOS host process and Rust toolchain. Th
 
 ### ARM64 distribution and previews
 
-The initial packaging target is macOS on Apple Silicon. Public version tags use `vX.Y.Z`. Current Actions build temporary-signed previews only and do not create or publish Releases. Distributed packages use a fixed self-signed identity without Apple notarization; update discovery opens the release page and installation remains manual.
+The initial packaging target is macOS on Apple Silicon. Public version tags use `vX.Y.Z`. Actions builds temporary-signed previews and prepares Release drafts from verified stable tags. Maintainers publish drafts manually. Distributed packages use a fixed self-signed identity without Apple notarization. Update discovery opens the release page for manual installation.
 
 In a separate test Mac/account with no existing VigilShell data, download the DMG and its SHA-256 file from the same release, verify with `shasum -a 256 -c <file>.dmg.sha256`, then drag the application into Applications. If macOS blocks an unverified developer, use the per-app **Privacy & Security → Open Anyway** flow after checking the download source; do not disable Gatekeeper globally.
 
