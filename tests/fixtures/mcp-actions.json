@@ -1,0 +1,760 @@
+[
+  {
+    "call": {
+      "tool": "connections_list"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "tool": "capabilities_get"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "connection_id": "connection",
+      "request_key": "request",
+      "tool": "session_manage",
+      "action": "open"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "tool": "session_manage",
+      "action": "get"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "tool": "session_manage",
+      "action": "close"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "tool": "server_inspect",
+      "action": "overview"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "tool": "server_inspect",
+      "action": "processes"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "command": "pwd",
+      "directory": "/srv",
+      "tool": "command_run",
+      "action": "command"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source": {
+        "kind": "inline",
+        "text": "pwd"
+      },
+      "interpreter": "sh",
+      "arguments": [],
+      "directory": "/srv",
+      "tool": "command_run",
+      "action": "script"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "directory": "/srv",
+      "columns": 80,
+      "rows": 24,
+      "tool": "terminal_manage",
+      "action": "open"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "task_id": "task",
+      "request_key": "key",
+      "text": "pwd\n",
+      "tool": "terminal_manage",
+      "action": "write"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "task_id": "task",
+      "request_key": "key",
+      "columns": 80,
+      "rows": 24,
+      "tool": "terminal_manage",
+      "action": "resize"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "task_id": "task",
+      "request_key": "key",
+      "tool": "terminal_manage",
+      "action": "close"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv",
+      "after": null,
+      "limit": 10,
+      "tool": "files_read",
+      "action": "list"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "hash": true,
+      "tool": "files_read",
+      "action": "stat"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "offset": 0,
+      "length": 100,
+      "tool": "files_read",
+      "action": "read"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "data": "YQ==",
+      "mode": "replace",
+      "expected_hash": null,
+      "tool": "files_write",
+      "action": "write"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "edits": [
+        {
+          "before": "a",
+          "after": "b"
+        }
+      ],
+      "expected_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tool": "files_write",
+      "action": "edit"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/new",
+      "parents": true,
+      "tool": "files_manage",
+      "action": "mkdir"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source": "/srv/file",
+      "target": "/srv/copy",
+      "recursive": false,
+      "overwrite": false,
+      "tool": "files_manage",
+      "action": "copy"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source": "/srv/file",
+      "target": "/srv/moved",
+      "overwrite": false,
+      "tool": "files_manage",
+      "action": "move"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "destination": "/srv/link",
+      "tool": "files_manage",
+      "action": "link"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "mode": 384,
+      "modified_seconds": null,
+      "tool": "files_manage",
+      "action": "set_attributes"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": "/srv/file",
+      "recursive": false,
+      "tool": "files_remove"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "key",
+      "local": {
+        "scopeId": "local",
+        "path": "file"
+      },
+      "remote": "/srv/file",
+      "overwrite": false,
+      "tool": "files_transfer",
+      "action": "upload"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "key",
+      "local": {
+        "scopeId": "local",
+        "path": "file"
+      },
+      "remote": "/srv/file",
+      "overwrite": false,
+      "tool": "files_transfer",
+      "action": "download"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "tool": "services_query",
+      "action": "list"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "tool": "services_query",
+      "action": "status"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "lines": 10,
+      "tool": "services_query",
+      "action": "logs"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "tool": "services_query",
+      "action": "definition"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "tool": "services_control",
+      "action": "start"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "tool": "services_control",
+      "action": "stop"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "tool": "services_control",
+      "action": "restart"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "tool": "services_control",
+      "action": "reload"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "expected_version": null,
+      "tool": "services_control",
+      "action": "enable"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "expected_version": null,
+      "tool": "services_control",
+      "action": "disable"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "definition": {
+        "target": {
+          "manager": "system",
+          "name": "fixture.service"
+        },
+        "content": {
+          "kind": "unit",
+          "text": "[Service]\nExecStart=/usr/bin/true\n"
+        },
+        "expectedHash": null
+      },
+      "tool": "services_define",
+      "action": "create"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "definition": {
+        "target": {
+          "manager": "system",
+          "name": "fixture.service"
+        },
+        "content": {
+          "kind": "unit",
+          "text": "[Service]\nExecStart=/usr/bin/true\n"
+        },
+        "expectedHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "tool": "services_define",
+      "action": "update"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "target": {
+        "manager": "system",
+        "name": "fixture.service"
+      },
+      "drop_in": null,
+      "expected_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tool": "services_define",
+      "action": "remove"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "tool": "packages_query"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "packages": [
+        {
+          "kind": "repository",
+          "name": "fixture",
+          "version": null
+        }
+      ],
+      "tool": "packages_manage",
+      "action": "install"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "packages": [
+        {
+          "kind": "repository",
+          "name": "fixture",
+          "version": null
+        }
+      ],
+      "tool": "packages_manage",
+      "action": "upgrade"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "packages": [
+        {
+          "kind": "repository",
+          "name": "fixture",
+          "version": null
+        }
+      ],
+      "tool": "packages_manage",
+      "action": "remove"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "tool": "package_sources_query"
+    },
+    "readOnly": true
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "definition": {
+        "format": "apt",
+        "name": "fixture",
+        "url": "https://example.invalid/repo",
+        "suite": "stable",
+        "components": ["main"],
+        "public_key": "-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n-----END PGP PUBLIC KEY BLOCK-----"
+      },
+      "tool": "package_sources_manage",
+      "action": "create"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source_id": "1111111111111111111111111111111111111111111111111111111111111111",
+      "expected_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "patch": {
+        "url": "https://example.invalid/new",
+        "suite": null,
+        "components": null,
+        "public_key": null
+      },
+      "tool": "package_sources_manage",
+      "action": "update"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source_id": "1111111111111111111111111111111111111111111111111111111111111111",
+      "expected_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tool": "package_sources_manage",
+      "action": "remove"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source_id": "1111111111111111111111111111111111111111111111111111111111111111",
+      "expected_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tool": "package_sources_manage",
+      "action": "enable"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "source_id": "1111111111111111111111111111111111111111111111111111111111111111",
+      "expected_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tool": "package_sources_manage",
+      "action": "disable"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "value": "fixture",
+      "tool": "system_settings_manage",
+      "action": "hostname"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "value": "Etc/UTC",
+      "tool": "system_settings_manage",
+      "action": "timezone"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "value": "C.UTF-8",
+      "tool": "system_settings_manage",
+      "action": "locale"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "request",
+      "timeout_seconds": null,
+      "configuration": {
+        "servers": ["1.1.1.1"],
+        "searchDomains": []
+      },
+      "expected_hash": null,
+      "tool": "system_settings_manage",
+      "action": "dns"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "key",
+      "tool": "power_control",
+      "action": "reboot"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": "session",
+      "request_key": "key",
+      "tool": "power_control",
+      "action": "powerOff"
+    },
+    "readOnly": false
+  },
+  {
+    "call": {
+      "session_id": null,
+      "connection_id": null,
+      "phase": null,
+      "offset": null,
+      "tool": "tasks_query",
+      "action": "list"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "task_id": "task",
+      "tool": "tasks_query",
+      "action": "get"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "task_id": "task",
+      "cursor": 0,
+      "view": "stream",
+      "tool": "tasks_query",
+      "action": "output"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "task_id": "task",
+      "request_key": "key",
+      "tool": "task_cancel"
+    },
+    "readOnly": null
+  },
+  {
+    "call": {
+      "tool": "terminal_manage",
+      "action": "workspace",
+      "session_id": "session",
+      "command": {
+        "action": "list_tabs"
+      }
+    },
+    "readOnly": null
+  }
+]

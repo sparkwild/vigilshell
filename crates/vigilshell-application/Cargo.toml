@@ -1,0 +1,27 @@
+[package]
+license.workspace = true
+publish.workspace = true
+name = "vigilshell-application"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+sha2 = "=0.10.9"
+base64 = "0.22"
+serde_json.workspace = true
+serde.workspace = true
+vigilshell-application-contracts = { path = "../vigilshell-application-contracts" }
+encoding_rs = "=0.8.41"
+vigilshell-domain = { path = "../vigilshell-domain" }
+
+tokio.workspace = true
+tokio-util.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+vigilshell-local-files = { path = "../vigilshell-local-files" }
+vigilshell-credentials = { path = "../vigilshell-credentials" }
+russh.workspace = true
+tempfile.workspace = true
+vigilshell-storage-sqlite = { path = "../vigilshell-storage-sqlite" }
+vigilshell-transport-russh = { path = "../vigilshell-transport-russh" }

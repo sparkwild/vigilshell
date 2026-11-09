@@ -1,0 +1,30 @@
+name: Backend
+'on':
+  workflow_call: {}
+concurrency:
+  group: backend-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install project Rust
+        run: |
+          rustup show active-toolchain
+          node scripts/check-rust-toolchain.mjs
+      - name: Native fixture request and startup checks
+        run: python3 -B -m unittest discover -s tests/development -p 'test_native_fixtures.py' -v
+      - name: Backend checks
+        run: node scripts/check-backend.mjs
+      - name: Dependency checks
+        run: node scripts/check-rust-dependencies.mjs

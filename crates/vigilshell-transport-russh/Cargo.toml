@@ -1,0 +1,24 @@
+[package]
+license.workspace = true
+name = "vigilshell-transport-russh"
+publish.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+encoding_rs = "=0.8.41"
+vigilshell-application-contracts = { path = "../vigilshell-application-contracts" }
+tokio-socks = "0.5"
+httparse = "1"
+base64 = "0.22"
+serde_json.workspace = true
+tracing.workspace = true
+sha2 = "=0.10.9"
+tokio-util.workspace = true
+vigilshell-domain = { path = "../vigilshell-domain" }
+russh.workspace = true
+tokio = { workspace = true, features = ["fs"] }
+zeroize = "=1.9.0"
+russh-sftp = "=2.3.0"
+[dev-dependencies]
+tempfile.workspace = true

@@ -1,0 +1,10 @@
+[package]
+license.workspace = true
+name = "vigilshell-application-contracts"
+publish.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+[dependencies]
+vigilshell-domain = { path = "../vigilshell-domain" }
+zeroize = "=1.9.0"

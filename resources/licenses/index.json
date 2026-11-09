@@ -1,0 +1,4979 @@
+[
+  {
+    "name": "@babel/runtime",
+    "version": "7.29.7",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/babel/babel.git",
+      "directory": "packages/babel-runtime"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+      }
+    ]
+  },
+  {
+    "name": "@base-ui/react",
+    "version": "1.8.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/mui/base-ui.git",
+      "directory": "packages/react"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a"
+      }
+    ]
+  },
+  {
+    "name": "@base-ui/utils",
+    "version": "0.4.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/mui/base-ui.git",
+      "directory": "packages/utils"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a"
+      }
+    ]
+  },
+  {
+    "name": "@floating-ui/core",
+    "version": "1.8.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/core"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+      }
+    ]
+  },
+  {
+    "name": "@floating-ui/dom",
+    "version": "1.8.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/dom"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+      }
+    ]
+  },
+  {
+    "name": "@floating-ui/react-dom",
+    "version": "2.1.9",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/react-dom"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+      }
+    ]
+  },
+  {
+    "name": "@floating-ui/utils",
+    "version": "0.2.12",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/utils"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+      }
+    ]
+  },
+  {
+    "name": "@fontsource-variable/inter",
+    "version": "5.3.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/fontsource/font-files.git",
+      "directory": "fonts/variable/inter"
+    },
+    "license": "OFL-1.1",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345"
+      }
+    ]
+  },
+  {
+    "name": "@fontsource-variable/jetbrains-mono",
+    "version": "5.3.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/fontsource/font-files.git",
+      "directory": "fonts/variable/jetbrains-mono"
+    },
+    "license": "OFL-1.1",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "403581b69dac5cff4079205e01c6b467e56af449ecbd7247693ddb1baafa005b"
+      }
+    ]
+  },
+  {
+    "name": "@fontsource-variable/noto-sans-sc",
+    "version": "5.3.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/fontsource/font-files.git",
+      "directory": "fonts/variable/noto-sans-sc"
+    },
+    "license": "OFL-1.1",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "18aabf190848725e2576eefb5c29ba06aac1029d02132252a7f312eac2e50cf3"
+      }
+    ]
+  },
+  {
+    "name": "@formkit/auto-animate",
+    "version": "0.10.0",
+    "source": "https://github.com/formkit/auto-animate.git",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "02d5eb6ab7b888ccff93e1c59b9a4dd4f97b5ac219f4f25cbf12fd5dd538bf3d"
+      }
+    ]
+  },
+  {
+    "name": "@hono/node-server",
+    "version": "1.19.17",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/honojs/node-server.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "6895190430d809c4c57a7582ecc2f99acbc2ea39a5dfad20262a41d5b3e91733"
+      }
+    ]
+  },
+  {
+    "name": "@hookform/resolvers",
+    "version": "5.9.1",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/react-hook-form/resolvers.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e8eeb472f0a5889c2c51625b86a3f9b8630680adb9f49a125352e2e426392780"
+      }
+    ]
+  },
+  {
+    "name": "@internationalized/date",
+    "version": "3.12.4",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "@internationalized/number",
+    "version": "3.6.8",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "@internationalized/string",
+    "version": "3.2.10",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "@modelcontextprotocol/core",
+    "version": "2.2.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a"
+      }
+    ]
+  },
+  {
+    "name": "@modelcontextprotocol/node",
+    "version": "2.1.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a"
+      }
+    ]
+  },
+  {
+    "name": "@modelcontextprotocol/server",
+    "version": "2.2.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a"
+      }
+    ]
+  },
+  {
+    "name": "@noble/hashes",
+    "version": "2.4.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/paulmillr/noble-hashes.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "4f221aee6e072336700c408c68ab3b96a3fc09f6aebe6f48f1bd99e5ef13faec"
+      }
+    ]
+  },
+  {
+    "name": "@react-types/shared",
+    "version": "3.36.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "@reduxjs/toolkit",
+    "version": "2.13.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/reduxjs/redux-toolkit.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "49784961ec6c4941437b7a2c54d8977d0528076a9e7c73dd40f7d0942b8f106d"
+      }
+    ]
+  },
+  {
+    "name": "@sinclair/typebox",
+    "version": "0.31.30",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/sinclairzx81/sinclair-typebox"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "license",
+        "sha256": "32fb6556bc84c192f493cbb1503b99f6ee893227a9473290e88699fde9807fd3"
+      }
+    ]
+  },
+  {
+    "name": "@standard-schema/spec",
+    "version": "1.1.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/standard-schema/standard-schema"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "653b779005a3a4d64a7288c940f7b9a0e8f0b1e0375f6aa6af9473caf131e564"
+      }
+    ]
+  },
+  {
+    "name": "@standard-schema/utils",
+    "version": "0.3.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/standard-schema/standard-schema"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "9cf2166507311f427e083ef7671da566949391cb745789abcff8bd43ac26d1f1"
+      }
+    ]
+  },
+  {
+    "name": "@swc/helpers",
+    "version": "0.5.23",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/swc-project/swc.git",
+      "directory": "packages/helpers"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "d96eba1f1881334d50ffc144276dfa98e147a415e7c591ecdfcb81680361dc91"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-array",
+    "version": "3.2.2",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-array"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-color",
+    "version": "3.1.3",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-color"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-ease",
+    "version": "3.0.2",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-ease"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-interpolate",
+    "version": "3.0.4",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-interpolate"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-path",
+    "version": "3.1.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-path"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-scale",
+    "version": "4.0.9",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-scale"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-shape",
+    "version": "3.2.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-shape"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-time",
+    "version": "3.0.4",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-time"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/d3-timer",
+    "version": "3.0.2",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/d3-timer"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/react",
+    "version": "19.3.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/react"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@types/use-sync-external-store",
+    "version": "0.0.6",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/use-sync-external-store"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+      }
+    ]
+  },
+  {
+    "name": "@xterm/addon-fit",
+    "version": "0.11.0",
+    "source": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-fit",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f"
+      }
+    ]
+  },
+  {
+    "name": "@xterm/addon-search",
+    "version": "0.16.0",
+    "source": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-search",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "689ceb10716bd7a87a804c14951d7c2b818cbd60aab83d540902470ce3b13444"
+      }
+    ]
+  },
+  {
+    "name": "@xterm/addon-serialize",
+    "version": "0.14.0",
+    "source": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-serialize",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "source": "https://raw.githubusercontent.com/xtermjs/xterm.js/f447274f430fd22513f6adbf9862d19524471c04/LICENSE",
+        "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd"
+      }
+    ]
+  },
+  {
+    "name": "@xterm/headless",
+    "version": "6.0.0",
+    "source": "https://github.com/xtermjs/xterm.js",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "source": "https://raw.githubusercontent.com/xtermjs/xterm.js/f447274f430fd22513f6adbf9862d19524471c04/LICENSE",
+        "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd"
+      }
+    ]
+  },
+  {
+    "name": "@xterm/xterm",
+    "version": "6.0.0",
+    "source": "https://github.com/xtermjs/xterm.js",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd"
+      }
+    ]
+  },
+  {
+    "name": "aead",
+    "version": "0.6.1",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "b1cf9a3333ca78152b859012cd4a804156e5243e9ca20ad1df7327ba5ea7405c"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "33b32a251d445c5c03a634e64c53314c55540fc367fabdd45d9b6c8f260c028c"
+      }
+    ]
+  },
+  {
+    "name": "aes",
+    "version": "0.9.3",
+    "source": "https://github.com/RustCrypto/block-ciphers",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "25f77efa393854f7c15eaf6a2589a2071db2d7337642742763adb12bdecf0445"
+      }
+    ]
+  },
+  {
+    "name": "aes-gcm",
+    "version": "0.11.1",
+    "source": "https://github.com/RustCrypto/AEADs",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+      }
+    ]
+  },
+  {
+    "name": "agent-logos-MIT",
+    "version": "bundled",
+    "source": "resources/licenses/agent-logos-MIT.txt",
+    "license": "See original notice",
+    "documents": [
+      {
+        "file": "agent-logos-MIT.txt",
+        "sha256": "89279bfec31b33a0daf30647362065de82475760fb98692ad37980e4b72df7f5"
+      }
+    ]
+  },
+  {
+    "name": "aho-corasick",
+    "version": "1.1.4",
+    "source": "https://github.com/BurntSushi/aho-corasick",
+    "license": "Unlicense OR MIT",
+    "documents": [
+      {
+        "file": "COPYING",
+        "sha256": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f"
+      }
+    ]
+  },
+  {
+    "name": "ajv",
+    "version": "8.20.0",
+    "source": "ajv-validator/ajv",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3"
+      }
+    ]
+  },
+  {
+    "name": "ajv-formats",
+    "version": "2.1.1",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/ajv-validator/ajv-formats.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf"
+      }
+    ]
+  },
+  {
+    "name": "ambient-authority",
+    "version": "0.0.2",
+    "source": "https://github.com/sunfishcode/ambient-authority",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "d00d6d48df2db6f91e4ca9c656e5e30782d5becf52bb3e5bfd0aff467bd37781"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "argon2",
+    "version": "0.6.0",
+    "source": "https://github.com/RustCrypto/password-hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "aria-hidden",
+    "version": "1.2.6",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/theKashey/aria-hidden.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9"
+      }
+    ]
+  },
+  {
+    "name": "autocfg",
+    "version": "1.5.1",
+    "source": "https://github.com/cuviper/autocfg",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "27995d58ad5c1145c1a8cd86244ce844886958a35eb2b78c6b772748669999ac"
+      }
+    ]
+  },
+  {
+    "name": "base16ct",
+    "version": "1.0.0",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "54fb6dfe99a6906f862aa40282f0e8e9d9d0f22d57d99ab8acbaf4c8ceaa70e0"
+      }
+    ]
+  },
+  {
+    "name": "base64",
+    "version": "0.22.1",
+    "source": "https://github.com/marshallpierce/rust-base64",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0dd882e53de11566d50f8e8e2d5a651bcf3fabee4987d70f306233cf39094ba7"
+      }
+    ]
+  },
+  {
+    "name": "base64ct",
+    "version": "1.8.3",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "2d1c57bff28344b9e698f51063bc8509799cc4c99a4e0cf2aa3f7e7c3e1f9a9d"
+      }
+    ]
+  },
+  {
+    "name": "bcrypt-pbkdf",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/password-hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "3708458dee7f359ac6c9c5558023ed481be87e5372c43ebd7f2ca7ad23c12026"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "36ce5478ce77743cf9be5b0967b2508b593880d9987fd29f6bd814672f95795b"
+      }
+    ]
+  },
+  {
+    "name": "bitflags",
+    "version": "2.13.2",
+    "source": "https://github.com/bitflags/bitflags",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "blake2",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "3721e5764ca384059a3521d84c0fb40373894a099d8246fe76bf0d7418041846"
+      }
+    ]
+  },
+  {
+    "name": "block-buffer",
+    "version": "0.10.4",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d5c22aa3118d240e877ad41c5d9fa232f9c77d757d4aac0c2f943afc0a95e0ef"
+      }
+    ]
+  },
+  {
+    "name": "block-buffer",
+    "version": "0.12.1",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "98181e7249d0c01737645ec982499ce99a0f07eb8f7d625b8840d799d10dbc01"
+      }
+    ]
+  },
+  {
+    "name": "block-padding",
+    "version": "0.4.2",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "98181e7249d0c01737645ec982499ce99a0f07eb8f7d625b8840d799d10dbc01"
+      }
+    ]
+  },
+  {
+    "name": "blowfish",
+    "version": "0.10.0",
+    "source": "https://github.com/RustCrypto/block-ciphers",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "4ff7fc936cdf875209dace77be5f98df16df51d82df7a2069f4d264d1d61c259"
+      }
+    ]
+  },
+  {
+    "name": "byteorder",
+    "version": "1.5.0",
+    "source": "https://github.com/BurntSushi/byteorder",
+    "license": "Unlicense OR MIT",
+    "documents": [
+      {
+        "file": "COPYING",
+        "sha256": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f"
+      }
+    ]
+  },
+  {
+    "name": "bytes",
+    "version": "1.12.1",
+    "source": "https://github.com/tokio-rs/bytes",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "45f522cacecb1023856e46df79ca625dfc550c94910078bd8aec6e02880b3d42"
+      }
+    ]
+  },
+  {
+    "name": "cap-primitives",
+    "version": "4.0.3",
+    "source": "https://github.com/bytecodealliance/cap-std",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "a8799c2a07dabcb8d52481f885c5ab7000acb8a4d3cd9503fbcb97c84d350e65"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "cap-std",
+    "version": "4.0.3",
+    "source": "https://github.com/bytecodealliance/cap-std",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "6b1691fdee3b03c3946696a7be125fcf50eff310b9486fac850c1b8aea91478b"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "cbc",
+    "version": "0.2.1",
+    "source": "https://github.com/RustCrypto/block-modes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "63af4bea227c94d021e99427f6ca3a4b8efddadcca93ab6130f708cf6138cf68"
+      }
+    ]
+  },
+  {
+    "name": "cc",
+    "version": "1.4.5",
+    "source": "https://github.com/rust-lang/cc-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ]
+  },
+  {
+    "name": "cfg-if",
+    "version": "1.0.4",
+    "source": "https://github.com/rust-lang/cfg-if",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ]
+  },
+  {
+    "name": "cfg_aliases",
+    "version": "0.2.2",
+    "source": "https://github.com/katharostech/cfg_aliases",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "31b94860253d8ec7b4529f51901044d3b459d6292d996504a36b1bae3a36a812"
+      }
+    ]
+  },
+  {
+    "name": "chacha20",
+    "version": "0.10.2",
+    "source": "https://github.com/RustCrypto/stream-ciphers",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+      }
+    ]
+  },
+  {
+    "name": "chacha20poly1305",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/AEADs",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+      }
+    ]
+  },
+  {
+    "name": "chrono",
+    "version": "0.4.45",
+    "source": "https://github.com/chronotope/chrono",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "sha256": "946c9835d8034d24404f8cfec5f4654cee5dad17e944afc3d06d742cf2882831"
+      }
+    ]
+  },
+  {
+    "name": "cipher",
+    "version": "0.5.2",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "950d712c518a02fcb7cff96950aee304a1cc5283361712c980ea21e8d6d669a5"
+      }
+    ]
+  },
+  {
+    "name": "class-variance-authority",
+    "version": "0.7.1",
+    "source": "https://github.com/joe-bell/cva.git",
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0ccbf956cffc8dcf515809433cb5242ee67c94513d46e48c261d68d0880de406"
+      }
+    ]
+  },
+  {
+    "name": "client-only",
+    "version": "0.0.1",
+    "source": "https://registry.npmjs.org/client-only/-/client-only-0.0.1.tgz",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "PACKAGE_LICENSE_DECLARATION"
+      }
+    ]
+  },
+  {
+    "name": "clsx",
+    "version": "2.1.1",
+    "source": "lukeed/clsx",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "license",
+        "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97"
+      }
+    ]
+  },
+  {
+    "name": "cmov",
+    "version": "0.5.4",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "70c9d40f1f9545c3f133b8a67206e89da850f6468eed072281bb3701514114a9"
+      }
+    ]
+  },
+  {
+    "name": "cn",
+    "version": "0.2.6",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/shadcn-ui/cn.git",
+      "directory": "packages/cn"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "00ff8408e93e2ecc4d90c0edeabdf434100c3aff50acc5d330e17eccd4a3faa5"
+      }
+    ]
+  },
+  {
+    "name": "const-oid",
+    "version": "0.10.2",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "73b9dc2e79c7308998dd30296e073aefaefb944a68fb89aa412c23c0edcabcaa"
+      }
+    ]
+  },
+  {
+    "name": "core-foundation",
+    "version": "0.10.1",
+    "source": "https://github.com/servo/core-foundation-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "62065228e42caebca7e7d7db1204cbb867033de5982ca4009928915e4095f3a3"
+      }
+    ]
+  },
+  {
+    "name": "core-foundation-sys",
+    "version": "0.8.7",
+    "source": "https://github.com/servo/core-foundation-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "62065228e42caebca7e7d7db1204cbb867033de5982ca4009928915e4095f3a3"
+      }
+    ]
+  },
+  {
+    "name": "cpubits",
+    "version": "0.1.1",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "003736bc98408b53511b9cc8ff5d1af3bf0a8f17d53841cc39d8ab1b96a195b0"
+      }
+    ]
+  },
+  {
+    "name": "cpufeatures",
+    "version": "0.2.17",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "ae9baa7beea910273c2f384c2a6b721fb7bd02bda3436074a1072e4ee689f985"
+      }
+    ]
+  },
+  {
+    "name": "cpufeatures",
+    "version": "0.3.1",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "73b9dc2e79c7308998dd30296e073aefaefb944a68fb89aa412c23c0edcabcaa"
+      }
+    ]
+  },
+  {
+    "name": "crossbeam-utils",
+    "version": "0.8.23",
+    "source": "https://github.com/crossbeam-rs/crossbeam",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "5734ed989dfca1f625b40281ee9f4530f91b2411ec01cb748223e7eb87e201ab"
+      }
+    ]
+  },
+  {
+    "name": "crypto-bigint",
+    "version": "0.7.10",
+    "source": "https://github.com/RustCrypto/crypto-bigint",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "crypto-common",
+    "version": "0.1.7",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "3521672491a3479422d5fe1aca6645dd2984090f85da6e5205abfb18fb7a6897"
+      }
+    ]
+  },
+  {
+    "name": "crypto-common",
+    "version": "0.2.2",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d2e7ec5355c96eeade56b09187ceb48a6a30299da3ce7531a66d3d11405ab963"
+      }
+    ]
+  },
+  {
+    "name": "crypto-primes",
+    "version": "0.7.2",
+    "source": "https://github.com/entropyxyz/crypto-primes",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "1e860b66ad4646c4f188d5ee6f0be5192089c1c066cb42a6d25285c250543444"
+      }
+    ]
+  },
+  {
+    "name": "csstype",
+    "version": "3.2.3",
+    "source": "https://github.com/frenic/csstype",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e"
+      }
+    ]
+  },
+  {
+    "name": "ctr",
+    "version": "0.10.1",
+    "source": "https://github.com/RustCrypto/block-modes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "63af4bea227c94d021e99427f6ca3a4b8efddadcca93ab6130f708cf6138cf68"
+      }
+    ]
+  },
+  {
+    "name": "ctutils",
+    "version": "0.4.8",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "91585c36e4fb9ab4ca0d3dfac5d66d3c0c62cc51f640a0e1196542daf2267eae"
+      }
+    ]
+  },
+  {
+    "name": "curve25519-dalek",
+    "version": "5.0.0",
+    "source": "https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek",
+    "license": "BSD-3-Clause",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "403c53069750101aeb9df7e15f127056ceaf7e4e92d0b919a1f4c084afd5f1d4"
+      }
+    ]
+  },
+  {
+    "name": "d3-array",
+    "version": "3.2.4",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-array.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4"
+      }
+    ]
+  },
+  {
+    "name": "d3-color",
+    "version": "3.1.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-color.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+      }
+    ]
+  },
+  {
+    "name": "d3-ease",
+    "version": "3.0.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-ease.git"
+    },
+    "license": "BSD-3-Clause",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08"
+      }
+    ]
+  },
+  {
+    "name": "d3-format",
+    "version": "3.1.2",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-format.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "2a6d2d5f32ba0b755ddbc1c833f766e30cdbe6ebe9a6d4e3e24427721f0b63d3"
+      }
+    ]
+  },
+  {
+    "name": "d3-interpolate",
+    "version": "3.0.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-interpolate.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+      }
+    ]
+  },
+  {
+    "name": "d3-path",
+    "version": "3.1.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-path.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a09b0d6d76e768fca2085fad05743ee81ddd11946bcda160a3cf5e1081a479aa"
+      }
+    ]
+  },
+  {
+    "name": "d3-scale",
+    "version": "4.0.2",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-scale.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+      }
+    ]
+  },
+  {
+    "name": "d3-shape",
+    "version": "3.2.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-shape.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+      }
+    ]
+  },
+  {
+    "name": "d3-time",
+    "version": "3.1.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-time.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+      }
+    ]
+  },
+  {
+    "name": "d3-time-format",
+    "version": "4.1.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-time-format.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+      }
+    ]
+  },
+  {
+    "name": "d3-timer",
+    "version": "3.0.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/d3/d3-timer.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+      }
+    ]
+  },
+  {
+    "name": "dashmap",
+    "version": "6.2.1",
+    "source": "https://github.com/xacrimon/dashmap",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "16692e8cee4aa06e3913787497eba2d47c42002014136f5da67be6ee640e28a3"
+      }
+    ]
+  },
+  {
+    "name": "data-encoding",
+    "version": "2.11.1",
+    "source": "https://github.com/ia0/data-encoding",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b68ad1a3367b825447089e1f8d6829b97f47a89eb78d2f4ebaef4672f5606186"
+      }
+    ]
+  },
+  {
+    "name": "decimal.js-light",
+    "version": "2.5.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/MikeMcl/decimal.js-light.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENCE.md",
+        "sha256": "fc0397fbd5c128bec7edef4e8d3f45e15db5fd043cdd0a2edfc4f14d47fbc3e4"
+      }
+    ]
+  },
+  {
+    "name": "delegate",
+    "version": "0.13.5",
+    "source": "https://github.com/kobzol/rust-delegate",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-MIT",
+        "source": "https://raw.githubusercontent.com/kobzol/rust-delegate/b129d4cbf4cc499eff7743365dcb0fe5d8d2e820/LICENSE-MIT",
+        "sha256": "be7ee8aa49dc586023669a0c600a0536fce6a9f61264a53a67cdd842564ed899"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "source": "https://raw.githubusercontent.com/kobzol/rust-delegate/b129d4cbf4cc499eff7743365dcb0fe5d8d2e820/LICENSE-APACHE",
+        "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+      }
+    ]
+  },
+  {
+    "name": "der",
+    "version": "0.8.2",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "73b9dc2e79c7308998dd30296e073aefaefb944a68fb89aa412c23c0edcabcaa"
+      }
+    ]
+  },
+  {
+    "name": "des",
+    "version": "0.9.0",
+    "source": "https://github.com/RustCrypto/block-ciphers",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "15b3f2c71c37b46995aaa90362fe18bff234e6bb3037746319013aaf4174ec5c"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "39bec22df7525380b392c7ead6f098e8bce157600a020150955fd8aa86d63afb"
+      }
+    ]
+  },
+  {
+    "name": "digest",
+    "version": "0.10.7",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "9e0dfd2dd4173a530e238cb6adb37aa78c34c6bc7444e0e10c1ab5d8881f63ba"
+      }
+    ]
+  },
+  {
+    "name": "digest",
+    "version": "0.11.3",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "af59cea35d7f5e2777a713b8d155d65efa2c339eb43f3c14e868c6ac8506edad"
+      }
+    ]
+  },
+  {
+    "name": "dispatch2",
+    "version": "0.3.1",
+    "source": "https://github.com/madsmtm/objc2",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "source": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      }
+    ]
+  },
+  {
+    "name": "dyn-clone",
+    "version": "1.0.20",
+    "source": "https://github.com/dtolnay/dyn-clone",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "ecdsa",
+    "version": "0.17.0",
+    "source": "https://github.com/RustCrypto/signatures",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "78779d420019e6b4630376af8e86b6b335ee8a2f89ede6e0411e0469a326aaa4"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "9aa4f92bfcde293ebeca9e2379fa18d1d61f000977da144c7b74c2986c9b6466"
+      }
+    ]
+  },
+  {
+    "name": "ed25519",
+    "version": "3.0.0",
+    "source": "https://github.com/RustCrypto/signatures",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "78779d420019e6b4630376af8e86b6b335ee8a2f89ede6e0411e0469a326aaa4"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "9aa4f92bfcde293ebeca9e2379fa18d1d61f000977da144c7b74c2986c9b6466"
+      }
+    ]
+  },
+  {
+    "name": "ed25519-dalek",
+    "version": "3.0.0",
+    "source": "https://github.com/dalek-cryptography/curve25519-dalek/tree/main/ed25519-dalek",
+    "license": "BSD-3-Clause",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7a313964a6e050794d2ad57f4863c11f6bbe055c0ae6ce2cf3b9fc45150bada3"
+      }
+    ]
+  },
+  {
+    "name": "either",
+    "version": "1.18.0",
+    "source": "https://github.com/rayon-rs/either",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "7576269ea71f767b99297934c0b2367532690f8c4badc695edf8e04ab6a1e545"
+      }
+    ]
+  },
+  {
+    "name": "electron",
+    "version": "44.3.0",
+    "source": "https://github.com/electron/electron",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "5154e165bd6c2cc0cfbcd8916498c7abab0497923bafcd5cb07673fe8480087d"
+      }
+    ]
+  },
+  {
+    "name": "elliptic-curve",
+    "version": "0.14.1",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d8c4ab431f20da8452c9a217084163822e5fd9d134e1343903c929f2859fc8fd"
+      }
+    ]
+  },
+  {
+    "name": "encoding_rs",
+    "version": "0.8.41",
+    "source": "https://github.com/hsivonen/encoding_rs",
+    "license": "(Apache-2.0 OR MIT) AND BSD-3-Clause",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "11789f45bb180841cd362a5eee6789c68ddb573a11105e30768c308a6add0190"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "3fa4ca83dcc9237839b1bdeb2e6d16bdfb5ec0c5ce42b24694d8bbf0dcbef72c"
+      },
+      {
+        "file": "LICENSE-WHATWG",
+        "sha256": "838118388fe5c2e7f1dbbaeed13e1c7f3ebf88be91319c7c1d77c18e987d1a50"
+      }
+    ]
+  },
+  {
+    "name": "enum_dispatch",
+    "version": "0.3.13",
+    "source": "https://gitlab.com/antonok/enum_dispatch",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "1e5d3ddaf5cbc111c8517df39e6f252e4c16dbda26b7cc1ad54c9e3efb0586be"
+      }
+    ]
+  },
+  {
+    "name": "errno",
+    "version": "0.3.14",
+    "source": "https://github.com/lambda-fairy/rust-errno",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8764a597675778ddfd4e25f81b08a05dbcf089ac05662df7613fe67f150e3aa2"
+      }
+    ]
+  },
+  {
+    "name": "es-toolkit",
+    "version": "1.53.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/toss/es-toolkit.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "51f3674294d988d89dbebd31273baaeb3c697a15482d9699b14d1fded2e132a7"
+      },
+      {
+        "file": "NOTICE",
+        "sha256": "11ee5e3bce9b0a4dde7f73811caf98978e710228d891c3111ad8ef8d7d2a916f"
+      }
+    ]
+  },
+  {
+    "name": "eventemitter3",
+    "version": "5.0.4",
+    "source": {
+      "type": "git",
+      "url": "git://github.com/primus/eventemitter3.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "3aecc12b1cb28832b5f65ab64291de96568c3f236a74d646281b4491f7bcadbf"
+      }
+    ]
+  },
+  {
+    "name": "fallible-iterator",
+    "version": "0.3.0",
+    "source": "https://github.com/sfackler/rust-fallible-iterator",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0816e154b159ba255c563f7c8c7df5bbb8cc5fc96f5ab8cf9f4743b4f41fe7eb"
+      }
+    ]
+  },
+  {
+    "name": "fallible-streaming-iterator",
+    "version": "0.1.9",
+    "source": "https://github.com/sfackler/fallible-streaming-iterator",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8dcec5569a9be5b0e086c80faed6f1aefa670af0ec29cecc2f714303096887e0"
+      }
+    ]
+  },
+  {
+    "name": "fast-deep-equal",
+    "version": "3.1.3",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/epoberezkin/fast-deep-equal.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a"
+      }
+    ]
+  },
+  {
+    "name": "fast-uri",
+    "version": "3.1.7",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/fastify/fast-uri.git"
+    },
+    "license": "BSD-3-Clause",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786"
+      }
+    ]
+  },
+  {
+    "name": "fastrand",
+    "version": "2.5.0",
+    "source": "https://github.com/smol-rs/fastrand",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "ff",
+    "version": "0.14.0",
+    "source": "https://github.com/zkcrypto/ff",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "3708458dee7f359ac6c9c5558023ed481be87e5372c43ebd7f2ca7ad23c12026"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8d0c1d1d4b2bebf5b9211f0e883d5a482b7808f3ed31320da14ddee95811f4ef"
+      }
+    ]
+  },
+  {
+    "name": "find-msvc-tools",
+    "version": "0.1.12",
+    "source": "https://github.com/rust-lang/cc-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ]
+  },
+  {
+    "name": "fs-set-times",
+    "version": "0.20.3",
+    "source": "https://github.com/bytecodealliance/fs-set-times",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "e196ffeb5ab101e9ec8bbe395c9f367c5380ee2d28c47e5c03371523798a9af7"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "futures",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-channel",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-core",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-executor",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-io",
+    "version": "0.3.34",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-macro",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-sink",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-task",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "futures-util",
+    "version": "0.3.32",
+    "source": "https://github.com/rust-lang/futures-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "275c491d6d1160553c32fd6127061d7f9606c3ea25abfad6ca3f6ed088785427"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6652c868f35dfe5e8ef636810a4e576b9d663f3a17fb0f5613ad73583e1b88fd"
+      }
+    ]
+  },
+  {
+    "name": "generic-array",
+    "version": "0.14.7",
+    "source": "https://github.com/fizyk20/generic-array.git",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c09aae9d3c77b531f56351a9947bc7446511d6b025b3255312d3e3442a9a7583"
+      }
+    ]
+  },
+  {
+    "name": "generic-array",
+    "version": "1.4.5",
+    "source": "https://github.com/fizyk20/generic-array.git",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c09aae9d3c77b531f56351a9947bc7446511d6b025b3255312d3e3442a9a7583"
+      }
+    ]
+  },
+  {
+    "name": "getrandom",
+    "version": "0.2.17",
+    "source": "https://github.com/rust-random/getrandom",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "42fa16951ce7f24b5a467a40e5b449a1d41e662f97ca779864f053f39e097737"
+      }
+    ]
+  },
+  {
+    "name": "getrandom",
+    "version": "0.4.3",
+    "source": "https://github.com/rust-random/getrandom",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "523a42c25d245dde9c015f882cec7f4555aad883382a6cf19b4b7d9b2cd5419b"
+      }
+    ]
+  },
+  {
+    "name": "ghash",
+    "version": "0.6.0",
+    "source": "https://github.com/RustCrypto/universal-hashes",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+      }
+    ]
+  },
+  {
+    "name": "group",
+    "version": "0.14.0",
+    "source": "https://github.com/zkcrypto/group",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "7429802d3e67e3308471b91fbea341e484c4e0a23d0fb230a8636c38184cec79"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "hashbrown",
+    "version": "0.14.5",
+    "source": "https://github.com/rust-lang/hashbrown",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "ff8f68cb076caf8cefe7a6430d4ac086ce6af2ca8ce2c4e5a2004d4552ef52a2"
+      }
+    ]
+  },
+  {
+    "name": "hex",
+    "version": "0.4.3",
+    "source": "https://github.com/KokaKiwi/rust-hex",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "f7bdb3426d045cd50efd4953026e3eb5a83d0199f458a075602611b9344da5b9"
+      }
+    ]
+  },
+  {
+    "name": "hex-literal",
+    "version": "1.1.0",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "054aa61c4259f18e0e1355d88d0bb331d4cb7017251920ad3b126ce7dab65e26"
+      }
+    ]
+  },
+  {
+    "name": "hkdf",
+    "version": "0.13.0",
+    "source": "https://github.com/RustCrypto/KDFs/",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "59013a5c8d3a19c26a457579105915a5d51bb0c09d579f8cdedf12e4203c3018"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d288f9c9b4590446ec18c22ead8f8b5a12a3d4025b68f62dc9015063eb9cca69"
+      }
+    ]
+  },
+  {
+    "name": "hmac",
+    "version": "0.13.0",
+    "source": "https://github.com/RustCrypto/MACs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "9e0dfd2dd4173a530e238cb6adb37aa78c34c6bc7444e0e10c1ab5d8881f63ba"
+      }
+    ]
+  },
+  {
+    "name": "hono",
+    "version": "4.13.7",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/honojs/hono.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a6ab98e5c77b9070c443eaff2ff81034a6f8cc05a7524d5098eb0f24defa0115"
+      }
+    ]
+  },
+  {
+    "name": "httparse",
+    "version": "1.10.1",
+    "source": "https://github.com/seanmonstar/httparse",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "391a5396cec6230bfabd4ef4eb2350eb895bc5efce377a2218f5702ed020d3e3"
+      }
+    ]
+  },
+  {
+    "name": "hybrid-array",
+    "version": "0.4.15",
+    "source": "https://github.com/RustCrypto/hybrid-array",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "70c9d40f1f9545c3f133b8a67206e89da850f6468eed072281bb3701514114a9"
+      }
+    ]
+  },
+  {
+    "name": "iana-time-zone",
+    "version": "0.1.65",
+    "source": "https://github.com/strawlab/iana-time-zone",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "696759d65dfe558ff7d9f031c76db19ec5c0767470fb67c4e8d990820d1e99c9"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "da28ccc6b158fc2d8cccc74e99794b1cff1d29bd7bbeb019442fcf0c04c6cad9"
+      }
+    ]
+  },
+  {
+    "name": "immer",
+    "version": "10.2.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/immerjs/immer.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "99cf22f6960a6fe228ec84ea9aefb0d75b27999ece83a3a9801e1c2081fa270b"
+      }
+    ]
+  },
+  {
+    "name": "immer",
+    "version": "11.2.9",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/immerjs/immer.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "99cf22f6960a6fe228ec84ea9aefb0d75b27999ece83a3a9801e1c2081fa270b"
+      }
+    ]
+  },
+  {
+    "name": "inout",
+    "version": "0.2.2",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "a07fcacc3c60de4dc0fab10ac9d6aaba7379974e28451c99da7f7df09c25b28c"
+      }
+    ]
+  },
+  {
+    "name": "inter-OFL",
+    "version": "bundled",
+    "source": "resources/licenses/inter-OFL.txt",
+    "license": "See original notice",
+    "documents": [
+      {
+        "file": "inter-OFL.txt",
+        "sha256": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345"
+      }
+    ]
+  },
+  {
+    "name": "internmap",
+    "version": "2.0.3",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/mbostock/internmap.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f"
+      }
+    ]
+  },
+  {
+    "name": "io-extras",
+    "version": "0.19.0",
+    "source": "https://github.com/sunfishcode/io-extras",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "f0c1d22de8bd3b776a40f2691f08b84e91c7bafc78b72a51150e231002b88db3"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "io-lifetimes",
+    "version": "2.0.4",
+    "source": "https://github.com/sunfishcode/io-lifetimes",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "495c30b45120f8af07cfa26eb9cb1ebfe8324560dca2b3b1e76cad1b9b6b489a"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "io-lifetimes",
+    "version": "3.0.1",
+    "source": "https://github.com/sunfishcode/io-lifetimes",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "495c30b45120f8af07cfa26eb9cb1ebfe8324560dca2b3b1e76cad1b9b6b489a"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "ipnet",
+    "version": "2.12.2",
+    "source": "https://github.com/krisprice/ipnet",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "87d9feb9238c6bd8e0024fc4733b06cff036f89f36d93b7df1c8a0549bbb7a5b"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "47dc9ff29128ddfb4d6a0435383c9f89120bc374dbcc1dd00b933a0b28aa7865"
+      }
+    ]
+  },
+  {
+    "name": "itoa",
+    "version": "1.0.18",
+    "source": "https://github.com/dtolnay/itoa",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "jetbrains-mono-OFL",
+    "version": "bundled",
+    "source": "resources/licenses/jetbrains-mono-OFL.txt",
+    "license": "See original notice",
+    "documents": [
+      {
+        "file": "jetbrains-mono-OFL.txt",
+        "sha256": "403581b69dac5cff4079205e01c6b467e56af449ecbd7247693ddb1baafa005b"
+      }
+    ]
+  },
+  {
+    "name": "json-schema-traverse",
+    "version": "1.0.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/epoberezkin/json-schema-traverse.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a"
+      }
+    ]
+  },
+  {
+    "name": "keccak",
+    "version": "0.2.2",
+    "source": "https://github.com/RustCrypto/sponges",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8c7516d4b27b1e495be5e38b612298b63de48d05f49cdac94f70f3cd70f8864b"
+      }
+    ]
+  },
+  {
+    "name": "kem",
+    "version": "0.3.0",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "f25e815326bb6e7efb7baf7eeca7f096cd05bc1af9bb7c408984db61bd69e304"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d2e7ec5355c96eeade56b09187ceb48a6a30299da3ce7531a66d3d11405ab963"
+      }
+    ]
+  },
+  {
+    "name": "lazy_static",
+    "version": "1.5.0",
+    "source": "https://github.com/rust-lang-nursery/lazy-static.rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0621878e61f0d0fda054bcbe02df75192c28bde1ecc8289cbd86aeba2dd72720"
+      }
+    ]
+  },
+  {
+    "name": "libc",
+    "version": "0.2.189",
+    "source": "https://github.com/rust-lang/libc",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "123a331b5dbf04c30097fa43b8f858bc85df671fe776de498d01f3d6b7c1f69e"
+      }
+    ]
+  },
+  {
+    "name": "libsqlite3-sys",
+    "version": "0.38.2",
+    "source": "https://github.com/rusqlite/rusqlite",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c10c1f27337546471e5f7e4e97fdd398b35b9d4e126115dcd22de8d8e65abf6f"
+      }
+    ]
+  },
+  {
+    "name": "lock_api",
+    "version": "0.4.14",
+    "source": "https://github.com/Amanieu/parking_lot",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "c9a75f18b9ab2927829a208fc6aa2cf4e63b8420887ba29cdb265d6619ae82d5"
+      }
+    ]
+  },
+  {
+    "name": "log",
+    "version": "0.4.33",
+    "source": "https://github.com/rust-lang/log",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "lucide-react",
+    "version": "1.44.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/lucide-icons/lucide.git",
+      "directory": "packages/lucide-react"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+      }
+    ]
+  },
+  {
+    "name": "matchers",
+    "version": "0.2.0",
+    "source": "https://github.com/hawkw/matchers",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a47129d738752a6ae52247fea645b42cb320d19e9327f1eb2d1a7f99d9455ad3"
+      }
+    ]
+  },
+  {
+    "name": "maybe-owned",
+    "version": "0.3.4",
+    "source": "https://github.com/rustonaut/maybe-owned",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "aecc100d0547aa3bcbe04bcf5cb87c7db0be11004602adfa5056edf8bb847b35"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "ef2b3bbd7b718a7881253226313f103e89b379e1279681a3c1ebcb65a27d209d"
+      }
+    ]
+  },
+  {
+    "name": "mcp-logo-MIT",
+    "version": "bundled",
+    "source": "resources/licenses/mcp-logo-MIT.txt",
+    "license": "See original notice",
+    "documents": [
+      {
+        "file": "mcp-logo-MIT.txt",
+        "sha256": "8dc832311442895d6e9d9ff23f9f17e3b033c090737bcc7da544ca8910fcc977"
+      }
+    ]
+  },
+  {
+    "name": "md5",
+    "version": "0.8.1",
+    "source": "https://github.com/stainless-steel/md5",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "2096783a9b939ae2a3a4789d9696740cec1a72ac04ccf8a7972d436fd0e7b240"
+      }
+    ]
+  },
+  {
+    "name": "memchr",
+    "version": "2.8.3",
+    "source": "https://github.com/BurntSushi/memchr",
+    "license": "Unlicense OR MIT",
+    "documents": [
+      {
+        "file": "COPYING",
+        "sha256": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f"
+      }
+    ]
+  },
+  {
+    "name": "mio",
+    "version": "1.2.3",
+    "source": "https://github.com/tokio-rs/mio",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "07919255c7e04793d8ea760d6c2ce32d19f9ff02bdbdde3ce90b1e1880929a9b"
+      }
+    ]
+  },
+  {
+    "name": "ml-kem",
+    "version": "0.3.2",
+    "source": "https://github.com/RustCrypto/KEMs",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d0fb27c23e807f1fc6f506d161984b294a1f05c9888ae31f056d1712685948ad"
+      }
+    ]
+  },
+  {
+    "name": "module-lattice",
+    "version": "0.2.3",
+    "source": "https://github.com/RustCrypto/KEMs",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d0fb27c23e807f1fc6f506d161984b294a1f05c9888ae31f056d1712685948ad"
+      }
+    ]
+  },
+  {
+    "name": "multiversion_no_op",
+    "version": "1.0.0",
+    "source": "https://github.com/hsivonen/multiversion_no_op",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "d2a809eafabba137f508bea16a1b93d8ff24df7da6f38129d830db9bc118bdfe"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "3fa4ca83dcc9237839b1bdeb2e6d16bdfb5ec0c5ce42b24694d8bbf0dcbef72c"
+      }
+    ]
+  },
+  {
+    "name": "nix",
+    "version": "0.31.3",
+    "source": "https://github.com/nix-rust/nix",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "66e3ee1fa7f909ad3c612d556f2a0cdabcd809ad6e66f3b0605015ac64841b70"
+      }
+    ]
+  },
+  {
+    "name": "noto-sans-sc-OFL",
+    "version": "bundled",
+    "source": "resources/licenses/noto-sans-sc-OFL.txt",
+    "license": "See original notice",
+    "documents": [
+      {
+        "file": "noto-sans-sc-OFL.txt",
+        "sha256": "18aabf190848725e2576eefb5c29ba06aac1029d02132252a7f312eac2e50cf3"
+      }
+    ]
+  },
+  {
+    "name": "num-bigint",
+    "version": "0.5.1",
+    "source": "https://github.com/rust-num/num-bigint",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "num-integer",
+    "version": "0.1.47",
+    "source": "https://github.com/rust-num/num-integer",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "num-traits",
+    "version": "0.2.19",
+    "source": "https://github.com/rust-num/num-traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "objc2",
+    "version": "0.6.4",
+    "source": "https://github.com/madsmtm/objc2",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "source": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      }
+    ]
+  },
+  {
+    "name": "objc2-app-kit",
+    "version": "0.3.2",
+    "source": "https://github.com/madsmtm/objc2",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      }
+    ]
+  },
+  {
+    "name": "objc2-core-foundation",
+    "version": "0.3.2",
+    "source": "https://github.com/madsmtm/objc2",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      }
+    ]
+  },
+  {
+    "name": "objc2-encode",
+    "version": "4.1.0",
+    "source": "https://github.com/madsmtm/objc2",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "source": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      }
+    ]
+  },
+  {
+    "name": "objc2-foundation",
+    "version": "0.3.2",
+    "source": "https://github.com/madsmtm/objc2",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      }
+    ]
+  },
+  {
+    "name": "once_cell",
+    "version": "1.21.4",
+    "source": "https://github.com/matklad/once_cell",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "p256",
+    "version": "0.14.0",
+    "source": "https://github.com/RustCrypto/elliptic-curves",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d8c4ab431f20da8452c9a217084163822e5fd9d134e1343903c929f2859fc8fd"
+      }
+    ]
+  },
+  {
+    "name": "p384",
+    "version": "0.14.0",
+    "source": "https://github.com/RustCrypto/elliptic-curves",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "02168781a5b59970e3da1784d2eb69f432598a3757f283dbffdafd9d483a9113"
+      }
+    ]
+  },
+  {
+    "name": "p521",
+    "version": "0.14.0",
+    "source": "https://github.com/RustCrypto/elliptic-curves",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d8c4ab431f20da8452c9a217084163822e5fd9d134e1343903c929f2859fc8fd"
+      }
+    ]
+  },
+  {
+    "name": "parking_lot_core",
+    "version": "0.9.12",
+    "source": "https://github.com/Amanieu/parking_lot",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "c9a75f18b9ab2927829a208fc6aa2cf4e63b8420887ba29cdb265d6619ae82d5"
+      }
+    ]
+  },
+  {
+    "name": "password-hash",
+    "version": "0.6.1",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "d8c4ab431f20da8452c9a217084163822e5fd9d134e1343903c929f2859fc8fd"
+      }
+    ]
+  },
+  {
+    "name": "pbkdf2",
+    "version": "0.13.0",
+    "source": "https://github.com/RustCrypto/password-hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8ea5cea8ddecc46a64a004406414d25529fca7eb71cfd8c0cfe49c343bff79c5"
+      }
+    ]
+  },
+  {
+    "name": "pem-rfc7468",
+    "version": "1.0.0",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "4148e7b027fba018131f297b4fe27995386ba317018d6855e182fd0e86cd754f"
+      }
+    ]
+  },
+  {
+    "name": "phc",
+    "version": "0.6.1",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "pin-project-lite",
+    "version": "0.2.17",
+    "source": "https://github.com/taiki-e/pin-project-lite",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "pkcs1",
+    "version": "0.8.0-rc.4",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "4148e7b027fba018131f297b4fe27995386ba317018d6855e182fd0e86cd754f"
+      }
+    ]
+  },
+  {
+    "name": "pkcs5",
+    "version": "0.8.1",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "pkcs8",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "73b9dc2e79c7308998dd30296e073aefaefb944a68fb89aa412c23c0edcabcaa"
+      }
+    ]
+  },
+  {
+    "name": "pkg-config",
+    "version": "0.3.34",
+    "source": "https://github.com/rust-lang/pkg-config-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ]
+  },
+  {
+    "name": "poly1305",
+    "version": "0.9.1",
+    "source": "https://github.com/RustCrypto/universal-hashes",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b67acfaaf787b346e1d3bf7654b4fabfd20360fdeb4351cc5e9d624147824527"
+      }
+    ]
+  },
+  {
+    "name": "polyval",
+    "version": "0.7.3",
+    "source": "https://github.com/RustCrypto/universal-hashes",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+      }
+    ]
+  },
+  {
+    "name": "primefield",
+    "version": "0.14.0",
+    "source": "https://github.com/RustCrypto/elliptic-curves",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "4621bda86773a67b5645bbd25cf1bf8b6820d4fcec3885b23b9ceec612007f63"
+      }
+    ]
+  },
+  {
+    "name": "primeorder",
+    "version": "0.14.0",
+    "source": "https://github.com/RustCrypto/elliptic-curves",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "233b95ccbf90dc67e32f3e8995c489f6312d9191ebd141a931c3b684f1e3be6d"
+      }
+    ]
+  },
+  {
+    "name": "proc-macro2",
+    "version": "1.0.107",
+    "source": "https://github.com/dtolnay/proc-macro2",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "quote",
+    "version": "1.0.47",
+    "source": "https://github.com/dtolnay/quote",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "rand",
+    "version": "0.10.2",
+    "source": "https://github.com/rust-random/rand",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "90eb64f0279b0d9432accfa6023ff803bc4965212383697eee27a0f426d5f8d5"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "35242e7a83f69875e6edeff02291e688c97caafe2f8902e4e19b49d3e78b4cab"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "209fbbe0ad52d9235e37badf9cadfe4dbdc87203179c0899e738b39ade42177b"
+      }
+    ]
+  },
+  {
+    "name": "rand_core",
+    "version": "0.10.1",
+    "source": "https://github.com/rust-random/rand_core",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "92b81db30f7ab6d693e0af5661a40d273ca1947e891123ed823924192c10cbc7"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "6df43f6f4b5d4587f3d8d71e45532c688fd168afa5fe89d571cb32fa09c4ef51"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8b6e9feec03e7c9a5facb26855cecd31662bf989b636bcfe79521bdf8ac863f0"
+      }
+    ]
+  },
+  {
+    "name": "react",
+    "version": "19.3.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/react"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+      }
+    ]
+  },
+  {
+    "name": "react-aria",
+    "version": "3.52.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "react-aria-components",
+    "version": "1.21.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "react-dom",
+    "version": "19.3.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/react-dom"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+      }
+    ]
+  },
+  {
+    "name": "react-hook-form",
+    "version": "7.88.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/react-hook-form/react-hook-form"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e8eeb472f0a5889c2c51625b86a3f9b8630680adb9f49a125352e2e426392780"
+      }
+    ]
+  },
+  {
+    "name": "react-is",
+    "version": "17.0.2",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/facebook/react.git",
+      "directory": "packages/react-is"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+      }
+    ]
+  },
+  {
+    "name": "react-redux",
+    "version": "9.3.1",
+    "source": "github:reduxjs/react-redux",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "f2da73c752c6b87624755edacf927cbd915fa76555d383e74494bad4a5155ab3"
+      }
+    ]
+  },
+  {
+    "name": "react-resizable-panels",
+    "version": "4.12.4",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/bvaughn/react-resizable-panels.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "a8f1e0280bf14adcf5d017547db85eb5c3bac0feb1690ca98650874002eaa8ea"
+      }
+    ]
+  },
+  {
+    "name": "react-stately",
+    "version": "3.50.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/adobe/react-spectrum"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "7dfe6526888bac51759c99f9a51262ba2711a8c12a067f2181609dd9a4066b84"
+      }
+    ]
+  },
+  {
+    "name": "recharts",
+    "version": "3.8.0",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/recharts/recharts.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "2d3aa48a8d1d3b93093680e8e68d3a64cfb590c3ade377ffcaefc69dac7c2ce5"
+      }
+    ]
+  },
+  {
+    "name": "redux",
+    "version": "5.0.1",
+    "source": "github:reduxjs/redux",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "f2da73c752c6b87624755edacf927cbd915fa76555d383e74494bad4a5155ab3"
+      }
+    ]
+  },
+  {
+    "name": "redux-thunk",
+    "version": "3.1.0",
+    "source": "github:reduxjs/redux-thunk",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "635da794c92d278f8355428be0f9922d643f556d4f75f33fe4aca6b98d27affe"
+      }
+    ]
+  },
+  {
+    "name": "ref-cast",
+    "version": "1.0.27",
+    "source": "https://github.com/dtolnay/ref-cast",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "ref-cast-impl",
+    "version": "1.0.27",
+    "source": "https://github.com/dtolnay/ref-cast",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "regex-automata",
+    "version": "0.4.16",
+    "source": "https://github.com/rust-lang/regex",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "regex-syntax",
+    "version": "0.8.11",
+    "source": "https://github.com/rust-lang/regex",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6485b8ed310d3f0340bf1ad1f47645069ce4069dcc6bb46c7d5c6faf41de1fdb"
+      }
+    ]
+  },
+  {
+    "name": "require-from-string",
+    "version": "2.0.2",
+    "source": "floatdrop/require-from-string",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "license",
+        "sha256": "6ee0feb1f6ef996ff5a68600f8cf98909cf412d39ef3cdceaefd87d636fa1b7f"
+      }
+    ]
+  },
+  {
+    "name": "reselect",
+    "version": "5.1.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/reduxjs/reselect.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0bb5035e49bf9b5661655b402bab3c3efccb8eab2a50e37392100139fe3280f2"
+      }
+    ]
+  },
+  {
+    "name": "reselect",
+    "version": "5.3.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/reduxjs/reselect.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e98047a5dee068b33f82e8c4b7a63037b5108c93393198efd4097753004af5dd"
+      }
+    ]
+  },
+  {
+    "name": "rfc6979",
+    "version": "0.6.0",
+    "source": "https://github.com/RustCrypto/signatures",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "78779d420019e6b4630376af8e86b6b335ee8a2f89ede6e0411e0469a326aaa4"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "9aa4f92bfcde293ebeca9e2379fa18d1d61f000977da144c7b74c2986c9b6466"
+      }
+    ]
+  },
+  {
+    "name": "ring",
+    "version": "0.17.14",
+    "source": "https://github.com/briansmith/ring",
+    "license": "Apache-2.0 AND ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b3d734001a94efff3579978d953391aa7115f877657d25eb54037a43875d078a"
+      },
+      {
+        "file": "LICENSE-BoringSSL",
+        "sha256": "005fc765ddc5115da796cca915baa9557abae13ff35e0a47c47affc56f6c414d"
+      },
+      {
+        "file": "LICENSE-other-bits",
+        "sha256": "f025ccfb7dfb6bdfedc75ca0f67acc69e6fb4998143d834f7c2f38a29989680f"
+      }
+    ]
+  },
+  {
+    "name": "rsa",
+    "version": "0.10.0-rc.18",
+    "source": "https://github.com/RustCrypto/RSA",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "769f80b5bcb42ed0af4e4d2fd74e1ac9bf843cb80c5a29219d1ef3544428a6bb"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "30fefc3a7d6a0041541858293bcbea2dde4caa4c0a5802f996a7f7e8c0085652"
+      }
+    ]
+  },
+  {
+    "name": "rusqlite",
+    "version": "0.40.2",
+    "source": "https://github.com/rusqlite/rusqlite",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "c10c1f27337546471e5f7e4e97fdd398b35b9d4e126115dcd22de8d8e65abf6f"
+      }
+    ]
+  },
+  {
+    "name": "rusqlite_migration",
+    "version": "2.6.0",
+    "source": "https://github.com/cljoly/rusqlite_migration",
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "source": "https://raw.githubusercontent.com/cljoly/rusqlite_migration/37c7a555018ecd80c58b2954779d83c281e4557a/LICENSE.txt",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ]
+  },
+  {
+    "name": "russh",
+    "version": "0.63.3",
+    "source": "https://github.com/warp-tech/russh",
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "source": "https://raw.githubusercontent.com/warp-tech/russh/f33baf439be8c59c49cb6cb2ae5976c579495bdf/LICENSE.txt",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ]
+  },
+  {
+    "name": "russh-cryptovec",
+    "version": "0.62.0",
+    "source": "https://github.com/warp-tech/russh",
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "source": "https://raw.githubusercontent.com/warp-tech/russh/907c732562c5732aad6c140dba958eafddc41ba0/LICENSE.txt",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ]
+  },
+  {
+    "name": "russh-sftp",
+    "version": "2.3.0",
+    "source": "https://github.com/AspectUnk/russh-sftp",
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+      }
+    ]
+  },
+  {
+    "name": "russh-util",
+    "version": "0.52.0",
+    "source": "https://github.com/warp-tech/russh",
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-2.0.txt",
+        "source": "https://raw.githubusercontent.com/warp-tech/russh/3d09c20c52a542ffa327723d3a44cb1edd9b0ca4/LICENSE-2.0.txt",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ]
+  },
+  {
+    "name": "rustc_version",
+    "version": "0.4.1",
+    "source": "https://github.com/djc/rustc-version-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "c9a75f18b9ab2927829a208fc6aa2cf4e63b8420887ba29cdb265d6619ae82d5"
+      }
+    ]
+  },
+  {
+    "name": "rustix",
+    "version": "1.1.4",
+    "source": "https://github.com/bytecodealliance/rustix",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "COPYRIGHT",
+        "sha256": "377c2e7c53250cc5905c0b0532d35973392af16ffb9596a41d99d202cf3617c9"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-Apache-2.0_WITH_LLVM-exception",
+        "sha256": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "rustversion",
+    "version": "1.0.23",
+    "source": "https://github.com/dtolnay/rustversion",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "salsa20",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/stream-ciphers",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6bfc9e0412997fc00de5379aa3b2e919449d2adee1aee3b0cb9ee0a5fd367956"
+      }
+    ]
+  },
+  {
+    "name": "scheduler",
+    "version": "0.28.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/scheduler"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+      }
+    ]
+  },
+  {
+    "name": "schemars",
+    "version": "1.2.2",
+    "source": "https://github.com/GREsau/schemars",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "1954992a2b32e8a2af24a4c11b726902e344c1934b947a77f04d404908f8db30"
+      }
+    ]
+  },
+  {
+    "name": "schemars_derive",
+    "version": "1.2.2",
+    "source": "https://github.com/GREsau/schemars",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "1954992a2b32e8a2af24a4c11b726902e344c1934b947a77f04d404908f8db30"
+      }
+    ]
+  },
+  {
+    "name": "scopeguard",
+    "version": "1.2.0",
+    "source": "https://github.com/bluss/scopeguard",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "fb77f0a9c53e473abe5103c8632ef9f0f2874d4fb3f17cb2d8c661aab9cee9d7"
+      }
+    ]
+  },
+  {
+    "name": "scrypt",
+    "version": "0.12.0",
+    "source": "https://github.com/RustCrypto/password-hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "sec1",
+    "version": "0.8.1",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "security-framework",
+    "version": "3.7.0",
+    "source": "https://github.com/kornelski/rust-security-framework",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "91e934255ba3b2f21103d68c5581c23ef34aa95c4628e4405b8c901935e11c69"
+      }
+    ]
+  },
+  {
+    "name": "security-framework-sys",
+    "version": "2.17.0",
+    "source": "https://github.com/kornelski/rust-security-framework",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "91e934255ba3b2f21103d68c5581c23ef34aa95c4628e4405b8c901935e11c69"
+      }
+    ]
+  },
+  {
+    "name": "semver",
+    "version": "1.0.28",
+    "source": "https://github.com/dtolnay/semver",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serde",
+    "version": "1.0.229",
+    "source": "https://github.com/serde-rs/serde",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serde_bytes",
+    "version": "0.11.19",
+    "source": "https://github.com/serde-rs/bytes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serde_core",
+    "version": "1.0.229",
+    "source": "https://github.com/serde-rs/serde",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serde_derive",
+    "version": "1.0.229",
+    "source": "https://github.com/serde-rs/serde",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serde_derive_internals",
+    "version": "0.30.0",
+    "source": "https://github.com/serde-rs/serde",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serde_json",
+    "version": "1.0.151",
+    "source": "https://github.com/serde-rs/json",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "serdect",
+    "version": "0.4.3",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "2ca9996043628ad4dea1408974e1d92d3932f6acf9db8ffb7faecbfa6d928997"
+      }
+    ]
+  },
+  {
+    "name": "sha1",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "831e0f43ad0bf014c1c4fec5767aae470434c1d66d6e671be2d823e729063e25"
+      }
+    ]
+  },
+  {
+    "name": "sha2",
+    "version": "0.10.9",
+    "source": "https://github.com/RustCrypto/hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b4eb00df6e2a4d22518fcaa6a2b4646f249b3a3c9814509b22bd2091f1392ff1"
+      }
+    ]
+  },
+  {
+    "name": "sha2",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "831e0f43ad0bf014c1c4fec5767aae470434c1d66d6e671be2d823e729063e25"
+      }
+    ]
+  },
+  {
+    "name": "sha3",
+    "version": "0.11.0",
+    "source": "https://github.com/RustCrypto/hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6462612d92b861384dcd378168a7a0ef3ef28876d3d380d382cb5a3091e360b8"
+      }
+    ]
+  },
+  {
+    "name": "sha3",
+    "version": "0.12.0",
+    "source": "https://github.com/RustCrypto/hashes",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "6462612d92b861384dcd378168a7a0ef3ef28876d3d380d382cb5a3091e360b8"
+      }
+    ]
+  },
+  {
+    "name": "shadcn",
+    "version": "4.21.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/shadcn-ui/ui.git",
+      "directory": "packages/shadcn"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f"
+      }
+    ]
+  },
+  {
+    "name": "sharded-slab",
+    "version": "0.1.7",
+    "source": "https://github.com/hawkw/sharded-slab",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "eafbfa606bc005ed7fd2f623d65af17ffe4ef7c017221ac14405bf4140771ea9"
+      }
+    ]
+  },
+  {
+    "name": "shlex",
+    "version": "2.0.1",
+    "source": "https://github.com/comex/rust-shlex",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "553fffcd9b1cb158bc3e9edc35da85ca5c3b3d7d2e61c883ebcfa8a65814b583"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "4455bf75a91154108304cb283e0fea9948c14f13e20d60887cf2552449dea3b1"
+      }
+    ]
+  },
+  {
+    "name": "signal-hook-registry",
+    "version": "1.4.8",
+    "source": "https://github.com/vorner/signal-hook",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "503558bfefe66ca15e4e3f7955b3cb0ec87fd52f29bf24b336af7bd00e946d5c"
+      }
+    ]
+  },
+  {
+    "name": "signature",
+    "version": "3.0.0",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "9aa4f92bfcde293ebeca9e2379fa18d1d61f000977da144c7b74c2986c9b6466"
+      }
+    ]
+  },
+  {
+    "name": "simdutf8",
+    "version": "0.1.5",
+    "source": "https://github.com/rusticstuff/simdutf8",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-Apache",
+        "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "1847e0e0698142ed4347c1441a9fa81c8fbddd44b1d8bbcd5e3647f991759d7f"
+      }
+    ]
+  },
+  {
+    "name": "slab",
+    "version": "0.4.12",
+    "source": "https://github.com/tokio-rs/slab",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "8ce0830173fdac609dfb4ea603fdc002c2f4af0dc9b1a005653f5da9cf534b18"
+      }
+    ]
+  },
+  {
+    "name": "smallvec",
+    "version": "1.16.0",
+    "source": "https://github.com/servo/rust-smallvec",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "0b28172679e0009b655da42797c03fd163a3379d5cfa67ba1f1655e974a2a1a9"
+      }
+    ]
+  },
+  {
+    "name": "socket2",
+    "version": "0.6.5",
+    "source": "https://github.com/rust-lang/socket2",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ]
+  },
+  {
+    "name": "spki",
+    "version": "0.8.0",
+    "source": "https://github.com/RustCrypto/formats",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "sponge-cursor",
+    "version": "0.1.0",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "083cb05a34eb9c78faf69aa49674ec30d1eadbdc2042473644992786e6c8249b"
+      }
+    ]
+  },
+  {
+    "name": "ssh-cipher",
+    "version": "0.3.0",
+    "source": "https://github.com/RustCrypto/SSH",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "003736bc98408b53511b9cc8ff5d1af3bf0a8f17d53841cc39d8ab1b96a195b0"
+      }
+    ]
+  },
+  {
+    "name": "ssh-encoding",
+    "version": "0.3.0",
+    "source": "https://github.com/RustCrypto/SSH",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "ssh-key",
+    "version": "0.7.0-rc.11",
+    "source": "https://github.com/RustCrypto/SSH",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88"
+      }
+    ]
+  },
+  {
+    "name": "ssh-terminal-NOTICES",
+    "version": "bundled",
+    "source": "resources/licenses/ssh-terminal-NOTICES.txt",
+    "license": "See original notice",
+    "documents": [
+      {
+        "file": "ssh-terminal-NOTICES.txt",
+        "sha256": "15b0a8c4d08a192209e3283a97f333c0067f008616497afd505413978300b654"
+      }
+    ]
+  },
+  {
+    "name": "subtle",
+    "version": "2.6.1",
+    "source": "https://github.com/dalek-cryptography/subtle",
+    "license": "BSD-3-Clause",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "d1fc1bc0d155df60b2e7705b6b2ae02a05c96f948e1cec6e2fb86360b09f346b"
+      }
+    ]
+  },
+  {
+    "name": "syn",
+    "version": "2.0.119",
+    "source": "https://github.com/dtolnay/syn",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "syn",
+    "version": "3.0.5",
+    "source": "https://github.com/dtolnay/syn",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "tailwind-merge",
+    "version": "3.6.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/dcastil/tailwind-merge.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5"
+      }
+    ]
+  },
+  {
+    "name": "tempfile",
+    "version": "3.27.0",
+    "source": "https://github.com/Stebalien/tempfile",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8b427f5bc501764575e52ba4f9d95673cf8f6d80a86d0d06599852e1a9a20a36"
+      }
+    ]
+  },
+  {
+    "name": "thiserror",
+    "version": "1.0.69",
+    "source": "https://github.com/dtolnay/thiserror",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "thiserror",
+    "version": "2.0.20",
+    "source": "https://github.com/dtolnay/thiserror",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "thiserror-impl",
+    "version": "1.0.69",
+    "source": "https://github.com/dtolnay/thiserror",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "thiserror-impl",
+    "version": "2.0.20",
+    "source": "https://github.com/dtolnay/thiserror",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "thread_local",
+    "version": "1.1.10",
+    "source": "https://github.com/Amanieu/thread_local-rs",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "c9a75f18b9ab2927829a208fc6aa2cf4e63b8420887ba29cdb265d6619ae82d5"
+      }
+    ]
+  },
+  {
+    "name": "tiny-invariant",
+    "version": "1.3.3",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/alexreardon/tiny-invariant.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f"
+      }
+    ]
+  },
+  {
+    "name": "tokio",
+    "version": "1.53.3",
+    "source": "https://github.com/tokio-rs/tokio",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "253cd04c6714889df2d32f3f64d669179a1c95c76ac43c40882c52eb06bc3552"
+      }
+    ]
+  },
+  {
+    "name": "tokio-macros",
+    "version": "2.7.2",
+    "source": "https://github.com/tokio-rs/tokio",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "0b83dc40cba89b9922bb84b0a9c7d2768ce37c1d7e138b7424fd4549915778c9"
+      }
+    ]
+  },
+  {
+    "name": "tokio-socks",
+    "version": "0.5.3",
+    "source": "https://github.com/sticnarf/tokio-socks",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a0bb5ec9a11d4b34412e0b9867c01f0cc63f5935ab20a087798201b910be5aa1"
+      }
+    ]
+  },
+  {
+    "name": "tokio-util",
+    "version": "0.7.18",
+    "source": "https://github.com/tokio-rs/tokio",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "253cd04c6714889df2d32f3f64d669179a1c95c76ac43c40882c52eb06bc3552"
+      }
+    ]
+  },
+  {
+    "name": "tracing",
+    "version": "0.1.44",
+    "source": "https://github.com/tokio-rs/tracing",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "898b1ae9821e98daf8964c8d6c7f61641f5f5aa78ad500020771c0939ee0dea1"
+      }
+    ]
+  },
+  {
+    "name": "tracing-core",
+    "version": "0.1.36",
+    "source": "https://github.com/tokio-rs/tracing",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "898b1ae9821e98daf8964c8d6c7f61641f5f5aa78ad500020771c0939ee0dea1"
+      }
+    ]
+  },
+  {
+    "name": "tracing-serde",
+    "version": "0.2.0",
+    "source": "https://github.com/tokio-rs/tracing",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "898b1ae9821e98daf8964c8d6c7f61641f5f5aa78ad500020771c0939ee0dea1"
+      }
+    ]
+  },
+  {
+    "name": "tracing-subscriber",
+    "version": "0.3.23",
+    "source": "https://github.com/tokio-rs/tracing",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "898b1ae9821e98daf8964c8d6c7f61641f5f5aa78ad500020771c0939ee0dea1"
+      }
+    ]
+  },
+  {
+    "name": "tslib",
+    "version": "2.8.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/Microsoft/tslib.git"
+    },
+    "license": "0BSD",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751"
+      }
+    ]
+  },
+  {
+    "name": "typenum",
+    "version": "1.20.1",
+    "source": "https://github.com/paholg/typenum",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "db11fec9946737df39ca3898d9cd8c10ec6f6c3a884a6802b0ad0b81b4e8f23a"
+      },
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "516b24e051bf5630880ebbd55c40a25ce9552ebaf8970a53e8976eb70e522406"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "a825bd853ab71619a4923d7b4311221427848070ff44d990da39b0b274c1683f"
+      }
+    ]
+  },
+  {
+    "name": "typescript",
+    "version": "6.0.3",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/microsoft/TypeScript.git"
+    },
+    "license": "Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+      }
+    ]
+  },
+  {
+    "name": "unicode-ident",
+    "version": "1.0.24",
+    "source": "https://github.com/dtolnay/unicode-ident",
+    "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      },
+      {
+        "file": "LICENSE-UNICODE",
+        "sha256": "f7db81051789b729fea528a63ec4c938fdcb93d9d61d97dc8cc2e9df6d47f2a1"
+      }
+    ]
+  },
+  {
+    "name": "universal-hash",
+    "version": "0.6.1",
+    "source": "https://github.com/RustCrypto/traits",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "efa52eb70a774b62c50cf50f5e57e2625c29d375d09b91132f4f020e47b9944e"
+      }
+    ]
+  },
+  {
+    "name": "untrusted",
+    "version": "0.9.0",
+    "source": "https://github.com/briansmith/untrusted",
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "sha256": "7abd9b6960dcf7d4d0a48606a5b71bfe37d472db68d70637f3a58a56785f1621"
+      }
+    ]
+  },
+  {
+    "name": "use-sync-external-store",
+    "version": "1.7.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/use-sync-external-store"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+      }
+    ]
+  },
+  {
+    "name": "uuid",
+    "version": "1.26.1",
+    "source": "https://github.com/uuid-rs/uuid",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "436bc5a105d8e57dcd8778730f3754f7bf39c14d2f530e4cde4bd2d17a83ec3d"
+      }
+    ]
+  },
+  {
+    "name": "valibot",
+    "version": "1.5.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/open-circle/valibot"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "1ca6c9ca372cffe26c313464b9d9f0aef2417b27b2bad20396f4769005122d4d"
+      }
+    ]
+  },
+  {
+    "name": "vcpkg",
+    "version": "0.2.15",
+    "source": "https://github.com/mcgoo/vcpkg-rs",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "60c93a31f490375aadf64098b75f10715010379541021e00261045d7800611d3"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "016d20f335060a70e79d9fcf8dfaa6201114d65d592211f4bdfb8ae9ca2bc1dc"
+      }
+    ]
+  },
+  {
+    "name": "version_check",
+    "version": "0.9.5",
+    "source": "https://github.com/SergioBenitez/version_check",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "b7e650f3fce5c53249d1cdc608b54df156a97edd636cf9d23498d0cfe7aec63e"
+      }
+    ]
+  },
+  {
+    "name": "victory-vendor",
+    "version": "37.4.1",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/FormidableLabs/victory"
+    },
+    "license": "MIT AND ISC AND BSD-3-Clause",
+    "documents": [
+      {
+        "file": "LICENSE.txt",
+        "sha256": "909af77588b84d9e557d26c4bd1a26a282aaba7123c4a839c75287c803166955"
+      }
+    ]
+  },
+  {
+    "name": "wnaf",
+    "version": "0.14.1",
+    "source": "https://github.com/RustCrypto/elliptic-curves",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "c1c9d5ca65122bab96e368709f8cfe9b92b443a3c21306c3260fc98eaac7e5fc"
+      }
+    ]
+  },
+  {
+    "name": "zeroize",
+    "version": "1.9.0",
+    "source": "https://github.com/RustCrypto/utils",
+    "license": "Apache-2.0 OR MIT",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8c7516d4b27b1e495be5e38b612298b63de48d05f49cdac94f70f3cd70f8864b"
+      }
+    ]
+  },
+  {
+    "name": "zmij",
+    "version": "1.0.23",
+    "source": "https://github.com/dtolnay/zmij",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "zod",
+    "version": "4.6.4",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/colinhacks/zod.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8"
+      }
+    ]
+  }
+]

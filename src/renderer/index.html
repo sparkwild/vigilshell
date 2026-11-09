@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VigilShell</title>
+    <link rel="stylesheet" href="./startup.css" />
+  </head>
+  <body>
+    <div id="startup-screen" role="status" aria-label="VigilShell">
+      <div class="startup-logo" role="img" aria-label="VigilShell"></div>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M12 3a9 9 0 1 0 9 9" />
+      </svg>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
