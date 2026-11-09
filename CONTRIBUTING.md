@@ -22,7 +22,7 @@ Historical version baselines belong in immutable tags. Create a release preparat
 
 Use the pinned Node, npm and Rust versions in `.nvmrc`, `package.json` and `rust-toolchain.toml`. Run `npm ci`, `npm run check` and the tests relevant to your change. Native work reuses VigilShell Dev; never test against production data. See [the technical stack](docs/TECH_STACK.md) for signing and build commands.
 
-CI checks pull requests and pushes to `main`. Native, backend, dependency, packaging and CI changes also run an ARM64 macOS package and startup check with a disposable certificate. The aggregate check is named `CI verified`. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. PR and `main` CI use read-only repository permissions and disposable signing material.
+CI classifies changes in pull requests and pushes to `main`. Changes limited to `README.md`, `CONTRIBUTING.md`, `AGENTS.md` and Markdown files under `docs/` only run classification and the aggregate `CI verified` check. Other changes run frontend and backend checks. PRs that affect native code, dependencies, packaging or CI also build an ARM64 macOS package and verify startup with a disposable certificate. The `main` push runs code checks when needed. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. PR and `main` CI use read-only repository permissions.
 
 Preview artifacts support isolated testing and use a temporary signing identity. Distributed packages use the fixed release identity.
 
@@ -34,7 +34,7 @@ Source and release versions use stable `X.Y.Z` numbers. Prepare a version using 
 
 Public version tags use `vX.Y.Z` and identify the exact release source commit. Create them on a verified `main` commit after the version change is integrated. Preserve published tags permanently. Corrections use a new version and tag. Releasing from a future maintenance branch requires explicit version-line source validation in the release workflow before that branch is eligible to publish.
 
-Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, `main` ancestry and a successful `main` push CI run for the exact source commit. The `macos-release` environment provides the fixed signing identity. The workflow verifies the ARM64 DMG and native startup, then attaches the installer, checksum, signing report and build manifest directly to a draft. Review the verified draft and its assets before publishing it manually.
+Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, `main` ancestry and a successful `main` push CI run for the exact source commit. If that run did not pass both code checks, the release workflow runs them on the tagged commit before signing. The `macos-release` environment provides the fixed signing identity. The workflow verifies the ARM64 DMG and native startup, then attaches the installer, checksum, signing report and build manifest directly to a draft. Review the verified draft and its assets before publishing it manually.
 
 An existing draft or published release blocks a second draft for that tag. If an upload stops partway through, the draft remains marked pending. Review and clear the incomplete draft before rerunning the original tag workflow. Keep the tag at the original commit.
 
