@@ -21,6 +21,9 @@ extraResources:
     to: icons
   - from: resources/licenses
     to: licenses
+    filter:
+      - '**/*'
+      - '!LICENSES.chromium.html'
 extraFiles:
   - from: '${env.VIGILSHELL_BUILD_ROOT}/backend'
     to: Helpers
@@ -42,3 +45,15 @@ mac:
   target: dmg
 dmg:
   sign: false
+  contents:
+    - x: 130
+      y: 220
+      type: file
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+    - x: 270
+      y: 315
+      type: file
+      path: node_modules/electron/dist/LICENSES.chromium.html
