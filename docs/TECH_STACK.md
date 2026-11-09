@@ -16,7 +16,7 @@
 | 终端 | xterm.js、FitAddon、SearchAddon；Headless／Serialize 用于终端数据处理 |
 | 国际化 | Paraglide，zh-CN／en，消息源位于 `messages/` |
 | Rust 运行时 | Tokio、tokio-util、tracing |
-| 存储 | SQLite、rusqlite bundled、rusqlite_migration |
+| 存储 | SQLite 3.54.1、rusqlite 0.41.1 bundled、rusqlite_migration |
 | SSH/SFTP | russh、russh-sftp；encoding_rs 处理终端编码 |
 | 凭据 | XChaCha20-Poly1305、macOS Keychain、zeroize |
 | 通信类型 | Rust DTO → Schemars JSON Schema → TypeScript／Ajv；Serde 序列化 |
@@ -24,6 +24,8 @@
 | 测试与检查 | Vitest、React Testing Library、Rust tests、ESLint、Prettier、rustfmt、Clippy |
 
 字体、图标、文案随应用分发，不依赖运行时 CDN。基础依赖约束见 [foundation-dependencies.json](../scripts/foundation-dependencies.json)，Rust 来源及许可证约束见 [deny.toml](../deny.toml)。组件使用方式见 [UI 组件与设计规范](UI_DESIGN.md)。
+
+`rusqlite_migration` 固定使用上游 [rusqlite 0.41 兼容提交](https://github.com/cljoly/rusqlite_migration/commit/30b941a0850df790091dc58c3ec44f18dbb5e3ba)。
 
 Tokio 固定为 `1.53.3`；加密依赖的锁文件包含 `crypto-bigint 0.7.10` 与 `ctutils 0.4.8`。`cap-std` 的 Windows 间接依赖 `winx 0.36.4` 使用 `Apache-2.0 WITH LLVM-exception`，许可证许可仅限定该包和版本，其他依赖继续按通用清单检查。
 
@@ -64,9 +66,13 @@ Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`
 
 GitHub CI 对面向 main 的 PR 和 main 推送运行前后端检查；原生、后端、依赖、打包与 CI 改动调用 macOS ARM64 打包及启动检查。固定汇总检查名为 `CI verified`，仅在所需任务成功时通过。Actions 默认只读，不读取固定签名 secrets。
 
-`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。当前工作流不处理版本标签、不创建或发布 Release。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
-自签名不等于 Apple 公证；当前提供版本发现与发布页跳转，下载安装由用户手动完成。
+## 正式版本草稿
+
+`Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、远端标签对象、`main` 历史和同一提交的成功推送 CI。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
+
+macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。安装包、SHA-256、签名报告与 `build.json` 直接上传至 Release 草稿。工作流核对远端附件的摘要后更新草稿说明。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
 
 ## 更新与许可
 

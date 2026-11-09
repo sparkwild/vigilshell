@@ -26821,7 +26821,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-libsqlite3-sys 0.38.2
+libsqlite3-sys 0.39.1
 https://github.com/rusqlite/rusqlite
 
 LICENSE
@@ -37217,7 +37217,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ========================================================================
-rusqlite 0.40.2
+rusqlite 0.41.1
 https://github.com/rusqlite/rusqlite
 
 LICENSE

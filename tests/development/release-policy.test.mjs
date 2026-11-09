@@ -3,7 +3,14 @@ import { test } from 'node:test';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkVersions } from '../../scripts/release-policy.mjs';
+import { checkReleaseTag, checkVersions } from '../../scripts/release-policy.mjs';
+
+test('release tag must match the stable project version exactly', () => {
+  const version = checkVersions();
+  assert.equal(checkReleaseTag(`v${version}`), version);
+  for (const tag of [version, `v${version}-beta.1`, `v${version}\n`, `v${version}.1`])
+    assert.throws(() => checkReleaseTag(tag), /Release tag must match/);
+});
 
 test('all project version sources must match', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'vigil-version-'));

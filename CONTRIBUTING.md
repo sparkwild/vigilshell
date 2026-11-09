@@ -22,9 +22,9 @@ Historical version baselines belong in immutable tags. Create a release preparat
 
 Use the pinned Node, npm and Rust versions in `.nvmrc`, `package.json` and `rust-toolchain.toml`. Run `npm ci`, `npm run check` and the tests relevant to your change. Native work reuses VigilShell Dev; never test against production data. See [the technical stack](docs/TECH_STACK.md) for signing and build commands.
 
-CI checks pull requests and pushes to `main`. Native, backend, dependency, packaging and CI changes also run an ARM64 macOS package and startup check with a disposable certificate. The aggregate check is named `CI verified`. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. Workflows use read-only repository permissions. External PR builds use disposable signing material.
+CI checks pull requests and pushes to `main`. Native, backend, dependency, packaging and CI changes also run an ARM64 macOS package and startup check with a disposable certificate. The aggregate check is named `CI verified`. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. PR and `main` CI use read-only repository permissions and disposable signing material.
 
-Preview artifacts support isolated testing and use a temporary signing identity. Distributed packages use the fixed release identity. Current workflows produce checks and Actions artifacts. Tag-driven Release drafting and publication require a separate implementation.
+Preview artifacts support isolated testing and use a temporary signing identity. Distributed packages use the fixed release identity.
 
 For an explicit preview, run **Preview package** and optionally supply a full commit SHA. The selected commit must contain the preview tooling. Download the artifact matching its SHA, run ID and attempt; it contains a DMG, SHA-256 checksum, signing report and build manifest. Artifacts expire after 14 days and do not replace release backups.
 
@@ -34,7 +34,11 @@ Source and release versions use stable `X.Y.Z` numbers. Prepare a version using 
 
 Public version tags use `vX.Y.Z` and identify the exact release source commit. Create them on a verified `main` commit after the version change is integrated. Preserve published tags permanently. Corrections use a new version and tag. Releasing from a future maintenance branch requires explicit version-line source validation in the release workflow before that branch is eligible to publish.
 
-Preview builds use the source version and are identified by commit SHA, run ID and attempt. Update discovery selects published stable releases with compatible installers and filters drafts and prereleases. Release creation and publication are separately authorized operations. The current automated entry points are CI and preview packaging.
+Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, `main` ancestry and a successful `main` push CI run for the exact source commit. The `macos-release` environment provides the fixed signing identity. The workflow verifies the ARM64 DMG and native startup, then attaches the installer, checksum, signing report and build manifest directly to a draft. Review the verified draft and its assets before publishing it manually.
+
+An existing draft or published release blocks a second draft for that tag. If an upload stops partway through, the draft remains marked pending. Review and clear the incomplete draft before rerunning the original tag workflow. Keep the tag at the original commit.
+
+Preview builds use the source version and are identified by commit SHA, run ID and attempt. Update discovery selects published stable releases with compatible installers and filters drafts and prereleases.
 
 Keep release installers, checksums, build and signing reports, and securely stored signing material as release recovery assets. Git tags preserve source baselines. These separate assets support artifact verification and future signing continuity.
 
