@@ -64,9 +64,9 @@ Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`
 
 `npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。ARM64 安装包命名为 `VigilShell-<version>-macos-arm64.dmg`，同时生成 SHA-256 和包含版本、源码 SHA、证书身份的签名报告，打包入口始终使用 `--publish never`。
 
-GitHub CI 对面向 `main` 的 PR 和 `main` 推送按路径分类。纯文档改动只运行分类和 `CI verified` 汇总，其他改动运行前后端检查。涉及原生、依赖、打包或 CI 的 PR 额外执行 macOS ARM64 打包及启动验证。合并后的 `main` CI 只验证代码。固定汇总检查名为 `CI verified`，要求本次所需的任务通过。常规 CI 使用只读权限与一次性签名材料。
+GitHub CI 对面向 `main` 的 PR 和 `main` 推送按路径分类。纯文档改动只运行分类和 `CI verified` 汇总，其他改动运行前后端检查。`CI verified` 要求本次所需的任务通过。常规 CI 使用只读权限，完整安装包由手动预览和正式版本标签工作流构建。
 
-`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+`Preview package` 通过手动运行构建 macOS ARM64 安装包并验证启动，可指定完整提交 SHA。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试，源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 ## 正式版本草稿
 
