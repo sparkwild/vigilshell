@@ -68,6 +68,7 @@ function qualify() {
 
 function verifyDraft(release, source) {
   assert.equal(release.tag_name, source.tag);
+  assert.equal(release.target_commitish, source.sha);
   assert.equal(release.draft, true);
   assert.equal(release.prerelease, false);
   assert.equal(release.published_at, null);
@@ -118,13 +119,17 @@ async function draft() {
       ) + '\n',
     );
     const files = [dmg, checksum, reportPath, manifest];
-    const release = api(['--method', 'POST', releases, '--input', '-'], {
+    // GitHub can clear the tag association when a draft update omits the tag.
+    const binding = {
       tag_name: source.tag,
       target_commitish: source.sha,
-      name: `VigilShell ${source.version}`,
-      body: `Asset upload and verification pending. Review the build before publishing.\n\n[Build run](${runUrl})`,
       draft: true,
       prerelease: false,
+    };
+    const release = api(['--method', 'POST', releases, '--input', '-'], {
+      ...binding,
+      name: `VigilShell ${source.version}`,
+      body: `Asset upload and verification pending. Review the build before publishing.\n\n[Build run](${runUrl})`,
       make_latest: 'false',
     });
     verifyDraft(release, source);
@@ -162,9 +167,11 @@ async function draft() {
       );
     }
     const verified = api(['--method', 'PATCH', endpoint, '--input', '-'], {
+      ...binding,
       body: `macOS Apple Silicon installer signed with the fixed VigilShell certificate. The installer uses self-signing without Apple notarization.\n\nSource: \`${source.sha}\`. Runner startup, shutdown, and artifact checks passed.\n\n[Build run](${runUrl})`,
     });
     verifyDraft(verified, source);
+    verifyDraft(api([endpoint]), source);
     console.log(`Verified Release draft ${verified.html_url}`);
   } finally {
     rmSync(temp, { recursive: true, force: true });
