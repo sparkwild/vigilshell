@@ -2736,7 +2736,7 @@
   },
   {
     "name": "libsqlite3-sys",
-    "version": "0.38.2",
+    "version": "0.39.1",
     "source": "https://github.com/rusqlite/rusqlite",
     "license": "MIT",
     "documents": [
@@ -3757,7 +3757,7 @@
   },
   {
     "name": "rusqlite",
-    "version": "0.40.2",
+    "version": "0.41.1",
     "source": "https://github.com/rusqlite/rusqlite",
     "license": "MIT",
     "documents": [
@@ -3775,7 +3775,7 @@
     "documents": [
       {
         "file": "LICENSE.txt",
-        "source": "https://raw.githubusercontent.com/cljoly/rusqlite_migration/37c7a555018ecd80c58b2954779d83c281e4557a/LICENSE.txt",
+        "source": "https://raw.githubusercontent.com/cljoly/rusqlite_migration/30b941a0850df790091dc58c3ec44f18dbb5e3ba/LICENSE.txt",
         "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
       }
     ]

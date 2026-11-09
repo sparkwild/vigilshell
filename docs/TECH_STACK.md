@@ -16,7 +16,7 @@
 | 终端 | xterm.js、FitAddon、SearchAddon；Headless／Serialize 用于终端数据处理 |
 | 国际化 | Paraglide，zh-CN／en，消息源位于 `messages/` |
 | Rust 运行时 | Tokio、tokio-util、tracing |
-| 存储 | SQLite、rusqlite bundled、rusqlite_migration |
+| 存储 | SQLite 3.54.1、rusqlite 0.41.1 bundled、rusqlite_migration |
 | SSH/SFTP | russh、russh-sftp；encoding_rs 处理终端编码 |
 | 凭据 | XChaCha20-Poly1305、macOS Keychain、zeroize |
 | 通信类型 | Rust DTO → Schemars JSON Schema → TypeScript／Ajv；Serde 序列化 |
@@ -24,6 +24,8 @@
 | 测试与检查 | Vitest、React Testing Library、Rust tests、ESLint、Prettier、rustfmt、Clippy |
 
 字体、图标、文案随应用分发，不依赖运行时 CDN。基础依赖约束见 [foundation-dependencies.json](../scripts/foundation-dependencies.json)，Rust 来源及许可证约束见 [deny.toml](../deny.toml)。组件使用方式见 [UI 组件与设计规范](UI_DESIGN.md)。
+
+`rusqlite_migration` 固定使用上游 [rusqlite 0.41 兼容提交](https://github.com/cljoly/rusqlite_migration/commit/30b941a0850df790091dc58c3ec44f18dbb5e3ba)。
 
 Tokio 固定为 `1.53.3`；加密依赖的锁文件包含 `crypto-bigint 0.7.10` 与 `ctutils 0.4.8`。`cap-std` 的 Windows 间接依赖 `winx 0.36.4` 使用 `Apache-2.0 WITH LLVM-exception`，许可证许可仅限定该包和版本，其他依赖继续按通用清单检查。
 
