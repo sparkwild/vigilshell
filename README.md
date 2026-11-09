@@ -203,7 +203,7 @@ The following technical documents are currently in Chinese:
 
 ## License status
 
-VigilShell original code is licensed under [Apache-2.0](LICENSE). Licenses and notices for third-party resources distributed with the application are in [resources/licenses/](resources/licenses/).
+VigilShell original code is licensed under [Apache-2.0](LICENSE). See [resources/licenses/](resources/licenses/) for third-party notices. The DMG includes the complete `LICENSES.chromium.html` from Electron alongside the app.
 
 The source repository includes development skills with separate notices. [Third-party source notices](THIRD_PARTY_NOTICES.md)
 

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadSigningConfig, verifyApplicationLayout, verifyBundle } from './macos-signing.mjs';
 
@@ -9,21 +9,27 @@ export default async function verifyPackage(context) {
     context.appOutDir,
     config.profile === 'dev' ? 'VigilShell Dev.app' : 'VigilShell.app',
   );
-  for (const name of [
-    'THIRD_PARTY_NOTICES.txt',
-    'index.json',
-    'electron-LICENSE.txt',
-    'LICENSES.chromium.html',
-  ]) {
+  const resources = join(app, 'Contents/Resources');
+  const chromiumNotice = 'LICENSES.chromium.html';
+  for (const name of ['THIRD_PARTY_NOTICES.txt', 'index.json', 'electron-LICENSE.txt']) {
     if (
-      !readFileSync(join(app, 'Contents/Resources/licenses', name)).equals(
+      !readFileSync(join(resources, 'licenses', name)).equals(
         readFileSync(join('resources/licenses', name)),
       )
     )
       throw Error(`Packaged license differs: ${name}`);
   }
+  if (
+    existsSync(join(resources, chromiumNotice)) ||
+    existsSync(join(resources, 'licenses', chromiumNotice))
+  )
+    throw Error('Chromium notices belong beside the application');
   verifyApplicationLayout(app, process.arch, config.profile);
   const components = verifyBundle(app, config, process.arch);
+  copyFileSync(
+    join('node_modules/electron/dist', chromiumNotice),
+    join(context.appOutDir, chromiumNotice),
+  );
   writeFileSync(
     join(context.appOutDir, 'signing-report.json'),
     JSON.stringify(

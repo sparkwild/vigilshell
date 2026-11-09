@@ -63,7 +63,11 @@ def main():
         text += '\n\n' + '=' * 72 + '\n' + row['name'] + ' ' + row['version'] + '\n' + str(row['source']) + '\n'
         for doc in row['documents']: text += '\n' + doc['file'] + '\n' + doc['text']
     index = [{**row, 'documents': [{k:v for k,v in doc.items() if k != 'text'} for doc in row['documents']]} for row in rows]
-    outputs = {'THIRD_PARTY_NOTICES.txt': text, 'index.json': json.dumps(index, ensure_ascii=False, indent=2)+'\n', 'electron-LICENSE.txt': (ROOT/'node_modules/electron/dist/LICENSE').read_text(), 'LICENSES.chromium.html': (ROOT/'node_modules/electron/dist/LICENSES.chromium.html').read_text()}
+    outputs = {
+        'THIRD_PARTY_NOTICES.txt': text,
+        'index.json': json.dumps(index, ensure_ascii=False, indent=2)+'\n',
+        'electron-LICENSE.txt': (ROOT/'node_modules/electron/dist/LICENSE').read_text(),
+    }
     for name, content in outputs.items():
         path = OUT / name
         if args.check:

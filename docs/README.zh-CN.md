@@ -201,6 +201,6 @@ npm run package:release -- --arch arm64
 
 ## 许可说明
 
-VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。随应用分发的第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。
+VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 在应用旁提供 Electron 自带的完整 `LICENSES.chromium.html`。
 
 [贡献与预览构建](../CONTRIBUTING.md)
