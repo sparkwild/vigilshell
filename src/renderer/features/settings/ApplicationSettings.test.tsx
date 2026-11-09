@@ -50,7 +50,7 @@ beforeEach(() => {
       application: {
         info: async () => ({
           name: 'VigilShell',
-          version: '0.1.0-beta.1',
+          version: '0.1.0',
         }),
         state: async () => current,
         onChanged: (listener: typeof receive) => {
@@ -68,11 +68,11 @@ beforeEach(() => {
 afterEach(cleanup);
 it('keeps background discovery non-blocking and shows plain release notes only on demand', async () => {
   render(page());
-  await screen.findByText('v0.1.0-beta.1');
+  await screen.findByText('v0.1.0');
   await act(async () =>
     publish({
       phase: 'available',
-      release: { version: '0.1.0-beta.2', tag: 'v0.1.0-beta.2', notes: '<script>unsafe</script>' },
+      release: { version: '0.1.1', tag: 'v0.1.1', notes: '<script>unsafe</script>' },
     }),
   );
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -81,7 +81,7 @@ it('keeps background discovery non-blocking and shows plain release notes only o
   const dialog = screen.getByRole('dialog', { name: 'updates_check' });
   expect(within(dialog).getByText('<script>unsafe</script>')).toBeVisible();
   expect(dialog.querySelector('script')).toBeNull();
-  expect(within(dialog).getByText('v0.1.0-beta.2')).toBeVisible();
+  expect(within(dialog).getByText('v0.1.1')).toBeVisible();
   await userEvent.click(within(dialog).getByRole('button', { name: 'updates_download' }));
   expect(open).toHaveBeenCalledWith('openRelease');
   await userEvent.keyboard('{Escape}');
@@ -101,7 +101,7 @@ it('reopens a running check without a second request and keeps its result after 
     });
   });
   render(page());
-  await screen.findByText('v0.1.0-beta.1');
+  await screen.findByText('v0.1.0');
   await userEvent.click(screen.getByRole('button', { name: 'updates_check' }));
   expect(within(screen.getByRole('dialog')).getByText('updates_checking')).toBeVisible();
   await userEvent.keyboard('{Escape}');
@@ -146,7 +146,7 @@ it('handles a menu check request once and reports IPC failure in the dialog', as
 });
 
 it('does not present a cached release as a successful result after a failed check', async () => {
-  const release = { version: '0.1.0-beta.2', tag: 'v0.1.0-beta.2', notes: 'Cached notes' };
+  const release = { version: '0.1.1', tag: 'v0.1.1', notes: 'Cached notes' };
   current = { phase: 'available', release };
   check.mockImplementation(async () => publish({ phase: 'networkError', release }));
   render(page({ checkRequest: 1 }));

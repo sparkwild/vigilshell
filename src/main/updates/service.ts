@@ -2,18 +2,15 @@ import { EventEmitter } from 'node:events';
 import type { AvailableRelease, UpdateSnapshot } from '@contracts';
 import { automaticUpdateChecksEnabled } from '../../shared/application-features';
 const day = 24 * 60 * 60 * 1000;
-// Release tags are constrained to the project's stable and beta version grammar.
+// Release versions follow the project's stable X.Y.Z grammar.
 function version(value: string): number[] | null {
-  const m = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-beta\.([1-9]\d*))?$/.exec(value);
+  const m = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(value);
   if (!m) return null;
-  const parts = [Number(m[1]), Number(m[2]), Number(m[3]), m[4] ? Number(m[4]) : Infinity];
-  return parts.slice(0, 3).every(Number.isSafeInteger) &&
-    (parts[3] === Infinity || Number.isSafeInteger(parts[3]))
-    ? parts
-    : null;
+  const parts = [Number(m[1]), Number(m[2]), Number(m[3])];
+  return parts.every(Number.isSafeInteger) ? parts : null;
 }
 function compare(a: number[], b: number[]) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     if (a[i] !== b[i]) return a[i]! > b[i]! ? 1 : -1;
   }
   return 0;
@@ -38,12 +35,7 @@ export function selectRelease(
     )
       throw Error('invalidResponse');
     const candidate = version(item.tag_name);
-    if (
-      item.draft ||
-      !candidate ||
-      (installed[3] === Infinity && (candidate[3] !== Infinity || item.prerelease))
-    )
-      continue;
+    if (item.draft || item.prerelease || !item.tag_name.startsWith('v') || !candidate) continue;
     const v = item.tag_name.replace(/^v/, '');
     if (
       platform !== 'darwin' ||
