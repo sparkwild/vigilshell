@@ -56,10 +56,16 @@ function qualify() {
   ]).workflow_runs;
   const checked = runs.find((run) => run.head_sha === sha && run.conclusion === 'success');
   assert(checked, 'The tagged commit must have a successful main push CI run');
+  const { jobs } = api([
+    `repos/${env.GITHUB_REPOSITORY}/actions/runs/${checked.id}/jobs?per_page=100`,
+  ]);
+  const codeChecksRequired = !['frontend / ui', 'backend / rust'].every((name) =>
+    jobs.some((job) => job.name === name && job.conclusion === 'success'),
+  );
   requireUnusedRelease(tag);
   writeFileSync(
     env.GITHUB_OUTPUT,
-    `source=${JSON.stringify({ ...source, ciRunId: checked.id })}\n`,
+    `source=${JSON.stringify({ ...source, ciRunId: checked.id, codeChecksRequired })}\n`,
     {
       flag: 'a',
     },
