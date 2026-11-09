@@ -57,7 +57,7 @@ Agent 操作复用普通终端和文件界面。连接信息与控制状态共�
 
 界面支持 system／zh-CN／en。消息源位于 `messages/`，Paraglide 生成代码不手改；业务错误在显示时翻译，用户输入、保存名称和远端输出保持原文。切换语言和主题保留当前输入及界面状态。
 
-启动占位由 [HTML 入口](../src/renderer/index.html)与 [startup.css](../src/renderer/startup.css)提供，不依赖 React 或 Backend。透明背景上使用现有 S 形 Logo 遮罩和 Loading，玻璃效果只作用于图案笔画，无方形底板；工作台就绪后移除，不人为延迟启动。减少透明度与动态效果时使用对应回退。
+启动占位由 [HTML 入口](../src/renderer/index.html)与 [startup.css](../src/renderer/startup.css)提供，不依赖 React 或 Backend。透明背景上使用现有 S 形 Logo 遮罩，玻璃效果只作用于图案笔画，无方形底板。Logo 下方的启动文案和左侧加载圈同一行显示，工作台就绪后移除启动占位。减少透明度与动态效果时使用对应回退。
 
 ## 关于与更新
 

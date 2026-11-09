@@ -77,17 +77,19 @@
     background: #d4d4d4;
   }
 }
-#startup-screen svg {
+#startup-screen .startup-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#startup-screen .startup-progress svg {
   width: 20px;
   height: 20px;
+  flex: none;
   animation: startup-spin 1s linear infinite;
 }
-#startup-screen::after {
-  content: var(--startup-label, '');
-  position: absolute;
-  top: calc(50% + 84px);
-  opacity: 0;
-  animation: startup-label 0s 2s forwards;
+#startup-screen .startup-progress::after {
+  content: var(--startup-label, 'Starting VigilShell…');
 }
 #startup-screen.startup-finished {
   opacity: 0;
@@ -98,20 +100,11 @@
     transform: rotate(360deg);
   }
 }
-@keyframes startup-label {
-  to {
-    opacity: 1;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   #startup-screen {
     transition: none;
   }
-  #startup-screen svg {
-    animation: none;
-  }
-  #startup-screen::after {
-    opacity: 1;
+  #startup-screen .startup-progress svg {
     animation: none;
   }
 }
