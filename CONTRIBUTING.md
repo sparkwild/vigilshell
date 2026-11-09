@@ -22,11 +22,11 @@ Historical version baselines belong in immutable tags. Create a release preparat
 
 Use the pinned Node, npm and Rust versions in `.nvmrc`, `package.json` and `rust-toolchain.toml`. Run `npm ci`, `npm run check` and the tests relevant to your change. Native work reuses VigilShell Dev; never test against production data. See [the technical stack](docs/TECH_STACK.md) for signing and build commands.
 
-CI classifies changes in pull requests and pushes to `main`. Changes limited to `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, Markdown under `docs/`, and `.jpg`, `.jpeg`, or `.png` images under `docs/images/` only run classification and the aggregate `CI verified` check. Other changes run frontend and backend checks. PRs that affect native code, dependencies, packaging or CI also build an ARM64 macOS package and verify startup with a disposable certificate. The `main` push runs code checks when needed. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. PR and `main` CI use read-only repository permissions.
+CI classifies changes in pull requests and pushes to `main`. Changes limited to `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, Markdown under `docs/`, and `.jpg`, `.jpeg`, or `.png` images under `docs/images/` only run classification and the aggregate `CI verified` check. Other changes run frontend and backend checks. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. PR and `main` CI use read-only repository permissions.
 
 Preview artifacts support isolated testing and use a temporary signing identity. Distributed packages use the fixed release identity.
 
-For an explicit preview, run **Preview package** and optionally supply a full commit SHA. The selected commit must contain the preview tooling. Download the artifact matching its SHA, run ID and attempt; it contains a DMG, SHA-256 checksum, signing report and build manifest. Artifacts expire after 14 days and do not replace release backups.
+For changes to native integrations, signing or installer generation, run **Preview package** manually for the exact commit before merging and record the installation or startup result in the PR. For other previews, the workflow uses the selected ref when no commit SHA is supplied. The selected commit must contain the preview tooling. Download the artifact matching its SHA, run ID and attempt. It contains a DMG, SHA-256 checksum, signing report and build manifest. Preview artifacts are available for 14 days.
 
 ## Versions and release boundaries
 
