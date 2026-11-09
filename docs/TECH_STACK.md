@@ -64,7 +64,7 @@ Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`
 
 GitHub CI 对面向 main 的 PR 和 main 推送运行前后端检查；原生、后端、依赖、打包与 CI 改动调用 macOS ARM64 打包及启动检查。固定汇总检查名为 `CI verified`，仅在所需任务成功时通过。Actions 默认只读，不读取固定签名 secrets。
 
-`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串，清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。当前工作流不处理版本标签、不创建或发布 Release。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+`Preview package` 支持手动运行并选择完整提交 SHA，也供 CI 复用。预览使用一次性自签名证书及临时钥匙串。清理时按指纹移除临时证书的管理员信任记录，核对其余信任记录，删除临时钥匙串并恢复钥匙串搜索列表。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试；源码提交须包含对应构建工具。当前工作流不处理版本标签、不创建或发布 Release。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 自签名不等于 Apple 公证；当前提供版本发现与发布页跳转，下载安装由用户手动完成。
 

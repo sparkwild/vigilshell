@@ -61,8 +61,44 @@ export async function cleanupSigning(root, evidence, run = runCleanupCommand) {
     });
     const certificate = join(root, 'certificate.pem');
     if (existsSync(certificate)) {
+      // Import the edited admin trust list because per-certificate removal can hang on the runner.
       await stage('remove administrator certificate trust', () =>
-        run('sudo', ['-n', 'security', 'remove-trusted-cert', '-d', certificate]),
+        run(
+          'sudo',
+          [
+            '-n',
+            '/usr/bin/python3',
+            '-c',
+            `import hashlib, pathlib, plistlib, ssl, subprocess, sys
+
+certificate = pathlib.Path(sys.argv[1])
+fingerprint = hashlib.sha1(ssl.PEM_cert_to_DER_cert(certificate.read_text())).hexdigest().upper()
+security = '/usr/bin/security'
+
+def export_settings(path):
+    result = subprocess.run([security, 'trust-settings-export', '-d', str(path)],
+                            capture_output=True, text=True, timeout=8)
+    if result.returncode:
+        if 'No Trust Settings were found' in result.stderr:
+            return {'trustVersion': 1, 'trustList': {}}
+        raise RuntimeError(result.stderr.strip() or 'Unable to export admin trust settings')
+    settings = plistlib.loads(path.read_bytes())
+    if settings.get('trustVersion') != 1 or not isinstance(settings.get('trustList'), dict):
+        raise RuntimeError('Unexpected admin trust settings format')
+    return settings
+
+before = export_settings(certificate.with_name('trust-before.plist'))
+if fingerprint in before['trustList']:
+    del before['trustList'][fingerprint]
+    edited = certificate.with_name('trust-edited.plist')
+    edited.write_bytes(plistlib.dumps(before))
+    subprocess.run([security, 'trust-settings-import', '-d', str(edited)], check=True, timeout=15)
+    if export_settings(certificate.with_name('trust-after.plist')) != before:
+        raise RuntimeError('Admin trust settings differ after removing the temporary certificate')`,
+            certificate,
+          ],
+          45000,
+        ),
       );
     }
     const keychain = join(root, 'ci.keychain-db');
