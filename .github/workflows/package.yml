@@ -6,7 +6,6 @@ name: Preview package
         description: Full commit SHA in this repository (empty uses selected ref)
         type: string
         default: ''
-  workflow_call: {}
 permissions:
   contents: read
 jobs:
