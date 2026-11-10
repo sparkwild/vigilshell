@@ -4,7 +4,7 @@ See [GitHub Releases](https://github.com/sparkwild/vigilshell/releases) for publ
 
 ## v0.1.0
 
-### Highlights
+### Features
 
 - **SSH and terminal** — Organize SSH connections, verify host fingerprints, and work across multiple terminal tabs.
 - **Remote files** — Browse and transfer files over SFTP, or edit remote text files in a local editor with conflict detection.

@@ -36,11 +36,11 @@ Public version tags use `vX.Y.Z` and identify the exact release source commit. C
 
 ### Release notes
 
-Write concise, user-facing notes in English for the tagged source. Start with `## Highlights` and add `## Bug Fixes` or `## Upgrade Notes` when there is content for them. Describe the visible effect of each change. Link to a translation on the same tag when one is available. For the first release, summarize the capabilities shipped in that installer.
+Write concise, user-facing notes in English for the tagged source. Use `## Features`, `## Bug Fixes`, and `## Upgrade Notes` for sections with content. Describe the visible effect of each change. Link to a translation on the same tag when one is available. For the first release, summarize the capabilities shipped in that installer.
 
 Run `npm run changelog:generate` after editing version notes. [CHANGELOG.md](CHANGELOG.md) collects those notes in version order, newest first. Version note files are the source for the generated history. The release preflight checks that both are in sync.
 
-The workflow renders `VigilShell vX.Y.Z` with those sections in order, followed by **Downloads**, **Installation & Upgrade**, and **Build & Verification**. The downloads table groups verified installers by OS and links each colored badge to its tag-specific asset. The changelog link below the table opens the cumulative history on `main`. Build details include a source comparison when there is an earlier published stable tag in the source history. Review the installer from the draft's **Assets** section. The direct links in the notes are for the published release.
+The workflow renders `VigilShell vX.Y.Z` with those sections in order, followed by **Downloads**, **Installation & Upgrade**, and **Build & Verification**. The downloads table groups verified installers by OS and links each colored badge to its tag-specific asset. SHA-256 files are available in **Assets** for optional download verification. The changelog link below the table opens the cumulative history on `main`. Build details include a source comparison when there is an earlier published stable tag in the source history. Review the installer from the draft's **Assets** section. The direct links in the notes are for the published release.
 
 ### Draft and publication
 

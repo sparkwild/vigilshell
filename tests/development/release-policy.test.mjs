@@ -64,7 +64,7 @@ test('version checks reject prerelease source versions even when every file agre
   assert.throws(() => checkVersions(root), /Expected a stable X.Y.Z version/);
 });
 
-test('release notes require highlights and reserve generated sections for the workflow', async (t) => {
+test('release notes require content and reserve generated sections for the workflow', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'vigil-release-notes-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   assert.throws(() => readReleaseNotes('v0.2.0', root), /Missing release notes/);
@@ -73,18 +73,20 @@ test('release notes require highlights and reserve generated sections for the wo
   await mkdir(dir, { recursive: true });
   const path = join(dir, 'v0.2.0.md');
   for (const [markdown, error] of [
-    ['## Highlights\n', /empty Highlights/],
-    ['## Bug Fixes\n\n- A fix\n', /requires a Highlights/],
+    ['## Features\n', /empty Features/],
+    ['', /requires at least one release notes section/],
     [
-      '## Highlights\n\n- A feature\n\n## Downloads\n\n- An asset\n',
+      '## Features\n\n- A feature\n\n## Downloads\n\n- An asset\n',
       /unsupported section: Downloads/,
     ],
   ]) {
     await writeFile(path, markdown);
     assert.throws(() => readReleaseNotes('v0.2.0', root), error);
   }
-  await writeFile(path, '## Highlights\r\n\r\n- A feature\r\n');
-  assert.deepEqual(readReleaseNotes('v0.2.0', root), { Highlights: '- A feature' });
+  await writeFile(path, '## Features\r\n\r\n- A feature\r\n');
+  assert.deepEqual(readReleaseNotes('v0.2.0', root), { Features: '- A feature' });
+  await writeFile(path, '## Bug Fixes\n\n- A fix\n');
+  assert.deepEqual(readReleaseNotes('v0.2.0', root), { 'Bug Fixes': '- A fix' });
 });
 
 test('rendered notes put upgrade actions before versioned downloads', () => {
@@ -98,7 +100,6 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
     color: '0969DA',
     logo: 'apple',
     name: 'VigilShell-0.2.0-macos-arm64.dmg',
-    checksum: 'VigilShell-0.2.0-macos-arm64.dmg.sha256',
   };
   const assets = {
     installers: [installer],
@@ -109,32 +110,30 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
   const notes = renderReleaseNotes(
     {
       'Upgrade Notes': '- Back up settings before upgrading.',
-      Highlights: '- A feature',
+      Features: '- A feature',
       'Bug Fixes': '- A fix',
     },
     { ...options, previousTag: 'v0.1.0' },
   );
   assert.deepEqual(notes.match(/^## .+$/gm), [
-    '## Highlights',
+    '## Features',
     '## Bug Fixes',
     '## Upgrade Notes',
     '## Downloads',
     '## Installation & Upgrade',
     '## Build & Verification',
   ]);
-  for (const name of [installer.name, installer.checksum, assets.manifest, assets.signingReport]) {
-    assert(notes.includes(`(${repoUrl}/releases/download/${source.tag}/${name})`));
-  }
-  assert.match(
-    notes,
-    /\| OS \| Download \|\n\| --- \| --- \|\n\| macOS \| \[!\[DMG for Apple Silicon\]/,
-  );
-  assert.match(notes, /color=0969DA&logo=apple/);
+  for (const name of [installer.name, assets.manifest, assets.signingReport])
+    assert(notes.includes(`${repoUrl}/releases/download/${source.tag}/${name}`));
+  assert.match(notes, /\| OS \| Download \|\n\| :--- \| :--- \|\n\| macOS \| <a href="/);
+  assert.match(notes, /color=0969DA&amp;logo=apple/);
+  assert.match(notes, /alt="DMG for Apple Silicon" align="absmiddle"><\/a> \|$/m);
+  assert.doesNotMatch(notes, /SHA-256|\.dmg\.sha256/);
   assert(notes.includes(`[Changelog](${repoUrl}/blob/main/CHANGELOG.md)`));
   assert(notes.includes(`[Compare source changes](${repoUrl}/compare/v0.1.0...v0.2.0)`));
 
   const first = renderReleaseNotes(
-    { Highlights: '- A feature' },
+    { Features: '- A feature' },
     { ...options, showChangelog: false },
   );
   assert.doesNotMatch(
@@ -143,7 +142,7 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
   );
 
   const multi = renderReleaseNotes(
-    { Highlights: '- A feature' },
+    { Features: '- A feature' },
     {
       ...options,
       assets: {
@@ -155,7 +154,6 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
             architecture: 'Intel x64',
             color: '00A9E0',
             name: 'VigilShell-0.2.0-macos-x64.dmg',
-            checksum: 'VigilShell-0.2.0-macos-x64.dmg.sha256',
           },
           {
             os: 'Linux',
@@ -164,15 +162,14 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
             color: 'F84E29',
             logo: 'linux',
             name: 'VigilShell-0.2.0-linux-x64.AppImage',
-            checksum: 'VigilShell-0.2.0-linux-x64.AppImage.sha256',
           },
         ],
       },
     },
   );
   assert.equal(multi.match(/^\| macOS \|/gm)?.length, 1);
-  assert.match(multi, /^\| macOS \| .+<br>\[!\[DMG for Intel x64\]/m);
-  assert.match(multi, /^\| Linux \| \[!\[AppImage for x64\]/m);
+  assert.match(multi, /^\| macOS \| .+<br><a .+alt="DMG for Intel x64"/m);
+  assert.match(multi, /^\| Linux \| <a .+alt="AppImage for x64"/m);
   assert.doesNotMatch(multi, /^\| Windows \|/m);
 });
 
@@ -181,9 +178,9 @@ test('changelog preflight rejects history out of sync with the version notes', a
   t.after(() => rm(root, { recursive: true, force: true }));
   const dir = join(root, 'docs', 'releases');
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, 'v0.2.2.md'), '## Highlights\n\n- Earlier change\n');
+  await writeFile(join(dir, 'v0.2.2.md'), '## Features\n\n- Earlier change\n');
   const latest = join(dir, 'v0.2.10.md');
-  await writeFile(latest, '## Highlights\n\n- Recent change\n\n## Bug Fixes\n\n- Fixed behavior\n');
+  await writeFile(latest, '## Features\n\n- Recent change\n\n## Bug Fixes\n\n- Fixed behavior\n');
   await writeFile(join(dir, 'v0.2.10.zh-CN.md'), 'Translated notes');
 
   assert.throws(() => checkReleaseNotes('v0.2.10', root), /CHANGELOG.md is missing or out of date/);
@@ -193,6 +190,6 @@ test('changelog preflight rejects history out of sync with the version notes', a
   assert.doesNotMatch(log, /Translated notes/);
   await writeFile(join(root, 'CHANGELOG.md'), log);
   assert.doesNotThrow(() => checkReleaseNotes('v0.2.10', root));
-  await writeFile(latest, '## Highlights\n\n- Updated change\n');
+  await writeFile(latest, '## Features\n\n- Updated change\n');
   assert.throws(() => checkReleaseNotes('v0.2.10', root), /CHANGELOG.md is missing or out of date/);
 });
