@@ -9,7 +9,13 @@ files:
     to: out
     filter:
       - '**/*'
+      - '!**/*.map'
   - package.json
+  - '!node_modules/**/*.map'
+  - '!node_modules/**/*.{d.ts,d.mts,d.cts}'
+  - '!node_modules/**/{test,tests,__tests__,spec,fixtures,__fixtures__,__snapshots__,benchmark,benchmarks,example,examples}{,/**}'
+  - '!node_modules/**/*.{test,spec}.*'
+  - '!node_modules/**/{README*,readme*,CHANGELOG*,changelog*,CONTRIBUTING*,AGENTS.md,.eslintrc*,tsconfig*.json,.runkit_example.js}'
 extraResources:
   - from: '${env.VIGILSHELL_BUILD_ROOT}/native/mcp-native/authorization.node'
     to: native/mcp-identity.node
@@ -19,6 +25,9 @@ extraResources:
     to: backend/manifest.json
   - from: resources/icons
     to: icons
+    filter:
+      - app-icon-source.png
+      - tray-icon.png
   - from: resources/licenses
     to: licenses
     filter:
