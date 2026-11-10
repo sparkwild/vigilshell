@@ -174,7 +174,7 @@ npm run package:release -- --arch arm64
 
 ### ARM64 分发与预览
 
-首期打包面向 Apple Silicon Mac，公开版本标签使用 `vX.Y.Z`。当前 Actions 仅构建临时签名预览，不创建或发布 Release。分发包使用固定自签名身份，不经过 Apple 公证；版本发现打开发布页，下载安装由用户手动完成。
+首期打包面向 Apple Silicon Mac。手动运行 **Preview package** 可以构建临时自签名预览包，并可指定完整提交 SHA。为通过验证的 `main` 提交推送正式版本标签 `vX.Y.Z` 后，工作流使用固定自签名证书构建安装包并创建 Release 草稿。分发包不经过 Apple 公证。维护者核对草稿后手动发布，GitHub 在发布时锁定标签和附件。发现更新时打开发布页，由用户手动下载安装。
 
 在没有既有 VigilShell 数据的独立测试 Mac／账号中，从同一 Release 下载 DMG 与校验文件，执行 `shasum -a 256 -c <文件>.dmg.sha256`，再拖入“应用程序”。如系统因开发者无法验证而阻止打开，应先核对来源，再使用“隐私与安全性 → 仍要打开”的单应用允许方式，不全局关闭 Gatekeeper。
 
@@ -213,4 +213,4 @@ npm run package:release -- --arch arm64
 
 VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 在应用旁提供 Electron 自带的完整 `LICENSES.chromium.html`。
 
-[贡献与预览构建](../CONTRIBUTING.md)
+[贡献与预览构建](../CONTRIBUTING.md) · [安全政策](SECURITY.md)
