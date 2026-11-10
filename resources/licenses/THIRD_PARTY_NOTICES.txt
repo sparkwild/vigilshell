@@ -716,8 +716,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ========================================================================
-@hono/node-server 1.19.17
-{'type': 'git', 'url': 'https://github.com/honojs/node-server.git'}
+@hono/node-server 2.1.6
+{'type': 'git', 'url': 'git+https://github.com/honojs/node-server.git'}
 
 LICENSE
 MIT License
@@ -1396,7 +1396,7 @@ LICENSE
 
 
 ========================================================================
-@modelcontextprotocol/core 2.2.0
+@modelcontextprotocol/core 2.4.0
 {'type': 'git', 'url': 'git+https://github.com/modelcontextprotocol/typescript-sdk.git'}
 
 LICENSE
@@ -1619,7 +1619,7 @@ the full license text.
 
 
 ========================================================================
-@modelcontextprotocol/node 2.1.0
+@modelcontextprotocol/node 2.1.2
 {'type': 'git', 'url': 'git+https://github.com/modelcontextprotocol/typescript-sdk.git'}
 
 LICENSE
@@ -1842,7 +1842,7 @@ the full license text.
 
 
 ========================================================================
-@modelcontextprotocol/server 2.2.0
+@modelcontextprotocol/server 2.4.0
 {'type': 'git', 'url': 'git+https://github.com/modelcontextprotocol/typescript-sdk.git'}
 
 LICENSE
@@ -22943,7 +22943,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-hono 4.13.7
+hono 4.13.17
 {'type': 'git', 'url': 'git+https://github.com/honojs/hono.git'}
 
 LICENSE
@@ -50834,7 +50834,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-zod 4.6.4
+zod 4.6.6
 {'type': 'git', 'url': 'git+https://github.com/colinhacks/zod.git'}
 
 LICENSE

@@ -173,10 +173,10 @@
   },
   {
     "name": "@hono/node-server",
-    "version": "1.19.17",
+    "version": "2.1.6",
     "source": {
       "type": "git",
-      "url": "https://github.com/honojs/node-server.git"
+      "url": "git+https://github.com/honojs/node-server.git"
     },
     "license": "MIT",
     "documents": [
@@ -248,12 +248,12 @@
   },
   {
     "name": "@modelcontextprotocol/core",
-    "version": "2.2.0",
+    "version": "2.4.0",
     "source": {
       "type": "git",
       "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
     },
-    "license": "MIT",
+    "license": "Apache-2.0",
     "documents": [
       {
         "file": "LICENSE",
@@ -263,12 +263,12 @@
   },
   {
     "name": "@modelcontextprotocol/node",
-    "version": "2.1.0",
+    "version": "2.1.2",
     "source": {
       "type": "git",
       "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
     },
-    "license": "MIT",
+    "license": "Apache-2.0",
     "documents": [
       {
         "file": "LICENSE",
@@ -278,12 +278,12 @@
   },
   {
     "name": "@modelcontextprotocol/server",
-    "version": "2.2.0",
+    "version": "2.4.0",
     "source": {
       "type": "git",
       "url": "git+https://github.com/modelcontextprotocol/typescript-sdk.git"
     },
-    "license": "MIT",
+    "license": "Apache-2.0",
     "documents": [
       {
         "file": "LICENSE",
@@ -2405,7 +2405,7 @@
   },
   {
     "name": "hono",
-    "version": "4.13.7",
+    "version": "4.13.17",
     "source": {
       "type": "git",
       "url": "git+https://github.com/honojs/hono.git"
@@ -4991,7 +4991,7 @@
   },
   {
     "name": "zod",
-    "version": "4.6.4",
+    "version": "4.6.6",
     "source": {
       "type": "git",
       "url": "git+https://github.com/colinhacks/zod.git"
