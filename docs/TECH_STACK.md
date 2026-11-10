@@ -60,7 +60,7 @@ npm run signing:check -- --profile dev
 
 ## 检查与预览构建
 
-Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
+Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本，`npm run release:check -- --notes` 同时检查发布说明与累计变更日志。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
 
 `npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。ARM64 安装包命名为 `VigilShell-<version>-macos-arm64.dmg`，同时生成 SHA-256 和包含版本、源码 SHA、证书身份的签名报告，打包入口始终使用 `--publish never`。
 
@@ -70,9 +70,9 @@ GitHub CI 对面向 `main` 的 PR 和 `main` 推送按路径分类。纯文档�
 
 ## 正式版本草稿
 
-`Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、远端标签对象、`main` 历史和同一提交的成功推送 CI。若该次 CI 没有通过前后端检查，标签工作流会对同一提交补跑并要求两项检查通过。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
+`Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z.md`、生成的 `CHANGELOG.md`、远端标签对象、`main` 历史和同一提交的成功推送 CI。若该次 CI 没有通过前后端检查，标签工作流会对同一提交补跑并要求两项检查通过。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
 
-macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。安装包、SHA-256、签名报告与 `build.json` 直接上传至 Release 草稿。工作流核对远端附件的摘要后更新草稿说明。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
+macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。安装包、SHA-256、签名报告与 `build.json` 直接上传至 Release 草稿。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
 
 ## 更新与许可
 
