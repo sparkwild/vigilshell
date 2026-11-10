@@ -26,12 +26,14 @@ export function TerminalFloatingNotice({
   detail?: ReactNode;
 }) {
   return (
-    <aside {...props} className="terminal-floating-notice" data-dismissible={!!dismiss}>
+    <aside {...props} className="terminal-floating-notice">
       <div className="terminal-notice-header">
-        <div className="terminal-notice-identity">{children}</div>
-        {actions ? <div className="terminal-notice-actions">{actions}</div> : null}
+        <div className="terminal-notice-content">
+          <div className="terminal-notice-identity">{children}</div>
+          {actions ? <div className="terminal-notice-actions">{actions}</div> : null}
+        </div>
+        {dismiss ? <div className="terminal-notice-dismiss">{dismiss}</div> : null}
       </div>
-      {dismiss ? <div className="terminal-notice-dismiss">{dismiss}</div> : null}
       {detail ? <div className="terminal-notice-body">{detail}</div> : null}
     </aside>
   );

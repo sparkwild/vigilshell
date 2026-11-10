@@ -451,7 +451,6 @@
 }
 .terminal-notice-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   min-height: 32px;
@@ -459,8 +458,13 @@
   font-size: 12px;
   flex-shrink: 0;
 }
-.terminal-floating-notice[data-dismissible='true'] .terminal-notice-header {
-  padding-right: 32px;
+.terminal-notice-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 .terminal-notice-identity {
   display: flex;
@@ -471,9 +475,9 @@
   max-width: 100%;
 }
 .terminal-notice-dismiss {
-  position: absolute;
-  top: 4px;
-  right: 4px;
+  display: flex;
+  flex: none;
+  align-self: flex-start;
 }
 .terminal-notice-identity > :not(.terminal-notice-label) {
   flex-shrink: 0;
