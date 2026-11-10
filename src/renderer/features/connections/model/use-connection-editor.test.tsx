@@ -158,6 +158,53 @@ it('retains unsaved values and the original request handle when a save result is
   expect(fixture.mutation).toHaveBeenCalledOnce();
 });
 
+it('shows a passing test for a saved connection until its parameters change', async () => {
+  const connection: ConnectionDetails = {
+    ...fixture.job.connection!,
+    credentialSaved: true,
+    config: {
+      environment: 'none',
+      name: 'Fixture',
+      host: 'localhost',
+      port: 22,
+      username: 'fixture',
+      auth: 'password',
+    },
+  };
+  fixture.editor.connection = connection;
+  vi.mocked(fixture.store.call).mockResolvedValue({
+    kind: 'draft',
+    draft: {
+      id: 'draft',
+      connectionId: connection.id,
+      proxyId: null,
+      prepared: false,
+      saved: true,
+      auth: null,
+      label: null,
+      intent: 'keep',
+    },
+  });
+  fixture.mutation.mockResolvedValue({
+    kind: 'operation',
+    operation: { ...fixture.job, kind: 'test', id: 'test', connection: null },
+  });
+  const { result } = mount();
+  await act(async () => {
+    const { form, test } = result.current;
+    form.setValue('username', ' fixture ');
+    await form.handleSubmit(test)();
+  });
+  expect(fixture.mutation).toHaveBeenCalledWith(
+    'testConnection',
+    expect.objectContaining({ config: expect.objectContaining({ username: 'fixture' }) }),
+  );
+  expect(result.current.passedTestId).toBe('test');
+
+  act(() => result.current.form.setValue('port', 2222));
+  expect(result.current.passedTestId).toBeNull();
+});
+
 it('does not close or select over a newer editor after an older save completes', async () => {
   let finish!: (reply: WorkspaceReply) => void;
   fixture.mutation.mockImplementation(

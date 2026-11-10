@@ -206,7 +206,7 @@
   "ws_failed": "失败",
   "ws_cancelled": "已取消",
   "ws_working": "正在处理",
-  "ws_test_passed": "当前参数的认证测试通过",
+  "ws_test_passed": "成功",
   "ws_test_only": "测试仅验证认证，完成后断开，不打开终端",
   "ws_read_only_terminal": "此会话已结束，可重新连接以开始新终端",
   "ws_saved": "连接已保存",

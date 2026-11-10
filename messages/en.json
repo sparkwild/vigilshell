@@ -206,7 +206,7 @@
   "ws_failed": "Failed",
   "ws_cancelled": "Cancelled",
   "ws_working": "Working",
-  "ws_test_passed": "Authentication test passed for the current parameters",
+  "ws_test_passed": "Success",
   "ws_test_only": "Tests authenticate and disconnect without opening a terminal",
   "ws_read_only_terminal": "This session has ended. Reconnect to start a new terminal",
   "ws_saved": "Connection saved",

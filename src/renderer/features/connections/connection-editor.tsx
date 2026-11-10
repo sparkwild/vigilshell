@@ -88,8 +88,8 @@ export function ConnectionEditor({ editor }: { editor: Extract<Editor, { kind: '
     base,
     draft,
     error,
-    tested,
-    setTested,
+    passedTestId,
+    clearTestResult,
     unknown,
     owner,
     childClose,
@@ -300,7 +300,7 @@ export function ConnectionEditor({ editor }: { editor: Extract<Editor, { kind: '
                                   ? 'privateKey'
                                   : 'password';
                           form.setValue('auth', next, { shouldDirty: true });
-                          setTested(null);
+                          clearTestResult();
                           event.currentTarget
                             .querySelector<HTMLButtonElement>(`[data-auth-method="${next}"]`)
                             ?.focus();
@@ -308,7 +308,7 @@ export function ConnectionEditor({ editor }: { editor: Extract<Editor, { kind: '
                         onValueChange={(v) => {
                           if (v[0] === 'password' || v[0] === 'privateKey') {
                             form.setValue('auth', v[0], { shouldDirty: true });
-                            setTested(null);
+                            clearTestResult();
                           }
                         }}
                       >
@@ -446,14 +446,11 @@ export function ConnectionEditor({ editor }: { editor: Extract<Editor, { kind: '
               <OperationStatus
                 dismissible
                 owner={owner}
+                messageId={passedTestId ?? undefined}
                 message={
                   error
                     ? t(error === 'draft_lost' ? 'ws_draft_lost' : errorKey(error))
-                    : tested ===
-                        JSON.stringify({
-                          ...config,
-                          name: config.name.trim() || config.host.trim(),
-                        })
+                    : passedTestId
                       ? t('ws_test_passed')
                       : null
                 }
