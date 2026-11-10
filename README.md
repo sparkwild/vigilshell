@@ -174,7 +174,7 @@ The target architecture must match the macOS host process and Rust toolchain. Th
 
 ### ARM64 distribution and previews
 
-The initial packaging target is macOS on Apple Silicon. Public version tags use `vX.Y.Z`. Actions builds temporary-signed previews and prepares Release drafts from verified stable tags. Maintainers publish drafts manually. Distributed packages use a fixed self-signed identity without Apple notarization. Update discovery opens the release page for manual installation.
+The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a temporary self-signed installer. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft with a fixed self-signed installer without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication. Update discovery opens the release page for manual installation.
 
 In a separate test Mac/account with no existing VigilShell data, download the DMG and its SHA-256 file from the same release, verify with `shasum -a 256 -c <file>.dmg.sha256`, then drag the application into Applications. If macOS blocks an unverified developer, use the per-app **Privacy & Security → Open Anyway** flow after checking the download source; do not disable Gatekeeper globally.
 
@@ -217,4 +217,4 @@ VigilShell original code is licensed under [Apache-2.0](LICENSE). See [resources
 
 The source repository includes development skills with separate notices. [Third-party source notices](THIRD_PARTY_NOTICES.md)
 
-[Contributing and preview builds](CONTRIBUTING.md)
+[Contributing and preview builds](CONTRIBUTING.md) · [Security policy](docs/SECURITY.md)
