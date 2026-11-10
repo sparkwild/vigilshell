@@ -1,0 +1,12 @@
+# Changelog
+
+See [GitHub Releases](https://github.com/sparkwild/vigilshell/releases) for published installers.
+
+## v0.1.0
+
+### Highlights
+
+- **SSH and terminal** — Organize SSH connections, verify host fingerprints, and work across multiple terminal tabs.
+- **Remote files** — Browse and transfer files over SFTP, or edit remote text files in a local editor with conflict detection.
+- **Server monitoring** — View CPU, memory, disk, and network activity on connected Linux hosts.
+- **MCP and agent activity** — Connect an MCP client, grant access per SSH connection, and review agent tasks and output in VigilShell.

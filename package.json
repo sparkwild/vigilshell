@@ -53,6 +53,7 @@
     "test:icons": "node --test tests/development/icons.test.mjs",
     "dev:migrate-agent-policy": "node scripts/migrate-agent-policy.mjs",
     "release:check": "node scripts/release-policy.mjs",
+    "changelog:generate": "node scripts/release-policy.mjs --write-changelog",
     "licenses:generate": "python3 scripts/licenses.py",
     "licenses:check": "python3 scripts/licenses.py --check",
     "version:prepare": "node scripts/prepare-version.mjs",

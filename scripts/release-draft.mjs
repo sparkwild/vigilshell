@@ -10,7 +10,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, join } from 'node:path';
-import { checkReleaseTag } from './release-policy.mjs';
+import { readReleaseNotes, renderReleaseNotes } from './release-notes.mjs';
+import { checkReleaseNotes, checkReleaseTag, isStableReleaseTag } from './release-policy.mjs';
 import { validatePreview } from './preview-artifacts.mjs';
 import { normalizeFingerprint } from './signing/config.mjs';
 
@@ -33,12 +34,14 @@ function verifyTag(source) {
 function requireUnusedRelease(tag) {
   const existing = api(['--paginate', '--slurp', `${releases}?per_page=100`]).flat();
   assert(!existing.some((release) => release.tag_name === tag), 'A release already uses this tag');
+  return existing;
 }
 
 function qualify() {
   assert(env.GITHUB_REF.startsWith('refs/tags/'));
   const tag = env.GITHUB_REF.slice('refs/tags/'.length);
   const version = checkReleaseTag(tag);
+  checkReleaseNotes(tag);
   const sha = git('rev-parse', 'HEAD');
   assert.equal(git('rev-parse', `${env.GITHUB_REF}^{commit}`), sha);
   assert.equal(git('rev-parse', `${env.GITHUB_SHA}^{commit}`), sha);
@@ -62,10 +65,19 @@ function qualify() {
   const codeChecksRequired = !['frontend / ui', 'backend / rust'].every((name) =>
     jobs.some((job) => job.name === name && job.conclusion === 'success'),
   );
-  requireUnusedRelease(tag);
+  const existing = requireUnusedRelease(tag);
+  const publishedTags = new Set(
+    existing
+      .filter((release) => !release.draft && !release.prerelease && release.published_at)
+      .map((release) => release.tag_name),
+  );
+  const tags = git('tag', '--list', 'v*', '--merged', sha, '--sort=-version:refname').split('\n');
+  const previousTag = tags
+    .slice(tags.indexOf(tag) + 1)
+    .find((candidate) => isStableReleaseTag(candidate) && publishedTags.has(candidate));
   writeFileSync(
     env.GITHUB_OUTPUT,
-    `source=${JSON.stringify({ ...source, ciRunId: checked.id, codeChecksRequired })}\n`,
+    `source=${JSON.stringify({ ...source, ciRunId: checked.id, codeChecksRequired, previousTag })}\n`,
     {
       flag: 'a',
     },
@@ -81,8 +93,9 @@ function verifyDraft(release, source) {
 }
 
 async function draft() {
-  const source = JSON.parse(env.RELEASE_SOURCE);
+  const { previousTag, ...source } = JSON.parse(env.RELEASE_SOURCE);
   assert.equal(checkReleaseTag(source.tag), source.version);
+  const notes = readReleaseNotes(source.tag);
   assert.equal(git('rev-parse', 'HEAD'), source.sha);
   assert.equal(git('rev-parse', 'HEAD^{tree}'), source.tree);
   assert.equal(git('status', '--porcelain'), '', 'Release build changed the checkout');
@@ -132,9 +145,10 @@ async function draft() {
       draft: true,
       prerelease: false,
     };
+    const title = `VigilShell ${source.tag}`;
     const release = api(['--method', 'POST', releases, '--input', '-'], {
       ...binding,
-      name: `VigilShell ${source.version}`,
+      name: title,
       body: `Asset upload and verification pending. Review the build before publishing.\n\n[Build run](${runUrl})`,
       make_latest: 'false',
     });
@@ -172,12 +186,33 @@ async function draft() {
         `sha256:${createHash('sha256').update(readFileSync(file)).digest('hex')}`,
       );
     }
-    const verified = api(['--method', 'PATCH', endpoint, '--input', '-'], {
-      ...binding,
-      body: `macOS Apple Silicon installer signed with the fixed VigilShell certificate. The installer uses self-signing without Apple notarization.\n\nSource: \`${source.sha}\`. Runner startup, shutdown, and artifact checks passed.\n\n[Build run](${runUrl})`,
+    const body = renderReleaseNotes(notes, {
+      repository: env.GITHUB_REPOSITORY,
+      source,
+      assets: {
+        installers: [
+          {
+            os: 'macOS',
+            format: 'DMG',
+            architecture: 'Apple Silicon',
+            color: '0969DA',
+            logo: 'apple',
+            name,
+            checksum: basename(checksum),
+          },
+        ],
+        manifest: basename(manifest),
+        signingReport: basename(reportPath),
+      },
+      runUrl,
+      previousTag,
     });
+    const verified = api(['--method', 'PATCH', endpoint, '--input', '-'], { ...binding, body });
     verifyDraft(verified, source);
-    verifyDraft(api([endpoint]), source);
+    const saved = api([endpoint]);
+    verifyDraft(saved, source);
+    assert.equal(saved.name, title);
+    assert.equal(saved.body, body);
     console.log(`Verified Release draft ${verified.html_url}`);
   } finally {
     rmSync(temp, { recursive: true, force: true });
