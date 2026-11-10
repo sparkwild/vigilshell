@@ -145,7 +145,7 @@ async function draft() {
       draft: true,
       prerelease: false,
     };
-    const title = `VigilShell ${source.tag}`;
+    const title = source.version;
     const release = api(['--method', 'POST', releases, '--input', '-'], {
       ...binding,
       name: title,
