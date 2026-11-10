@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadSigningConfig, verifyApplicationLayout, verifyBundle } from './macos-signing.mjs';
+import { verifyPackageContents } from './verify-package-contents.mjs';
 
 export default async function verifyPackage(context) {
   const config = loadSigningConfig(process.env.VIGILSHELL_PACKAGE_PROFILE ?? 'release');
@@ -25,6 +26,7 @@ export default async function verifyPackage(context) {
   )
     throw Error('Chromium notices belong beside the application');
   verifyApplicationLayout(app, process.arch, config.profile);
+  verifyPackageContents(app, config.profile);
   const components = verifyBundle(app, config, process.arch);
   copyFileSync(
     join('node_modules/electron/dist', chromiumNotice),

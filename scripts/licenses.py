@@ -10,6 +10,45 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'resources/licenses'
 
+def npm_license_paths(packages, bundled, stylesheets=()):
+    """Collect locked runtime and renderer-bundled dependencies, including their peers.
+
+    Renderer packages live in devDependencies to avoid duplicate app.asar copies,
+    but their transitive code and font licenses still belong in the distribution.
+    """
+    root = packages['']
+    declared = root.get('dependencies', {}) | root.get('devDependencies', {})
+    for name in [*bundled, *stylesheets]:
+        if name not in declared:
+            raise RuntimeError('Undeclared bundled dependency: ' + name)
+
+    def resolve(parent, name, optional=False):
+        while True:
+            candidate = (parent + '/' if parent else '') + 'node_modules/' + name
+            if candidate in packages:
+                return candidate
+            if not parent:
+                if optional: return None
+                raise RuntimeError('Missing locked dependency: ' + name)
+            parent = parent.rsplit('/node_modules/', 1)[0] if '/node_modules/' in parent else ''
+
+    pending = [resolve('', name) for name in set(root.get('dependencies', {})) | set(bundled)]
+    seen = set()
+    while pending:
+        path = pending.pop()
+        if path is None or path in seen: continue
+        seen.add(path)
+        package = packages[path]
+        optional = package.get('optionalDependencies', {})
+        peers = package.get('peerDependencies', {})
+        peer_meta = package.get('peerDependenciesMeta', {})
+        dependencies = package.get('dependencies', {}) | optional | peers
+        for name in dependencies:
+            may_be_absent = name in optional or peer_meta.get(name, {}).get('optional', False)
+            pending.append(resolve(path, name, may_be_absent))
+    # Stylesheet-only imports ship the package's CSS, not its CLI dependency tree.
+    return seen | {resolve('', name) for name in stylesheets}
+
 def collect():
     rows = []
     supplements = json.loads((OUT / 'upstream.json').read_text()) if (OUT / 'upstream.json').exists() else {}
@@ -29,8 +68,9 @@ def collect():
                 raise RuntimeError('License content hash mismatch: ' + key)
         rows.append({'name': name, 'version': version, 'source': source, 'license': license_name, 'documents': documents})
     lock = json.loads((ROOT / 'package-lock.json').read_text())
-    for path, pkg in lock['packages'].items():
-        if not path or pkg.get('dev'): continue
+    bundled = json.loads((ROOT / 'scripts/bundled-dependencies.json').read_text())
+    for path in sorted(npm_license_paths(lock['packages'], bundled['packages'], bundled['stylesheets'])):
+        pkg = lock['packages'][path]
         base = ROOT / path
         manifest = json.loads((base / 'package.json').read_text())
         if manifest['version'] != pkg['version']: raise RuntimeError('Installed version differs: ' + path)
@@ -45,7 +85,7 @@ def collect():
     for pkg in metadata['packages']:
         if pkg['id'] in seen and pkg['source']:
             add(pkg['name'], pkg['version'], pkg['repository'], pkg['license'], pathlib.Path(pkg['manifest_path']).parent)
-    for name in ['shadcn', 'electron']:
+    for name in ['electron']:
         base = ROOT / 'node_modules' / name
         pkg = json.loads((base / 'package.json').read_text())
         add(name, pkg['version'], pkg.get('repository'), pkg['license'], base)

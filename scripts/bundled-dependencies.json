@@ -1,0 +1,25 @@
+{
+  "packages": [
+    "@base-ui/react",
+    "@fontsource-variable/inter",
+    "@fontsource-variable/jetbrains-mono",
+    "@fontsource-variable/noto-sans-sc",
+    "@formkit/auto-animate",
+    "@hookform/resolvers",
+    "@xterm/addon-fit",
+    "@xterm/addon-search",
+    "@xterm/xterm",
+    "class-variance-authority",
+    "clsx",
+    "cn",
+    "lucide-react",
+    "react",
+    "react-aria-components",
+    "react-dom",
+    "react-hook-form",
+    "react-resizable-panels",
+    "recharts",
+    "tailwind-merge"
+  ],
+  "stylesheets": ["shadcn", "tailwindcss", "tw-animate-css"]
+}

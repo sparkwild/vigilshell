@@ -58,6 +58,8 @@ npm run signing:check -- --profile dev
 
 打包入口移除继承的开发页面、启动器及数据目录环境变量；本地已有 Dev 应用运行时仍拒绝完整重建。安装包内的 `out/`、`Resources/native/` 和 `Helpers/` 布局、Dev／正式应用数据目录保持独立。最终产物仍输出到 `release/dev/` 或 `release/`。
 
+仅供 Renderer 使用、由 Vite 合入前端产物的 npm 依赖放在 `devDependencies`；Main 中外置加载的依赖保留在 `dependencies`，由 electron-builder 收集其运行时依赖树。打包排除依赖包的 sourcemap、类型声明、测试、示例、基准和开发说明；保留运行时代码、条件导出的源码与许可证。`Resources/icons` 只复制主进程使用的应用图和托盘图，其余图标由构建工具或 Renderer 按需处理。`npm run test:packaging` 验证过滤规则与 Renderer 依赖的许可覆盖。
+
 ## 检查与预览构建
 
 Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本，`npm run release:check -- --notes` 同时检查发布说明与累计变更日志。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
@@ -79,5 +81,7 @@ macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，�
 Main 在用户手动检查时通过公开 GitHub Releases 列表匿名查询标签为 `vX.Y.Z` 且含兼容安装包的正式发行版本，过滤草稿和 GitHub 标记为预发布的 Release；自动检查由共享功能开关停用，启动、周期与睡眠恢复调度实现保留。更新不下载或替换应用。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
 
 自有代码采用 Apache-2.0。`npm run licenses:generate` 根据锁定依赖和上游补充生成第三方声明；已声明许可但未附正文的依赖保留包声明与来源，仅提示，不阻止打包，也不补写未知版权人。`npm run licenses:check` 核对清单与许可资源；未声明许可、清单过期、资源缺失或内容不一致仍会失败。正式打包要求许可检查通过，并逐字节核对包内资源。
+
+npm 许可证收集以运行时 `dependencies` 和 [Renderer 打包依赖清单](../scripts/bundled-dependencies.json) 的 `packages` 为入口，按锁文件追踪普通、可选和 peer 依赖，包含嵌套安装版本。`stylesheets` 记录只导入 CSS 的包，收集其许可证，不引入未分发的 CLI 依赖树。新增 Renderer 依赖时同步该清单；移入 `devDependencies` 不会免除已分发代码、CSS 和字体的许可证收集。
 
 打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，与应用并列放在 DMG 根目录。打包校验挂载 DMG 并逐字节比对原文，同时检查 `.app` 内的许可布局。目录形式的 Dev 包也在 `.app` 旁提供同一份文件。

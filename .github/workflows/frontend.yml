@@ -30,6 +30,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test:signing
+      - run: npm run test:packaging
       - run: npm run test:dev-session
       - run: node --test tests/development/ci-macos-startup.test.mjs
       - run: npm run boundaries:check
