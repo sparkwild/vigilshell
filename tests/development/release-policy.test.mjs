@@ -23,13 +23,15 @@ test('all project version sources must match', async (t) => {
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const file of ['package.json', 'package-lock.json', 'Cargo.toml', 'Cargo.lock'])
     await writeFile(join(root, file), await readFile(file));
-  assert.equal(checkVersions(root), JSON.parse(await readFile('package.json', 'utf8')).version);
+  const version = JSON.parse(await readFile('package.json', 'utf8')).version;
+  assert.equal(checkVersions(root), version);
+  const mismatchedVersion = version === '0.1.1' ? '0.1.0' : '0.1.1';
   const path = join(root, 'Cargo.lock');
   await writeFile(
     path,
     (await readFile(path, 'utf8')).replace(
       /(name = "vigilshell-[^"]+"\nversion = ")[^"]+/,
-      '$10.1.1',
+      (_, prefix) => prefix + mismatchedVersion,
     ),
   );
   assert.throws(() => checkVersions(root));
