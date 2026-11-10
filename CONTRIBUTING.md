@@ -40,7 +40,7 @@ Write concise, user-facing notes in English for the tagged source. Use `## Featu
 
 Run `npm run changelog:generate` after editing version notes. [CHANGELOG.md](CHANGELOG.md) collects those notes in version order, newest first. Version note files are the source for the generated history. The release preflight checks that both are in sync.
 
-The workflow renders `VigilShell vX.Y.Z` with those sections in order, followed by **Downloads**, **Installation & Upgrade**, and **Build & Verification**. The downloads table groups verified installers by OS and links each colored badge to its tag-specific asset. SHA-256 files are available in **Assets** for optional download verification. The changelog link below the table opens the cumulative history on `main`. Build details include a source comparison when there is an earlier published stable tag in the source history. Review the installer from the draft's **Assets** section. The direct links in the notes are for the published release.
+Use the version number alone as the Release title in `X.Y.Z` format, for example `0.1.1`. The workflow renders the notes with those sections in order, followed by **Downloads**, **Installation & Upgrade**, and **Build & Verification**. The downloads table groups verified installers by OS and links each colored badge to its tag-specific asset. SHA-256 files are available in **Assets** for optional download verification. The changelog link below the table opens the cumulative history on `main`. Build details include a source comparison when there is an earlier published stable tag in the source history. Review the installer from the draft's **Assets** section. The direct links in the notes are for the published release.
 
 ### Draft and publication
 
