@@ -2,8 +2,6 @@ name: CI
 'on':
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -22,7 +20,7 @@ jobs:
           persist-credentials: false
       - id: paths
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           python3 - <<'PY'
           import os, subprocess, re

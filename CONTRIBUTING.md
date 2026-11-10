@@ -10,7 +10,7 @@ This document defines the project's contribution, branch and version rules. Tech
 2. Review and commit only the intended files. Use commit subjects such as `fix: correct release selection`, describing the resulting behavior.
 3. Push the work branch and open a PR describing the change, relevant checks and remaining verification. A request to commit and push defaults to this work branch. Direct pushes to `main` require an explicitly authorized exception permitted by the repository's protection rules.
 4. Merge after the current PR revision passes the required checks and review conversations are resolved. A solo maintainer may merge their own PR with zero required approving reviews. Local checks and hosted CI results must be reported separately.
-5. Verify the resulting `main` CI run. Delete the short-lived branch after its intended changes are integrated and any remaining local work is preserved. For squash merges, verify the resulting changes as well as the PR's merged state.
+5. Verify the PR's merged state and the resulting changes on `main`. Delete the short-lived branch after its intended changes are integrated and any remaining local work is preserved.
 
 For delegated work, commit and push authorization covers publishing the work branch. PR merge, release tags, Release publication and repository visibility changes require session authorization covering those actions. Reuse authorization already granted for the same scope.
 
@@ -22,7 +22,7 @@ Historical version baselines belong in immutable tags. Create a release preparat
 
 Use the pinned Node, npm and Rust versions in `.nvmrc`, `package.json` and `rust-toolchain.toml`. Run `npm ci`, `npm run check` and the tests relevant to your change. Native work reuses VigilShell Dev; never test against production data. See [the technical stack](docs/TECH_STACK.md) for signing and build commands.
 
-CI classifies changes in pull requests and pushes to `main`. Changes limited to `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CHANGELOG.md`, Markdown under `docs/`, and `.jpg`, `.jpeg`, or `.png` images under `docs/images/` only run classification and the aggregate `CI verified` check. Other changes run frontend and backend checks. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. PR and `main` CI use read-only repository permissions.
+CI classifies changes in pull requests targeting `main`. Changes limited to `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CHANGELOG.md`, Markdown under `docs/`, and `.jpg`, `.jpeg`, or `.png` images under `docs/images/` only run classification and the aggregate `CI verified` check. Other changes run frontend and backend checks. Failed, pending or infrastructure-blocked required checks must be resolved before normal merging. Run **CI** manually to check a selected ref with the full frontend and backend checks. CI uses read-only repository permissions.
 
 Preview artifacts support isolated testing and use a temporary signing identity. Distributed packages use the fixed release identity.
 
@@ -32,7 +32,7 @@ For changes to native integrations, signing or installer generation, run **Previ
 
 Source and release versions use stable `X.Y.Z` numbers. Prepare a version using `npm run version:prepare -- X.Y.Z`, review the resulting changes to `package.json`, `package-lock.json`, `Cargo.toml` and `Cargo.lock`, then submit those files, `docs/releases/vX.Y.Z.md` and the generated `CHANGELOG.md` through a PR. `npm run release:check` verifies version consistency. Run `npm run release:check -- --notes` on the candidate before creating its tag.
 
-Public version tags use `vX.Y.Z` and identify the exact release source commit. Create them on a verified `main` commit after the version change is integrated. Preserve published tags permanently. Corrections use a new version and tag. Releasing from a future maintenance branch requires explicit version-line source validation in the release workflow before that branch is eligible to publish.
+Public version tags use `vX.Y.Z` and identify the exact release source commit. Create them on a `main` commit after the version PR passes its checks and is merged. Preserve published tags permanently. Corrections use a new version and tag. Releasing from a future maintenance branch requires explicit version-line source validation in the release workflow before that branch is eligible to publish.
 
 ### Release notes
 
@@ -44,7 +44,7 @@ Use the version number alone as the Release title in `X.Y.Z` format, for example
 
 ### Draft and publication
 
-Pushing a new `vX.Y.Z` tag starts **Release draft**. Before starting the macOS job, the workflow validates the tag, the four version files, the release notes and changelog, `main` ancestry and a successful `main` push CI run for the exact source commit. If that run did not pass both code checks, the release workflow runs them on the tagged commit before signing. The `macos-release` environment provides the fixed signing identity. The workflow verifies the ARM64 DMG and native startup, then attaches the installer, checksum, signing report and build manifest directly to a draft. Review the generated notes and assets before publishing it manually.
+Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, the release notes and changelog, and `main` ancestry. It runs the full frontend and backend checks on the validated commit. Once both pass, the macOS job builds the same commit using the fixed signing identity from the `macos-release` environment. It verifies the ARM64 DMG and native startup, then attaches the installer, checksum, signing report and build manifest directly to a draft. Review the generated notes and assets before publishing it manually.
 
 An existing draft or published release blocks a second draft for that tag. If an upload stops partway through, the draft remains marked pending. Review and clear the incomplete draft before rerunning the original tag workflow. Keep the tag at the original commit.
 
@@ -56,7 +56,7 @@ Keep release installers, checksums, build and signing reports, and securely stor
 
 The settings below define the required protection baseline. Verify the live GitHub settings and PR merge behavior before reporting these protections as enforced.
 
-- Require PRs for `main`, with `CI verified` from GitHub Actions as a required status check and review conversations resolved before merging.
+- Require PRs for `main`, with branches up to date, `CI verified` from GitHub Actions passing, and review conversations resolved before merging.
 - Set required approving reviews to zero for solo maintenance. Apply normal merge checks to the maintainer as well as contributors.
 - Protect `main` from force pushes and deletion, and protect release tags from updates and deletion.
 - Keep the default Actions token read-only and require maintainer approval for external contributors' fork workflows. Fixed release signing material belongs in a restricted release environment.

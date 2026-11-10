@@ -54,17 +54,6 @@ function qualify() {
   };
   verifyTag(source);
   git('merge-base', '--is-ancestor', sha, 'refs/remotes/origin/main');
-  const runs = api([
-    `repos/${env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?branch=main&event=push&head_sha=${sha}&status=success&per_page=1`,
-  ]).workflow_runs;
-  const checked = runs.find((run) => run.head_sha === sha && run.conclusion === 'success');
-  assert(checked, 'The tagged commit must have a successful main push CI run');
-  const { jobs } = api([
-    `repos/${env.GITHUB_REPOSITORY}/actions/runs/${checked.id}/jobs?per_page=100`,
-  ]);
-  const codeChecksRequired = !['frontend / ui', 'backend / rust'].every((name) =>
-    jobs.some((job) => job.name === name && job.conclusion === 'success'),
-  );
   const existing = requireUnusedRelease(tag);
   const publishedTags = new Set(
     existing
@@ -75,13 +64,9 @@ function qualify() {
   const previousTag = tags
     .slice(tags.indexOf(tag) + 1)
     .find((candidate) => isStableReleaseTag(candidate) && publishedTags.has(candidate));
-  writeFileSync(
-    env.GITHUB_OUTPUT,
-    `source=${JSON.stringify({ ...source, ciRunId: checked.id, codeChecksRequired, previousTag })}\n`,
-    {
-      flag: 'a',
-    },
-  );
+  writeFileSync(env.GITHUB_OUTPUT, `source=${JSON.stringify({ ...source, previousTag })}\n`, {
+    flag: 'a',
+  });
 }
 
 function verifyDraft(release, source) {

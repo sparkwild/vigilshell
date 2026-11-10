@@ -1,6 +1,9 @@
 name: Backend
 'on':
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      source-sha:
+        type: string
 concurrency:
   group: backend-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
@@ -13,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          ref: ${{ inputs.source-sha }}
           persist-credentials: false
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:

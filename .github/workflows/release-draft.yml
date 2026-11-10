@@ -12,9 +12,6 @@ jobs:
     if: github.event.created && !github.event.deleted && !github.event.forced
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    permissions:
-      contents: read
-      actions: read
     outputs:
       source: ${{ steps.source.outputs.source }}
     steps:
@@ -32,19 +29,16 @@ jobs:
         run: node scripts/release-draft.mjs qualify
   frontend:
     needs: qualify
-    if: fromJSON(needs.qualify.outputs.source).codeChecksRequired
     uses: ./.github/workflows/frontend.yml
+    with:
+      source-sha: ${{ fromJSON(needs.qualify.outputs.source).sha }}
   backend:
     needs: qualify
-    if: fromJSON(needs.qualify.outputs.source).codeChecksRequired
     uses: ./.github/workflows/backend.yml
+    with:
+      source-sha: ${{ fromJSON(needs.qualify.outputs.source).sha }}
   draft:
     needs: [qualify, frontend, backend]
-    if: >-
-      !cancelled() && needs.qualify.result == 'success' &&
-      ((needs.frontend.result == 'success' && needs.backend.result == 'success') ||
-       (!fromJSON(needs.qualify.outputs.source).codeChecksRequired &&
-        needs.frontend.result == 'skipped' && needs.backend.result == 'skipped'))
     runs-on: macos-15
     timeout-minutes: 60
     environment: macos-release
