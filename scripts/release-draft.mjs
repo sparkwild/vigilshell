@@ -198,7 +198,6 @@ async function draft() {
             color: '0969DA',
             logo: 'apple',
             name,
-            checksum: basename(checksum),
           },
         ],
         manifest: basename(manifest),
