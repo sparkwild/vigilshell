@@ -2,30 +2,14 @@ name: Release draft
 'on':
   push:
     tags: ['v*']
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Existing immutable stable tag to recover
-        required: true
-        type: string
-      expected-sha:
-        description: Full product commit SHA already referenced by the tag
-        required: true
-        type: string
 permissions:
   contents: read
 concurrency:
-  group: release-draft-${{ inputs.tag || github.ref_name }}
+  group: release-draft-${{ github.ref }}
   cancel-in-progress: false
-env:
-  RECOVERY_TAG: ${{ inputs.tag }}
-  RECOVERY_SHA: ${{ inputs.expected-sha }}
-defaults:
-  run:
-    working-directory: source
 jobs:
   qualify:
-    if: (github.event_name == 'push' && github.event.created && !github.event.deleted && !github.event.forced) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: github.event.created && !github.event.deleted && !github.event.forced
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -33,23 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: ${{ github.sha }}
-          path: control
-          persist-credentials: false
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ inputs.expected-sha || github.sha }}
-          path: source
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version-file: source/.nvmrc
+          node-version-file: .nvmrc
           package-manager-cache: false
       - id: source
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node "$GITHUB_WORKSPACE/control/scripts/release-draft.mjs" qualify
+        run: node scripts/release-draft.mjs qualify
   frontend:
     needs: qualify
     uses: ./.github/workflows/frontend.yml
@@ -74,17 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: ${{ github.sha }}
-          path: control
-          persist-credentials: false
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
           ref: ${{ fromJSON(needs.qualify.outputs.source).sha }}
-          path: source
           persist-credentials: false
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version-file: source/.nvmrc
+          node-version-file: .nvmrc
           package-manager-cache: false
       - name: Toolchain and dependencies
         run: |
@@ -92,26 +63,25 @@ jobs:
           test "$(rustc -vV | sed -n 's/^host: //p')" = aarch64-apple-darwin
           npm install --global "$(node -p "require('./package.json').packageManager")"
           npm ci
-          npm --prefix "$GITHUB_WORKSPACE/control" ci --ignore-scripts
           node scripts/check-rust-toolchain.mjs
       - name: Import fixed release identity
         env:
           MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
           MACOS_SIGNING_P12_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
           MACOS_SIGNING_P12_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
-        run: node scripts/ci-command.mjs 180 bash "$GITHUB_WORKSPACE/control/scripts/ci-macos-signing.sh" setup-release
+        run: node scripts/ci-command.mjs 180 bash scripts/ci-macos-signing.sh setup-release
       - name: Build and verify ARM64 disk image
         run: npm run package:release -- --arch arm64
       - name: Verify native startup and shutdown
         run: npm run test:ci-macos
       - name: Remove temporary signing material
         if: always()
-        run: node scripts/ci-command.mjs 120 bash "$GITHUB_WORKSPACE/control/scripts/ci-macos-signing.sh" cleanup
+        run: node scripts/ci-command.mjs 120 bash scripts/ci-macos-signing.sh cleanup
       - name: Create and verify the Release draft
         env:
           GH_TOKEN: ${{ github.token }}
           MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
-        run: node "$GITHUB_WORKSPACE/control/scripts/release-draft.mjs" draft
+        run: node scripts/release-draft.mjs draft
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

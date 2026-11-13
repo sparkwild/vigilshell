@@ -6,9 +6,6 @@ CI_SIGNING_ROOT="$RUNNER_TEMP/vigilshell-ci-signing"
 CI_KEYCHAIN="$CI_SIGNING_ROOT/ci.keychain-db"
 case "${1:-}" in
   setup|setup-release)
-    if [[ "$1" == setup-release ]]; then
-      node "$(dirname "$0")/release-draft.mjs" verify-source
-    fi
     mkdir -m 700 "$CI_SIGNING_ROOT"
     umask 077
     # Exported keys are never needed after import, including on setup failure.
@@ -17,6 +14,7 @@ case "${1:-}" in
     CI_PASSWORD="$(openssl rand -hex 32)"
     echo "::add-mask::$CI_PASSWORD"
     if [[ "$1" == setup-release ]]; then
+      [[ "${GITHUB_REF_TYPE:-}" == tag && "${GITHUB_EVENT_NAME:-}" == push ]]
       : "${MACOS_SIGNING_P12_BASE64:?Missing release signing certificate}"
       : "${MACOS_SIGNING_P12_PASSWORD:?Missing release signing certificate password}"
       : "${MACOS_SIGNING_IDENTITY:?Missing fixed release signing fingerprint}"
