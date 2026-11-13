@@ -12,5 +12,7 @@
 
 ## Upgrade Notes
 
-- Upgrade from 0.1.1 or earlier by downloading the DMG and replacing the application manually. The in-app update engine is available starting with 0.1.2 for subsequent releases.
+- This version was not published. Its source tag is retained; the planned features and fixes are included in 0.1.3.
+
+- Upgrade from 0.1.1 or earlier by downloading the DMG and replacing the application manually. The first published version with the in-app update engine is 0.1.3.
 - Update checks and downloads are initiated manually. An ordinary quit does not install a downloaded update; use Restart and install when you are ready.
