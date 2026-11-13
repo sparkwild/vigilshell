@@ -26,6 +26,7 @@
     "postinstall": "install-electron",
     "deps:check": "node scripts/check-dependencies.mjs",
     "test:packaged": "node scripts/test-packaged.mjs",
+    "test:update:native": "npm run package:dev && node tests/e2e/native-update.mjs --application",
     "backend:check": "node scripts/check-backend.mjs",
     "deps:rust": "node scripts/check-rust-dependencies.mjs",
     "test:configuration": "vitest run src/renderer/features/connections/model/use-connection-editor.test.tsx src/renderer/features/connections/proxies/ProxyOptions.test.tsx src/shared/workspace-validation.test.ts",
@@ -80,6 +81,7 @@
     "@types/node": "24.13.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/semver": "7.8.0",
     "@vitejs/plugin-react": "5.2.0",
     "@xterm/addon-fit": "0.11.0",
     "@xterm/addon-search": "0.16.0",
@@ -137,6 +139,7 @@
     "@xterm/addon-serialize": "0.14.0",
     "@xterm/headless": "6.0.0",
     "ajv": "8.20.0",
+    "electron-updater": "6.8.12",
     "zod": "4.6.6"
   },
   "license": "Apache-2.0"

@@ -1,4 +1,5 @@
 import { registerApplication } from './updates/electron';
+import { UpdateInstallation } from './updates/installation';
 import { observeFileEditingNotifications } from './notifications/file-editing';
 import { observeRuntimeNotifications } from './notifications/runtime';
 import { registerFileEditors } from './file-editing/electron';
@@ -54,6 +55,8 @@ if (!app.requestSingleInstanceLock()) {
     uiState: UiStateService | undefined,
     mcp: McpController | undefined;
   let confirmingQuit = false;
+  let installingUpdate = false;
+  let updateQuitting = false;
   let quitting = false,
     pendingSettings: boolean | 'notifications' | 'about' | 'updates' = false,
     startup: RendererStartup | undefined;
@@ -63,6 +66,7 @@ if (!app.requestSingleInstanceLock()) {
   const developmentUrl = launch.developmentUrl;
   const allowedUrl = developmentUrl ?? pathToFileURL(page).href;
   const senderAllowed = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+    if (installingUpdate) return false;
     if (
       !window ||
       event.sender !== window.webContents ||
@@ -80,7 +84,11 @@ if (!app.requestSingleInstanceLock()) {
       return false;
     }
   };
-  const updates = registerApplication(senderAllowed);
+  const updates = registerApplication(senderAllowed, {
+    development: launch.applicationName === 'VigilShell Dev',
+    packaged: app.isPackaged && !launch.nativeDevelopment,
+    install: (prepare, commit) => installer.install(prepare, commit),
+  });
   updates.on('changed', (value) => {
     if (window && !window.isDestroyed()) window.webContents.send('application:changed', value);
   });
@@ -104,6 +112,11 @@ if (!app.requestSingleInstanceLock()) {
   let pendingTransferNavigation: import('@contracts').TransferNotificationTarget | undefined;
   function showWindow(settings: boolean | 'notifications' | 'about' | 'updates' = false) {
     if (quitting) return;
+    if (installingUpdate && settings) {
+      window?.show();
+      window?.focus();
+      return;
+    }
     if (settings) pendingSettings = settings;
     if (!window) {
       void createWindow();
@@ -360,9 +373,8 @@ if (!app.requestSingleInstanceLock()) {
   }
   let fileEditors: FileEditingService | undefined;
   let stopNotifications: (() => void) | undefined;
-  async function quit() {
-    if (quitting) return;
-    if (confirmingQuit) return;
+  async function confirmExit(update = false): Promise<boolean> {
+    if (quitting || confirmingQuit || installingUpdate) return false;
     if (
       workspace &&
       (workspace.activeCount ||
@@ -377,9 +389,9 @@ if (!app.requestSingleInstanceLock()) {
       const t = (key: MessageKey) => translate(key, locale);
       const options: Electron.MessageBoxOptions = {
         type: 'question',
-        message: t('ws_quit_title'),
+        message: t(update ? 'updates_install_title' : 'ws_quit_title'),
         detail:
-          t('ws_quit_body') +
+          t(update ? 'updates_install_body' : 'ws_quit_body') +
           '\n' +
           t('ws_affected_sessions') +
           ': ' +
@@ -396,7 +408,11 @@ if (!app.requestSingleInstanceLock()) {
           (mcp?.activeCount ?? 0),
         buttons: [
           t('ws_cancel'),
-          workspace.activeTransferCount ? t('tools_cancel_and_quit') : t('quit'),
+          update
+            ? t('updates_install')
+            : workspace.activeTransferCount
+              ? t('tools_cancel_and_quit')
+              : t('quit'),
         ],
         defaultId: 0,
         cancelId: 0,
@@ -406,8 +422,8 @@ if (!app.requestSingleInstanceLock()) {
         const result = window
           ? await dialog.showMessageBox(window, options)
           : await dialog.showMessageBox(options);
-        if (result.response !== 1) return;
-        if (workspace.activeTransferCount) await workspace.cancelTransfers();
+        if (result.response !== 1) return false;
+        if (!update && workspace.activeTransferCount) await workspace.cancelTransfers();
       } catch {
         const failure = {
           type: 'error' as const,
@@ -416,11 +432,58 @@ if (!app.requestSingleInstanceLock()) {
         };
         if (window) await dialog.showMessageBox(window, failure);
         else await dialog.showMessageBox(failure);
-        return;
+        return false;
       } finally {
         confirmingQuit = false;
       }
     }
+    return true;
+  }
+  const installer = new UpdateInstallation({
+    confirm: () => confirmExit(true),
+    lock: (value) => {
+      installingUpdate = value;
+      mcp?.setUpdating(value);
+      fileEditors?.setUpdating(value);
+    },
+    flush: async () => {
+      if (workspace?.activeTransferCount) await workspace.cancelTransfers();
+      if (!state || state.getSnapshot().runtime.status !== 'ready')
+        throw Error('runtime_unavailable');
+      const snapshot = await state.reconcilePreferences();
+      if (snapshot.save.phase !== 'idle' || snapshot.save.error)
+        throw Error('preferences_not_saved');
+      await uiState?.flush(true);
+      await fileEditors?.prepareForUpdate();
+    },
+    shutdown: async () => {
+      quitting = true;
+      stopNotifications?.();
+      startup?.dispose();
+      const stopping = Promise.allSettled([fileEditors?.stop(), mcp?.stop()]);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          stopping,
+          new Promise<void>((resolve) => {
+            timer = setTimeout(resolve, 5000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+      await state?.stop();
+      tray?.destroy();
+      updateQuitting = true;
+    },
+    recover: () => {
+      updateQuitting = true;
+      app.relaunch();
+      app.exit(1);
+    },
+  });
+  async function quit() {
+    if (!(await confirmExit()) || quitting || installingUpdate) return;
     quitting = true;
     updates.stop();
     stopNotifications?.();
@@ -433,6 +496,7 @@ if (!app.requestSingleInstanceLock()) {
     app.exit(0);
   }
   app.on('before-quit', (event) => {
+    if (updateQuitting) return;
     event.preventDefault();
     void quit();
   });

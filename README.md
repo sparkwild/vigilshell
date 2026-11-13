@@ -34,7 +34,7 @@ MCP operations are subject to connection authorization and remote account permis
 
 ## Installation and running
 
-Public release installers are not available yet. The native development entry point and packaging scripts currently target macOS. You can run from source or build a DMG locally.
+Published installers are available from [GitHub Releases](https://github.com/sparkwild/vigilshell/releases). You can also run from source or build a package locally. Current native development and packaging target macOS.
 
 - **Run from source:** follow [Development](#development) to set up dependencies and signing, then start `VigilShell Dev`.
 - **Install a local build:** after [building a package](#building-a-package), open the DMG in `release/` and drag `VigilShell.app` into Applications.
@@ -146,7 +146,7 @@ This prepares the Rust backend, communication contracts, localization code, and 
 | `npm run i18n:generate`      | Generate localization code from `messages/`                                                                             |
 | `npm run build`              | Compile backend, native bridge, and frontend resources for a production build                                           |
 | `npm run package:dev`        | Build a Dev application directory under `release/dev/`                                                                  |
-| `npm run package:release`    | Build and verify a DMG using the release profile under `release/`                                                       |
+| `npm run package:release`    | Build and verify the DMG, update ZIP and metadata under `release/`                                                       |
 
 Communication contracts are generated from Rust DTOs; localization code is generated from message sources. Edit the source and run the corresponding generator instead of editing generated files. Use Dev data for testing and debugging, preserving the production application's data and signing identity.
 
@@ -168,13 +168,15 @@ Packaging defaults to the current Node.js process architecture. You can also spe
 npm run package:release -- --arch arm64
 ```
 
-The target architecture must match the macOS host process and Rust toolchain. The script builds, signs, and verifies the DMG before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
+The target architecture must match the macOS host process and Rust toolchain. The script builds and verifies the signed DMG, update ZIP, checksums and `latest-mac.yml` before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
 
 `npm run build` defaults to the release signing profile. Packaged builds keep their frontend, native bridges, backend resources, and Cargo output under `.cache/build/<dev|release>/<architecture>/`, separate from the live Dev application. Release builds require only the release signing configuration; they do not fall back to Dev credentials.
 
 ### ARM64 distribution and previews
 
-The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a temporary self-signed installer. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft with a fixed self-signed installer without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication. Update discovery opens the release page for manual installation.
+The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a temporary self-signed installer. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft with fixed self-signed installers and update metadata without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication.
+
+Under **Settings → About**, check for a stable release, download it, and choose **Restart and install**. Automatic checking and downloading are disabled. Downloaded updates remain available after restarting; an ordinary quit does not install them. The release page remains available for manual installation. Versions without the update engine must first be upgraded manually to a version that includes it.
 
 In a separate test Mac/account with no existing VigilShell data, download the DMG and its SHA-256 file from the same release, verify with `shasum -a 256 -c <file>.dmg.sha256`, then drag the application into Applications. If macOS blocks an unverified developer, use the per-app **Privacy & Security → Open Anyway** flow after checking the download source; do not disable Gatekeeper globally.
 
@@ -213,7 +215,7 @@ The following technical documents are currently in Chinese:
 
 ## License status
 
-VigilShell original code is licensed under [Apache-2.0](LICENSE). See [resources/licenses/](resources/licenses/) for third-party notices. The DMG includes the complete `LICENSES.chromium.html` from Electron alongside the app.
+VigilShell original code is licensed under [Apache-2.0](LICENSE). See [resources/licenses/](resources/licenses/) for third-party notices. The DMG and update ZIP include the complete `LICENSES.chromium.html` from Electron alongside the app.
 
 The source repository includes development skills with separate notices. [Third-party source notices](THIRD_PARTY_NOTICES.md)
 

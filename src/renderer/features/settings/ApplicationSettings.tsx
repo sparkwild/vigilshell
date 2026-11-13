@@ -72,7 +72,21 @@ export function ApplicationSettings({
     setFailure(false);
     void action().catch(() => setFailure(true));
   };
-  const checking = pending || state.phase === 'checking';
+  const activeUpdate = ['downloading', 'ready', 'preparing', 'installing', 'installError'].includes(
+    state.phase,
+  );
+  const checking = (pending && !activeUpdate) || state.phase === 'checking';
+  const showUpdate =
+    !!state.release &&
+    [
+      'available',
+      'downloading',
+      'ready',
+      'preparing',
+      'installing',
+      'downloadError',
+      'installError',
+    ].includes(state.phase);
   return (
     <div className="flex flex-col gap-7">
       <section
@@ -94,20 +108,18 @@ export function ApplicationSettings({
           size="lg"
           variant="secondary"
           onClick={() => {
-            if ((state.phase === 'available' && state.release) || checking) {
+            if (showUpdate || checking) {
               setUpdateFailure(false);
               setDialogOpen(true);
             } else check();
           }}
         >
-          {checking ? (
+          {checking || ['downloading', 'preparing', 'installing'].includes(state.phase) ? (
             <Spinner data-icon="inline-start" aria-hidden="true" />
           ) : (
             <RefreshCwIcon data-icon="inline-start" />
           )}
-          {state.phase === 'available' && state.release && !checking
-            ? t('updates_view')
-            : t('updates_check')}
+          {showUpdate && !checking ? t('updates_view') : t('updates_check')}
         </Button>
       </section>
       {failure ? (
@@ -193,10 +205,23 @@ export function ApplicationSettings({
         onOpenChange={setDialogOpen}
         state={state}
         info={info}
-        pending={pending}
+        pending={pending && !activeUpdate}
         failure={updateFailure}
         onDownload={() => {
           setUpdateFailure(false);
+          void (
+            state.canDownload
+              ? window.vigilshell.application.download()
+              : window.vigilshell.application.open('openRelease')
+          ).catch(() => setUpdateFailure(true));
+        }}
+        onCancel={() => {
+          void window.vigilshell.application.cancel().catch(() => setUpdateFailure(true));
+        }}
+        onInstall={() => {
+          void window.vigilshell.application.install().catch(() => setUpdateFailure(true));
+        }}
+        onRelease={() => {
           void window.vigilshell.application
             .open('openRelease')
             .catch(() => setUpdateFailure(true));

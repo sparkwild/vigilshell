@@ -34,7 +34,7 @@ MCP 操作受连接授权和远端账号权限约束；具体可用能力还取�
 
 ## 安装与运行
 
-当前尚未提供公开发行的安装包。现有原生开发入口与打包脚本针对 macOS，可从源码运行，或在本机生成 DMG 后安装。
+已发布的安装包可从 [GitHub Releases](https://github.com/sparkwild/vigilshell/releases) 下载，也可以从源码运行或在本地打包。当前原生开发入口与打包脚本针对 macOS。
 
 - **从源码使用**：按照下方[开发](#开发)说明准备环境、配置签名并启动 `VigilShell Dev`。
 - **安装本地构建的版本**：完成[本地打包](#本地打包)后，打开 `release/` 中的 DMG，将 `VigilShell.app` 拖入“应用程序”。
@@ -146,7 +146,7 @@ npm run dev:app
 | `npm run i18n:generate`      | 从 `messages/` 生成本地化代码                                  |
 | `npm run build`              | 编译生产构建所需的后端、原生桥和前端资源                       |
 | `npm run package:dev`        | 生成 Dev 应用目录，输出到 `release/dev/`                       |
-| `npm run package:release`    | 生成并校验 release 配置的 DMG，输出到 `release/`               |
+| `npm run package:release`    | 生成并校验 DMG、更新 ZIP 和元数据，输出到 `release/`               |
 
 通信合同由 Rust DTO 生成，本地化代码由消息源生成；修改对应源码后运行生成命令，不直接编辑生成文件。测试与调试使用 Dev 数据，保留正式应用的数据和签名身份。
 
@@ -168,13 +168,15 @@ npm run package:release
 npm run package:release -- --arch arm64
 ```
 
-脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成构建、签名与 DMG 校验后才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
+脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成构建、签名以及 DMG、更新 ZIP、校验文件和 `latest-mac.yml` 检查后，才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
 
 `npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据。
 
 ### ARM64 分发与预览
 
-首期打包面向 Apple Silicon Mac。手动运行 **Preview package** 可以构建临时自签名预览包，并可指定完整提交 SHA。为通过验证的 `main` 提交推送正式版本标签 `vX.Y.Z` 后，工作流使用固定自签名证书构建安装包并创建 Release 草稿。分发包不经过 Apple 公证。维护者核对草稿后手动发布，GitHub 在发布时锁定标签和附件。发现更新时打开发布页，由用户手动下载安装。
+首期打包面向 Apple Silicon Mac。手动运行 **Preview package** 可以构建临时自签名预览包，并可指定完整提交 SHA。为通过验证的 `main` 提交推送正式版本标签 `vX.Y.Z` 后，工作流使用固定自签名证书构建安装包和更新元数据，并创建 Release 草稿。分发包不经过 Apple 公证。维护者核对草稿后手动发布，GitHub 在发布时锁定标签和附件。
+
+在“设置 → 关于”中手动检查正式版本、下载更新，再选择“重启并安装”。自动检查和自动下载保持关闭；下载完成的更新会跨重启保留，普通退出不会安装。发布页入口继续支持手动下载安装。尚不具备更新引擎的版本，需要先手动升级到包含引擎的版本。
 
 在没有既有 VigilShell 数据的独立测试 Mac／账号中，从同一 Release 下载 DMG 与校验文件，执行 `shasum -a 256 -c <文件>.dmg.sha256`，再拖入“应用程序”。如系统因开发者无法验证而阻止打开，应先核对来源，再使用“隐私与安全性 → 仍要打开”的单应用允许方式，不全局关闭 Gatekeeper。
 
@@ -211,6 +213,6 @@ npm run package:release -- --arch arm64
 
 ## 许可说明
 
-VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 在应用旁提供 Electron 自带的完整 `LICENSES.chromium.html`。
+VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 和更新 ZIP 在应用旁提供 Electron 自带的完整 `LICENSES.chromium.html`。
 
 [贡献与预览构建](../CONTRIBUTING.md) · [安全政策](SECURITY.md)

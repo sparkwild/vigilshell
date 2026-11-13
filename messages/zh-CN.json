@@ -1321,5 +1321,22 @@
   "updates_no_notes": "此版本未提供更新说明，可前往发布页查看。",
   "updates_view": "查看新版本",
   "updates_failed": "检查更新失败",
-  "updates_dismiss": "确定"
+  "updates_dismiss": "确定",
+  "updates_downloading": "正在下载更新…",
+  "updates_ready": "更新已就绪",
+  "updates_preparing": "正在准备安装…",
+  "updates_installing": "正在重启并安装…",
+  "updates_downloadError": "更新下载失败",
+  "updates_installError": "安装未完成，请重试或前往发布页手动安装。",
+  "updates_download_now": "下载更新",
+  "updates_retry_download": "重新下载",
+  "updates_install": "重启并安装",
+  "updates_later": "稍后",
+  "updates_release_page": "查看发布页",
+  "updates_background": "关闭此窗口后，下载会继续进行。",
+  "updates_install_title": "重启并安装更新？",
+  "updates_insufficientSpace": "磁盘空间不足，请清理空间后重试。",
+  "updates_readOnlyLocation": "请先将 VigilShell 安装到可写的应用目录，再重试。",
+  "updates_unsavedState": "请先完成保存或文件编辑，再重试安装。",
+  "updates_install_body": "应用将重启。活动会话会断开，传输会取消，尚未保存的表单修改将被丢弃。"
 }

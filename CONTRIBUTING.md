@@ -26,7 +26,7 @@ CI classifies changes in pull requests targeting `main`. Changes limited to `REA
 
 Preview artifacts support isolated testing and use a temporary signing identity. Distributed packages use the fixed release identity.
 
-For changes to native integrations, signing or installer generation, run **Preview package** manually for the exact commit before merging and record the installation or startup result in the PR. For other previews, the workflow uses the selected ref when no commit SHA is supplied. The selected commit must contain the preview tooling. Download the artifact matching its SHA, run ID and attempt. It contains a DMG, SHA-256 checksum, signing report and build manifest. Preview artifacts are available for 14 days.
+For changes to native integrations, signing or installer generation, run **Preview package** manually for the exact commit before merging and record the installation or startup result in the PR. For other previews, the workflow uses the selected ref when no commit SHA is supplied. The selected commit must contain the preview tooling. Download the artifact matching its SHA, run ID and attempt. It contains a DMG, update ZIP, checksums, ZIP blockmap, update metadata, signing report and build manifest. Preview artifacts are available for 14 days.
 
 ## Versions and release boundaries
 
@@ -44,7 +44,7 @@ Use the version number alone as the Release title in `X.Y.Z` format, for example
 
 ### Draft and publication
 
-Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, the release notes and changelog, and `main` ancestry. It runs the full frontend and backend checks on the validated commit. Once both pass, the macOS job builds the same commit using the fixed signing identity from the `macos-release` environment. It verifies the ARM64 DMG and native startup, then attaches the installer, checksum, signing report and build manifest directly to a draft. Review the generated notes and assets before publishing it manually.
+Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, the release notes and changelog, and `main` ancestry. It runs the full frontend and backend checks on the validated commit. Once both pass, the macOS job builds the same commit using the fixed signing identity from the `macos-release` environment. It verifies the ARM64 DMG, update ZIP, final metadata digests and native startup, then attaches both archives, their checksums, the ZIP blockmap, update metadata, signing report and build manifest directly to a draft. Review the generated notes and assets before publishing it manually.
 
 An existing draft or published release blocks a second draft for that tag. If an upload stops partway through, the draft remains marked pending. Review and clear the incomplete draft before rerunning the original tag workflow. Keep the tag at the original commit.
 

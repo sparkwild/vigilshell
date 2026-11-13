@@ -7,7 +7,7 @@
 | 层面 | 当前选择 |
 | --- | --- |
 | 开发环境 | Node.js 24.21.0、npm 11.19.1、Rust 1.96.0／Edition 2024；macOS Xcode Command Line Tools |
-| 桌面与构建 | Electron 44、electron-vite 5、Vite 7、electron-builder |
+| 桌面与构建 | Electron 44、electron-vite 5、Vite 7、electron-builder、electron-updater 6.8.12 |
 | 界面 | React 19、TypeScript 6、Tailwind CSS 4 |
 | 组件 | shadcn/ui Base UI，base-nova／neutral；React Aria 树与表格 |
 | 图标与字体 | Lucide；本地品牌 SVG；Fontsource Inter、JetBrains Mono、Noto Sans SC |
@@ -64,24 +64,28 @@ npm run signing:check -- --profile dev
 
 Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本，`npm run release:check -- --notes` 同时检查发布说明与累计变更日志。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
 
-`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。ARM64 安装包命名为 `VigilShell-<version>-macos-arm64.dmg`，同时生成 SHA-256 和包含版本、源码 SHA、证书身份的签名报告，打包入口始终使用 `--publish never`。
+`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。产物包括 `VigilShell-<version>-macos-arm64.dmg`、同名更新 ZIP、两者的 SHA-256、ZIP blockmap、`latest-mac.yml` 和签名报告。更新元数据仅引用最终 ZIP，并核对版本、架构、大小和 SHA-512；DMG 的摘要在签名后生成。签名前规范化暂存包的资源写权限，保留执行权限和符号链接，避免 Squirrel 无法处理只读资源。打包入口始终使用 `--publish never`。
 
 GitHub CI 对面向 `main` 的 PR 按路径分类。纯文档改动只运行分类和 `CI verified` 汇总，其他改动运行前后端检查。合并前要求分支跟上 `main`，并通过 `CI verified`。手动运行 CI 会对所选 ref 执行完整前后端检查。常规 CI 使用只读权限，完整安装包由手动预览和正式版本标签工作流构建。
 
-`Preview package` 通过手动运行构建 macOS ARM64 安装包并验证启动，可指定完整提交 SHA。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、SHA-256、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试，源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+`Preview package` 通过手动运行构建 macOS ARM64 安装包并验证启动，可指定完整提交 SHA。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、更新 ZIP、校验文件、blockmap、更新元数据、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。预览只用于隔离测试，源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 ## 正式版本草稿
 
 `Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z.md`、生成的 `CHANGELOG.md`、远端标签对象及提交是否属于 `main` 历史。工作流使用资格检查确认的 SHA 执行完整前后端检查，两项都通过后才进入同一提交的 macOS 打包。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
 
-macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。安装包、SHA-256、签名报告与 `build.json` 直接上传至 Release 草稿。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
+macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。DMG、ZIP、校验文件、blockmap、更新元数据、签名报告与 `build.json` 直接上传至 Release 草稿。创建草稿前重新核对最终 ZIP 与元数据摘要。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
 
 ## 更新与许可
 
-Main 在用户手动检查时通过公开 GitHub Releases 列表匿名查询标签为 `vX.Y.Z` 且含兼容安装包的正式发行版本，过滤草稿和 GitHub 标记为预发布的 Release；自动检查由共享功能开关停用，启动、周期与睡眠恢复调度实现保留。更新不下载或替换应用。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
+Main 在用户手动检查时通过公开 GitHub Releases 列表匿名查询标签为 `vX.Y.Z` 且含兼容安装包的正式发行版本，过滤草稿和 GitHub 标记为预发布的 Release；自动检查由共享功能开关停用，启动、周期与睡眠恢复调度实现保留。Main 使用 electron-updater 手动下载 ZIP，用户明确选择安装后才进行原生准备与重启替换；自动下载和普通退出安装均关闭。已下载包按摘要保存为不可变文件，回执原子替换，重启后校验版本、架构、大小和 SHA-512，支持离线恢复与安装。原生准备超时属于结果未知，保存安装回执后受控重启；重启仍为旧版本时展示安装失败，不自动重试。安装前验证目录写权限、解压空间及保存结果。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
 
 自有代码采用 Apache-2.0。`npm run licenses:generate` 根据锁定依赖和上游补充生成第三方声明；已声明许可但未附正文的依赖保留包声明与来源，仅提示，不阻止打包，也不补写未知版权人。`npm run licenses:check` 核对清单与许可资源；未声明许可、清单过期、资源缺失或内容不一致仍会失败。正式打包要求许可检查通过，并逐字节核对包内资源。
 
 npm 许可证收集以运行时 `dependencies` 和 [Renderer 打包依赖清单](../scripts/bundled-dependencies.json) 的 `packages` 为入口，按锁文件追踪普通、可选和 peer 依赖，包含嵌套安装版本。`stylesheets` 记录只导入 CSS 的包，收集其许可证，不引入未分发的 CLI 依赖树。新增 Renderer 依赖时同步该清单；移入 `devDependencies` 不会免除已分发代码、CSS 和字体的许可证收集。
 
-打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，与应用并列放在 DMG 根目录。打包校验挂载 DMG 并逐字节比对原文，同时检查 `.app` 内的许可布局。目录形式的 Dev 包也在 `.app` 旁提供同一份文件。
+打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，与应用并列放在 DMG 和 ZIP 根目录。打包校验挂载 DMG、解压 ZIP 并逐字节比对原文，同时检查 `.app` 内的许可布局、权限和签名。目录形式的 Dev 包也在 `.app` 旁提供同一份文件。
+
+本地原生升级验收使用 `npm run test:update:native`，复用现有 Dev 身份和 Dev 数据；运行前完全退出 Dev。测试通过应用 IPC 验证下载、普通退出、离线恢复和递增签名包的真实替换与重启。结束后退出升级后的 Dev，运行 `node tests/e2e/restore-dev-after-update.mjs <evidence-directory>` 恢复原 Dev 外壳；该操作不回滚数据。`--application` 验收使用 Main 的完整安装协调，未指定该参数时仅探测原生更新器。
+
+Dev 打包应用只有设置 `VIGILSHELL_DEV_UPDATE_FEED` 时才开放内部下载，且地址限于 HTTP loopback；正式构建忽略该变量，固定使用公开 Releases。原生热更新外壳不执行应用替换。Dev 和正式更新缓存使用独立名称，发行元数据不会决定本机数据或缓存目录。

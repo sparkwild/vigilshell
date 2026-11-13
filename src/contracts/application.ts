@@ -4,6 +4,9 @@ export interface ApplicationApi {
   info(): Promise<ApplicationInfo>;
   state(): Promise<UpdateSnapshot>;
   check(): Promise<UpdateSnapshot>;
+  download(): Promise<UpdateSnapshot>;
+  cancel(): Promise<UpdateSnapshot>;
+  install(): Promise<UpdateSnapshot>;
   open(action: 'openRelease' | 'project' | 'issues'): Promise<void>;
   onChanged(listener: (state: UpdateSnapshot) => void): () => void;
 }

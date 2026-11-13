@@ -17,6 +17,9 @@ const bridge: DesktopApi = {
     info: () => ipcRenderer.invoke('application:request', { action: 'info' }),
     state: () => ipcRenderer.invoke('application:request', { action: 'state' }),
     check: () => ipcRenderer.invoke('application:request', { action: 'check' }),
+    download: () => ipcRenderer.invoke('application:request', { action: 'download' }),
+    cancel: () => ipcRenderer.invoke('application:request', { action: 'cancel' }),
+    install: () => ipcRenderer.invoke('application:request', { action: 'install' }),
     open: (action) => ipcRenderer.invoke('application:request', { action }),
     onChanged: (listener) => {
       const receive = (_: Electron.IpcRendererEvent, value: import('@contracts').UpdateSnapshot) =>

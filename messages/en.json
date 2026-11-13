@@ -1321,5 +1321,22 @@
   "updates_no_notes": "No release notes provided. Visit the release page for details.",
   "updates_view": "View update",
   "updates_failed": "Failed to check for updates",
-  "updates_dismiss": "OK"
+  "updates_dismiss": "OK",
+  "updates_downloading": "Downloading update…",
+  "updates_ready": "Update ready to install",
+  "updates_preparing": "Preparing to install…",
+  "updates_installing": "Restarting to install…",
+  "updates_downloadError": "Failed to download the update",
+  "updates_installError": "Installation did not complete. Please try again or use the release page.",
+  "updates_download_now": "Download update",
+  "updates_retry_download": "Retry download",
+  "updates_install": "Restart and install",
+  "updates_later": "Later",
+  "updates_release_page": "View release page",
+  "updates_background": "You can close this window; the download will continue.",
+  "updates_install_title": "Restart and install the update?",
+  "updates_insufficientSpace": "Free up disk space, then try again.",
+  "updates_readOnlyLocation": "Move VigilShell to a writable application folder before installing.",
+  "updates_unsavedState": "Complete pending saves and file editing before trying again.",
+  "updates_install_body": "The app will restart. Active sessions will disconnect, transfers will be cancelled, and unsaved form changes will be discarded."
 }

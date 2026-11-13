@@ -779,6 +779,18 @@
     ]
   },
   {
+    "name": "argparse",
+    "version": "2.0.1",
+    "source": "nodeca/argparse",
+    "license": "Python-2.0",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23"
+      }
+    ]
+  },
+  {
     "name": "aria-hidden",
     "version": "1.2.6",
     "source": {
@@ -966,6 +978,22 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "4ff7fc936cdf875209dace77be5f98df16df51d82df7a2069f4d264d1d61c259"
+      }
+    ]
+  },
+  {
+    "name": "builder-util-runtime",
+    "version": "9.7.1",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/electron-userland/electron-builder.git",
+      "directory": "packages/builder-util-runtime"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "bed8d0ab3e6031817f775a641ff37313b0f5591bc8ba0ed79b978dafbd4231ce"
       }
     ]
   },
@@ -1654,6 +1682,21 @@
     ]
   },
   {
+    "name": "debug",
+    "version": "4.4.3",
+    "source": {
+      "type": "git",
+      "url": "git://github.com/debug-js/debug.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "3a61c6c96caf5c1d9b623fb9b04c822b783dfcb78aa7e49c76a3f643e6ed7f95"
+      }
+    ]
+  },
+  {
     "name": "decimal.js-light",
     "version": "2.5.1",
     "source": {
@@ -1848,6 +1891,22 @@
       {
         "file": "LICENSE",
         "sha256": "5154e165bd6c2cc0cfbcd8916498c7abab0497923bafcd5cb07673fe8480087d"
+      }
+    ]
+  },
+  {
+    "name": "electron-updater",
+    "version": "6.8.12",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/electron-userland/electron-builder.git",
+      "directory": "packages/electron-updater"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "bed8d0ab3e6031817f775a641ff37313b0f5591bc8ba0ed79b978dafbd4231ce"
       }
     ]
   },
@@ -2060,6 +2119,21 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ]
+  },
+  {
+    "name": "fs-extra",
+    "version": "10.1.0",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/jprichardson/node-fs-extra"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "1e76029602ae9b21cc4e612db2496d92febed882ba13ba745f8b3309e85f9d39"
       }
     ]
   },
@@ -2300,6 +2374,21 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+      }
+    ]
+  },
+  {
+    "name": "graceful-fs",
+    "version": "4.2.11",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/isaacs/node-graceful-fs"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "f65c5d9f22a317b2a10803bd1868461ce6499c2ed7217bc80c0cc772a748789c"
       }
     ]
   },
@@ -2656,6 +2745,18 @@
     ]
   },
   {
+    "name": "js-yaml",
+    "version": "4.3.2",
+    "source": "nodeca/js-yaml",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550"
+      }
+    ]
+  },
+  {
     "name": "json-schema-traverse",
     "version": "1.0.0",
     "source": {
@@ -2667,6 +2768,21 @@
       {
         "file": "LICENSE",
         "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a"
+      }
+    ]
+  },
+  {
+    "name": "jsonfile",
+    "version": "6.2.1",
+    "source": {
+      "type": "git",
+      "url": "git@github.com:jprichardson/node-jsonfile.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "a9801fb52ba22ef808682a094da8a7a480584b7ed0dfd0d888ab543616335031"
       }
     ]
   },
@@ -2699,6 +2815,17 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "d2e7ec5355c96eeade56b09187ceb48a6a30299da3ce7531a66d3d11405ab963"
+      }
+    ]
+  },
+  {
+    "name": "lazy-val",
+    "version": "1.0.5",
+    "source": "develar/lazy-val",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "PACKAGE_LICENSE_DECLARATION"
       }
     ]
   },
@@ -2759,6 +2886,30 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "c9a75f18b9ab2927829a208fc6aa2cf4e63b8420887ba29cdb265d6619ae82d5"
+      }
+    ]
+  },
+  {
+    "name": "lodash.escaperegexp",
+    "version": "4.1.2",
+    "source": "lodash/lodash",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
+      }
+    ]
+  },
+  {
+    "name": "lodash.isequal",
+    "version": "4.5.0",
+    "source": "lodash/lodash",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "e159c6d48c989185448658f276375bfb2300362ec6d4ae5525a2d49c4bcb947d"
       }
     ]
   },
@@ -2903,6 +3054,18 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "d0fb27c23e807f1fc6f506d161984b294a1f05c9888ae31f056d1712685948ad"
+      }
+    ]
+  },
+  {
+    "name": "ms",
+    "version": "2.1.3",
+    "source": "vercel/ms",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "license.md",
+        "sha256": "1662fae9b5314d11cf51284e2dcd1f006a354f7343f08712a730fcff9a359801"
       }
     ]
   },
@@ -3904,6 +4067,21 @@
     ]
   },
   {
+    "name": "sax",
+    "version": "1.6.1",
+    "source": {
+      "type": "git",
+      "url": "git+ssh://git@github.com/isaacs/sax-js.git"
+    },
+    "license": "BlueOak-1.0.0",
+    "documents": [
+      {
+        "file": "LICENSE.md",
+        "sha256": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004"
+      }
+    ]
+  },
+  {
     "name": "scheduler",
     "version": "0.28.0",
     "source": {
@@ -4036,6 +4214,21 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    ]
+  },
+  {
+    "name": "semver",
+    "version": "7.7.4",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/npm/node-semver.git"
+    },
+    "license": "ISC",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
       }
     ]
   },
@@ -4646,6 +4839,18 @@
     ]
   },
   {
+    "name": "tiny-typed-emitter",
+    "version": "2.1.0",
+    "source": "https://github.com/binier/tiny-typed-emitter.git",
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "4b3faf884ee71eec3df920b66c98fc6618af28e824cf3a32ef3d8774048cc76d"
+      }
+    ]
+  },
+  {
     "name": "tokio",
     "version": "1.53.3",
     "source": "https://github.com/tokio-rs/tokio",
@@ -4836,6 +5041,21 @@
       {
         "file": "LICENSE-MIT",
         "sha256": "efa52eb70a774b62c50cf50f5e57e2625c29d375d09b91132f4f020e47b9944e"
+      }
+    ]
+  },
+  {
+    "name": "universalify",
+    "version": "2.0.1",
+    "source": {
+      "type": "git",
+      "url": "git+https://github.com/RyanZim/universalify.git"
+    },
+    "license": "MIT",
+    "documents": [
+      {
+        "file": "LICENSE",
+        "sha256": "3fda5977c0904e226190b4e21d64340c1731e2142d6fe5f3dee0090a216b8b63"
       }
     ]
   },

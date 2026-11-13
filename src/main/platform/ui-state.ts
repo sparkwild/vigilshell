@@ -136,6 +136,10 @@ export class UiStateService extends EventEmitter<{ changed: [UiStateNotice] }> {
           if (!e.dirty) e.desired = e.record.data;
           this.emit('changed', this.notice(e));
         }
+        if (!e.dirty && !e.unresolved) {
+          e.error = null;
+          e.desired = e.record.data;
+        }
       } catch (error) {
         e.dirty = true;
         e.error =
@@ -156,10 +160,12 @@ export class UiStateService extends EventEmitter<{ changed: [UiStateNotice] }> {
     await this.drain(e);
     return this.notice(e);
   }
-  async flush() {
+  async flush(requireSaved = false) {
     for (const e of this.entries.values()) {
       clearTimeout(e.timer);
-      if (e.dirty || e.running) await this.drain(e);
+      if (e.dirty || e.running || (requireSaved && (e.error || e.unresolved))) await this.drain(e);
     }
+    if (requireSaved && [...this.entries.values()].some((e) => e.dirty || e.unresolved || e.error))
+      throw Error('ui_state_not_saved');
   }
 }

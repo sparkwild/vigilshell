@@ -40,6 +40,7 @@ extraFiles:
       - VigilShell.app/**
       - VigilShell Dev.app/**
       - VigilShell Credential Input.app/**
+afterPack: ./scripts/prepare-package.mjs
 afterSign: ./scripts/verify-package.mjs
 artifactBuildCompleted: ./scripts/sign-artifact.mjs
 mac:
@@ -51,9 +52,14 @@ mac:
   hardenedRuntime: false
   signIgnore:
     - '\.(png|icns|ico|svg)$'
-  target: dmg
+  target:
+    - dmg
+    - zip
+  extraDistFiles:
+    - resources/licenses/electron-LICENSE.txt
 dmg:
   sign: false
+  writeUpdateInfo: false
   contents:
     - x: 130
       y: 220

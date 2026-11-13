@@ -24,12 +24,38 @@ pub enum UpdatePhase {
     NetworkError,
     RateLimited,
     InvalidResponse,
+    Downloading,
+    Ready,
+    Preparing,
+    Installing,
+    DownloadError,
+    InstallError,
+}
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProgress {
+    pub transferred: f64,
+    pub total: f64,
+    pub percent: f64,
+}
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdateIssue {
+    InsufficientSpace,
+    ReadOnlyLocation,
+    UnsavedState,
 }
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateSnapshot {
     pub phase: UpdatePhase,
     pub release: Option<AvailableRelease>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub progress: Option<UpdateProgress>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub can_download: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub issue: Option<UpdateIssue>,
 }
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", tag = "action", deny_unknown_fields)]
@@ -40,6 +66,9 @@ pub enum ApplicationRequest {
     OpenRelease,
     Project,
     Issues,
+    Download,
+    Cancel,
+    Install,
 }
 #[derive(JsonSchema)]
 pub struct ApplicationContract {
