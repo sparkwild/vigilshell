@@ -11,7 +11,8 @@ import { useActivityFeed } from './use-activity-feed';
 import { taskSummary } from './activity-feed';
 import { activityDuration, compactDuration } from './activity-duration';
 import { taskPhaseKeys, toolKey } from './session-model';
-import { CloseButton, IconButton } from '../../components/ui/icon-button';
+import { IconButton } from '../../components/ui/icon-button';
+import { ViewCloseButton } from '../../components/ui/view-close-button';
 import { Button } from '../../components/ui/button';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../../components/ui/input-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
@@ -226,7 +227,7 @@ export function AgentActivity({
       aria-label={t('mcp_activity')}
     >
       {onBack ? (
-        <CloseButton
+        <ViewCloseButton
           className="absolute top-4 right-4"
           label={t('activity_close')}
           onClick={onBack}

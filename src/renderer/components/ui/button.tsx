@@ -50,7 +50,6 @@ const buttonVariants = cva(
         breadcrumb: 'h-[26px] shrink min-w-0 px-[3px] py-0 text-xs overflow-hidden text-ellipsis',
         'icon-hint': 'size-5 [&_svg]:size-3.5',
         'icon-tab': 'size-6 [&_svg]:size-3.5',
-        'icon-close': "size-8 [&_svg:not([class*='size-'])]:size-5",
         icon: 'size-8',
         'icon-xs':
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

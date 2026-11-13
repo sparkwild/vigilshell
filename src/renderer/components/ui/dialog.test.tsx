@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
-import { Dialog, FormDialog, DialogContent, DialogTitle } from './dialog';
+import { Dialog, DialogTrigger, FormDialog, DialogContent, DialogTitle } from './dialog';
+import { Button } from './button';
 
 beforeEach(() => {
   Element.prototype.getAnimations = () => [];
@@ -72,4 +74,24 @@ it('focuses preview content instead of an action', async () => {
     </Dialog>,
   );
   await waitFor(() => expect(screen.getByRole('dialog', { name: 'Preview' })).toHaveFocus());
+});
+
+it('closes through the dedicated view control and restores focus to the trigger', async () => {
+  const user = userEvent.setup();
+  render(
+    <Dialog>
+      <DialogTrigger render={<Button />}>Open view</DialogTrigger>
+      <DialogContent closeLabel="Close view">
+        <DialogTitle>Activity view</DialogTitle>
+      </DialogContent>
+    </Dialog>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Open view' });
+  await user.click(trigger);
+  expect(screen.getByRole('dialog', { name: 'Activity view' })).toBeVisible();
+  await user.click(screen.getByRole('button', { name: 'Close view' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: 'Activity view' })).not.toBeInTheDocument(),
+  );
+  expect(trigger).toHaveFocus();
 });

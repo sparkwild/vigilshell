@@ -41,7 +41,7 @@
 
 ## 交互与反馈
 
-表单聚焦首个可编辑项，确认默认聚焦取消，长内容预览聚焦正文；中文输入法组合中的 Enter 不提交。图标按钮使用公共 IconButton，并提供可访问名称及 Tooltip。页面、弹窗和浮层的右上角关闭入口统一使用 CloseButton（32px 点击区域、20px 图标、2.5px 线宽），页面只设置位置，不单独覆盖尺寸或样式。
+表单聚焦首个可编辑项，确认默认聚焦取消，长内容预览聚焦正文；中文输入法组合中的 Enter 不提交。图标按钮使用公共 IconButton，并提供可访问名称及 Tooltip。功能页、页面级 Dialog 和 Sheet 的右上角关闭入口使用独立 ViewCloseButton，专用组件内部统一维护 32px 点击区域、20px 图标与 2.5px 线宽；调用方只设置位置，不覆盖尺寸或样式。提示条、小浮层和工具栏使用普通 CloseButton，保持常规线宽 2，默认 icon-sm（28px 点击区域、16px 图标）；紧凑连接提示使用 icon-xs（24px 点击区域、12px 图标）。终端标签继续使用 TerminalCloseButton。功能页专用的加粗与放大样式不进入通用 Button 或普通 CloseButton。
 
 操作反馈归属对应组件：加载使用 Spinner／Skeleton，空内容使用 Empty，错误使用 Alert 或局部结果区。应用不使用 Toast，不为成功操作增加重复提示。系统通知由 Main 统一管理，页面只报告实际可见内容。
 

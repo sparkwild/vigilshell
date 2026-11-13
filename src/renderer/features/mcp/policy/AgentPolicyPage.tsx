@@ -29,7 +29,7 @@ import {
   CardContent,
   CardFooter,
 } from '../../../components/ui/card';
-import { CloseButton } from '../../../components/ui/icon-button';
+import { ViewCloseButton } from '../../../components/ui/view-close-button';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../../../components/ui/input-group';
 import { TruncatedText } from '../../../components/ui/tooltip';
 import { Label } from '../../../components/ui/label';
@@ -166,7 +166,7 @@ export function AgentPolicyPage({
             />
           </InputGroup>
         )}
-        <CloseButton
+        <ViewCloseButton
           className="ml-auto"
           label={t('ws_close')}
           disabled={!!pending}

@@ -88,6 +88,7 @@ export function TerminalConnectionInfo({
       }
       dismiss={
         <CloseButton
+          size="icon-xs"
           onClick={() => {
             store.hideTerminalInfo(session.id);
             store.terminals.get(session.id)?.focus();
