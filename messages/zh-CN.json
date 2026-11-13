@@ -40,7 +40,7 @@
   "renderer_interrupted": "界面意外中断",
   "renderer_startup_failed_body": "请重新加载界面后继续使用",
   "renderer_reload": "重新加载界面",
-  "show_window": "打开 VigilShell",
+  "show_window": "显示主窗口",
   "quit": "退出 VigilShell",
   "tray_quit": "退出",
   "hide": "隐藏 VigilShell",

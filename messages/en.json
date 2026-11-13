@@ -40,7 +40,7 @@
   "renderer_interrupted": "The interface stopped unexpectedly",
   "renderer_startup_failed_body": "Reload the interface to continue",
   "renderer_reload": "Reload interface",
-  "show_window": "Open VigilShell",
+  "show_window": "Show Main Window",
   "quit": "Quit VigilShell",
   "tray_quit": "Quit",
   "hide": "Hide VigilShell",
