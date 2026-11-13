@@ -46,6 +46,8 @@ Use the version number alone as the Release title in `X.Y.Z` format, for example
 
 Pushing a new `vX.Y.Z` tag starts **Release draft**. The workflow validates the tag, the four version files, the release notes and changelog, and `main` ancestry. It runs the full frontend and backend checks on the validated commit. Once both pass, the macOS job builds the same commit using the fixed signing identity from the `macos-release` environment. It verifies the ARM64 DMG, update ZIP, final metadata digests and native startup, then attaches both archives, their checksums, the ZIP blockmap, update metadata, signing report and build manifest directly to a draft. Review the generated notes and assets before publishing it manually.
 
+Release qualification runs with Node built-ins before npm dependencies are installed. Update-artifact verification is loaded only in the draft stage, after installing locked dependencies.
+
 An existing draft or published release blocks a second draft for that tag. If an upload stops partway through, the draft remains marked pending. Review and clear the incomplete draft before rerunning the original tag workflow. Keep the tag at the original commit.
 
 Preview builds use the source version and are identified by commit SHA, run ID and attempt. Update discovery selects published stable releases with compatible installers and filters drafts and prereleases.

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { inspectUpdateArtifacts } from './verify-update-artifacts.mjs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -79,6 +78,7 @@ function verifyDraft(release, source) {
 }
 
 async function draft() {
+  const { inspectUpdateArtifacts } = await import('./verify-update-artifacts.mjs');
   const { previousTag, ...source } = JSON.parse(env.RELEASE_SOURCE);
   assert.equal(checkReleaseTag(source.tag), source.version);
   const notes = readReleaseNotes(source.tag);
