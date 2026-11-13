@@ -56,6 +56,8 @@ npm run signing:check -- --profile dev
 
 正式打包使用 `--profile release` 单独配置对应的证书指纹和钥匙串路径。配置脚本按当前用户将配置分别保存到 `dev`、`release` 目录，实际签名从所选钥匙串读取私钥；证书导出文件及私钥不存入源码仓库。同一发行线的后续版本保持签名身份连续，官方发行使用维护者管理的固定正式身份。实现见[签名配置](../scripts/signing/config.mjs)与[打包脚本](../scripts/package-macos.mjs)。
 
+Dev 启动器统一管理 Main／Backend 重启：按 Main、Preload 产物内容和原生签名身份比较运行版本，相同产物不重启。连续构建只启动最新完成版本，Rust 编译与合同生成完成后再切换；钥匙串读取尚未结束时暂缓自动切换，显式退出仍正常收尾。此机制减少开发期间重复授权，不改变系统对新二进制的授权规则。
+
 本地热更新沿用现有 Dev 身份、`out/`、`target/debug/` 和 `.cache/{notification-native,mcp-native}/`。打包构建通过统一上下文把前端、原生桥、后端资源和 Cargo 输出放到 `.cache/build/<dev|release>/<arm64|x64>/` 的 `out/`、`native/`、`backend/`、`cargo/`，不覆盖热更新产物。`package:dev` 使用 Dev 签名和 `development-package` 模式，`package:release` 使用 release 签名和 `production` 模式；构建模式与身份不匹配时失败。原生桥在编译阶段即采用所选身份，不要求 release 构建配置 Dev 证书。
 
 打包入口移除继承的开发页面、启动器及数据目录环境变量；本地已有 Dev 应用运行时仍拒绝完整重建。安装包内的 `out/`、`Resources/native/` 和 `Helpers/` 布局、Dev／正式应用数据目录保持独立。最终产物仍输出到 `release/dev/` 或 `release/`。

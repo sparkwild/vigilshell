@@ -1,3 +1,4 @@
+import { notifyRuntime } from './dev-runtime.mjs';
 import { realpathSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -67,9 +68,12 @@ export function rustDevelopmentPlugins(root) {
         const rebuild = async () => {
           if (running || closed) return;
           running = true;
+          let success = false;
+          await notifyRuntime({ kind: 'build', running: true });
           try {
             while (dirty && !closed) {
               dirty = false;
+              success = false;
               try {
                 console.log('[dev:app] Rust changed; rebuilding Backend and desktop contracts');
                 await run(process.execPath, [join(root, 'scripts/build-backend.mjs')]);
@@ -81,6 +85,7 @@ export function rustDevelopmentPlugins(root) {
                 if (!dirty && !closed) {
                   await run(process.execPath, [join(root, 'scripts/dev-backend.mjs'), '--publish']);
                   await writeFile(revision, randomUUID());
+                  success = true;
                 }
               } catch (error) {
                 console.error(
@@ -91,6 +96,7 @@ export function rustDevelopmentPlugins(root) {
             }
           } finally {
             running = false;
+            await notifyRuntime({ kind: 'build', running: false, success });
           }
         };
         /** @param {string} _event @param {string} file */

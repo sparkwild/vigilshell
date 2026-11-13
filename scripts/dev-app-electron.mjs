@@ -5,6 +5,24 @@ import { dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { notifyRuntime } from './dev-runtime.mjs';
+
+if (process.env.VIGILSHELL_DEV_CONTROL && process.env.VIGILSHELL_DEV_SUPERVISED !== '1') {
+  await notifyRuntime({
+    kind: 'launch',
+    args: process.argv.slice(2),
+    rendererUrl: process.env.ELECTRON_RENDERER_URL,
+  });
+  await new Promise((resolve) => {
+    const timer = setInterval(() => {}, 60000);
+    const stop = () => {
+      clearInterval(timer);
+      resolve();
+    };
+    for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(signal, stop);
+  });
+  process.exit(0);
+}
 
 const execute = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');

@@ -76,6 +76,13 @@ impl EncryptedSecretStore {
                 revision: revision + 1,
                 code: result.err().map(|e| e.code().into()),
             });
+            // Dev supervision also needs completion when initialization fails before a key read.
+            tracing::info!(
+                application = "vigilshell",
+                pid = std::process::id(),
+                stage = "vault_initialization",
+                outcome = "finished"
+            );
         });
         self.access_state()
     }
