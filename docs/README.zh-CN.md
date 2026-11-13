@@ -212,6 +212,6 @@ npm run package:release -- --arch arm64
 
 ## 许可说明
 
-VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 和更新 ZIP 在应用旁提供 Electron 自带的完整 `LICENSES.chromium.html`。
+VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 在 `.licenses/LICENSES.chromium.html` 中提供 Electron 自带的完整 Chromium 许可声明，在 Finder 中按 `⌘⇧.` 可显示隐藏目录；更新 ZIP 仍将同一文件放在应用旁。
 
 [贡献与预览构建](../CONTRIBUTING.md) · [安全政策](SECURITY.md)
