@@ -21,7 +21,7 @@ const buttonVariants = cva(
         sidebar:
           'text-[length:var(--font-size-body)] font-normal text-sidebar-foreground not-aria-disabled:hover:bg-sidebar-hover active:not-aria-disabled:bg-sidebar-pressed aria-expanded:bg-sidebar-hover',
         update:
-          'text-update-accent not-aria-disabled:hover:bg-update-accent/10 active:not-aria-disabled:bg-update-accent/15 focus-visible:border-update-accent focus-visible:ring-update-accent/40',
+          'text-update-accent not-aria-disabled:hover:bg-sidebar-hover active:not-aria-disabled:bg-sidebar-pressed',
         'sidebar-placeholder':
           'border-dashed border-sidebar-border bg-transparent font-normal text-muted-foreground not-aria-disabled:hover:bg-sidebar-hover active:not-aria-disabled:bg-sidebar-pressed',
         titlebar:

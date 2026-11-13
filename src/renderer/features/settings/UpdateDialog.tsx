@@ -64,6 +64,7 @@ export function UpdateDialog({
     !checking &&
     (failure || ['empty', 'networkError', 'rateLimited', 'invalidResponse'].includes(state.phase));
   const available = !checking && !failed && state.release;
+  const discovered = !!available && state.phase === 'available';
   const Icon =
     failed || state.phase === 'downloadError' || state.phase === 'installError'
       ? TriangleAlertIcon
@@ -107,9 +108,16 @@ export function UpdateDialog({
             {checking || downloading || installing ? (
               <Spinner className="size-4 shrink-0" aria-hidden="true" />
             ) : (
-              <Icon className="size-4 shrink-0" aria-hidden="true" />
+              <Icon
+                className={cn('size-4 shrink-0', discovered && 'text-update-accent')}
+                aria-hidden="true"
+              />
             )}
-            <span className="min-w-0 [overflow-wrap:anywhere]" role="status" aria-live="polite">
+            <span
+              className={cn('min-w-0 [overflow-wrap:anywhere]', discovered && 'text-update-accent')}
+              role="status"
+              aria-live="polite"
+            >
               {title}
             </span>
           </DialogTitle>
