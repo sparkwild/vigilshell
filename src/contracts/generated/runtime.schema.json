@@ -18,6 +18,9 @@
     "file_editors": {
       "$ref": "#/definitions/FileEditorContract"
     },
+    "native_menu": {
+      "$ref": "#/definitions/NativeMenuState"
+    },
     "runtime": {
       "$ref": "#/definitions/RuntimeContract"
     },
@@ -29,6 +32,7 @@
     }
   },
   "required": [
+    "native_menu",
     "application",
     "file_editors",
     "agent",
@@ -8461,6 +8465,64 @@
         "system",
         "zh-CN",
         "en"
+      ]
+    },
+    "NativeMenuCloseTarget": {
+      "type": "string",
+      "enum": [
+        "dialog",
+        "page",
+        "tab",
+        "window"
+      ]
+    },
+    "NativeMenuCommand": {
+      "type": "string",
+      "enum": [
+        "new",
+        "newGroup",
+        "connect",
+        "connectNew",
+        "editConnection",
+        "find",
+        "close",
+        "workbench",
+        "agentPolicy",
+        "agentActivity",
+        "toggleSidebar",
+        "toggleTools",
+        "showFiles",
+        "showMonitor",
+        "showTransfers"
+      ]
+    },
+    "NativeMenuState": {
+      "description": "Presentation capabilities only; connection identities and business state stay in Renderer.",
+      "type": "object",
+      "properties": {
+        "checked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NativeMenuCommand"
+          },
+          "maxItems": 15
+        },
+        "closeTarget": {
+          "$ref": "#/definitions/NativeMenuCloseTarget"
+        },
+        "enabled": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NativeMenuCommand"
+          },
+          "maxItems": 15
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "checked",
+        "closeTarget"
       ]
     },
     "NativeServiceDefinition": {

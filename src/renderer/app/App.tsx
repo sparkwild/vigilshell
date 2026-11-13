@@ -1,3 +1,4 @@
+import { NativeMenuProvider, useNativeMenuActions } from './native-menu/NativeMenuProvider';
 import { UpdateController, useOpenUpdate } from '../features/settings/UpdateController';
 import { hasNotificationTarget } from '../features/notifications/target-availability';
 import type { NotificationTarget } from '@contracts';
@@ -24,9 +25,11 @@ import { usePageNavigation } from './use-page-navigation';
 export function App(props: { fontFailed: boolean }) {
   return (
     <UiProvider>
-      <UpdateController>
-        <Application {...props} />
-      </UpdateController>
+      <NativeMenuProvider>
+        <UpdateController>
+          <Application {...props} />
+        </UpdateController>
+      </NativeMenuProvider>
     </UiProvider>
   );
 }
@@ -257,18 +260,32 @@ function Application({ fontFailed }: { fontFailed: boolean }) {
   useEffect(() => {
     window.vigilshell.rendererReady();
   }, []);
-  useEffect(
-    () =>
-      window.vigilshell.onWorkspaceCommand((command) => {
-        if (view === 'workbench') return;
-        if (command === 'close') goBack();
-        if (command === 'new')
-          void navigate(() => {
+  useNativeMenuActions(
+    {
+      new: {
+        enabled: true,
+        run: () =>
+          navigate(() => {
             restoreWorkbench();
-            if (!workspaceStore.getSnapshot().editor) workspaceStore.newConnection();
-          });
-      }),
-    [view, goBack, navigate, restoreWorkbench, workspaceStore],
+            if (!workspaceStore.getSnapshot().editor) return workspaceStore.newConnection();
+          }),
+      },
+      workbench: { enabled: true, checked: view === 'workbench', run: goBack },
+      agentPolicy: {
+        enabled: true,
+        checked: view === 'policy',
+        run: () => navigate(() => showAgentTarget({ view: 'policy', connectionId: null })),
+      },
+      agentActivity: {
+        enabled: true,
+        checked: view === 'activity',
+        run: () => navigate(() => showAgentTarget({ view: 'activity' })),
+      },
+      ...(view !== 'workbench'
+        ? { close: { enabled: true, closeTarget: 'page' as const, run: goBack } }
+        : {}),
+    },
+    2,
   );
   return (
     <ConfirmationProvider>

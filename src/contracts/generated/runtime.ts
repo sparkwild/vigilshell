@@ -1559,6 +1559,31 @@ export type FileEditorRequest =
     }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "NativeMenuCommand".
+ */
+export type NativeMenuCommand =
+  | "new"
+  | "newGroup"
+  | "connect"
+  | "connectNew"
+  | "editConnection"
+  | "find"
+  | "close"
+  | "workbench"
+  | "agentPolicy"
+  | "agentActivity"
+  | "toggleSidebar"
+  | "toggleTools"
+  | "showFiles"
+  | "showMonitor"
+  | "showTransfers"
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "NativeMenuCloseTarget".
+ */
+export type NativeMenuCloseTarget = "dialog" | "page" | "tab" | "window"
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "RpcCommand".
  */
 export type RpcCommand =
@@ -3341,6 +3366,7 @@ export interface DesktopContract {
   desktop: DesktopSnapshot
   error_code: ErrorCode
   file_editors: FileEditorContract
+  native_menu: NativeMenuState
   runtime: RuntimeContract
   system_notifications: SystemNotificationContract
   workspace: WorkspaceContract
@@ -4089,6 +4115,23 @@ export interface FileEditorView {
   id: string
   path: string
   phase: string
+}
+/**
+ * Presentation capabilities only; connection identities and business state stay in Renderer.
+ *
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "NativeMenuState".
+ */
+export interface NativeMenuState {
+  /**
+   * @maxItems 15
+   */
+  checked: NativeMenuCommand[]
+  closeTarget: NativeMenuCloseTarget
+  /**
+   * @maxItems 15
+   */
+  enabled: NativeMenuCommand[]
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema

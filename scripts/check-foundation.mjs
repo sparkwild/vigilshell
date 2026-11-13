@@ -8,6 +8,12 @@ const root = resolve('.');
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 const app = manifest.name;
 const failures = [];
+if (
+  /\bMenu\.(?:buildFromTemplate|setApplicationMenu)\b/.test(
+    readFileSync('src/main/index.ts', 'utf8'),
+  )
+)
+  failures.push('Native menu layouts must remain in src/main/menus, outside the application entry');
 const sharedDependencies = JSON.parse(readFileSync('scripts/foundation-dependencies.json', 'utf8'));
 for (const [name, version] of Object.entries(sharedDependencies)) {
   const declared = manifest.dependencies?.[name] ?? manifest.devDependencies?.[name];

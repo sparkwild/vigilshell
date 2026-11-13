@@ -1,4 +1,6 @@
 import { registerApplication } from './updates/electron';
+import { NativeMenus } from './menus/controller';
+import { openApplicationLink } from './platform/application-links';
 import { UpdateInstallation } from './updates/installation';
 import { observeFileEditingNotifications } from './notifications/file-editing';
 import { observeRuntimeNotifications } from './notifications/runtime';
@@ -13,7 +15,6 @@ import {
   app,
   BrowserWindow,
   ipcMain,
-  Menu,
   Tray,
   nativeImage,
   nativeTheme,
@@ -93,10 +94,53 @@ if (!app.requestSingleInstanceLock()) {
     if (window && !window.isDestroyed()) window.webContents.send('application:changed', value);
   });
   let rendererReady = false;
+  const nativeMenus = new NativeMenus(
+    launch.applicationName,
+    {
+      show: () => showWindow(),
+      settings: () => showWindow(true),
+      about: () => showWindow('about'),
+      updates: () => showWindow('updates'),
+      closeWindow: () => {
+        if (!installingUpdate && !quitting && !confirmingQuit) window?.close();
+      },
+      editors: () => {
+        showWindow();
+        fileEditors?.show();
+      },
+      project: () => {
+        void openApplicationLink('project').catch((error) =>
+          console.error('Application link:', error),
+        );
+      },
+      issues: () => {
+        void openApplicationLink('issues').catch((error) =>
+          console.error('Application link:', error),
+        );
+      },
+      quit: () => app.quit(),
+      command: (command) => {
+        if (
+          installingUpdate ||
+          quitting ||
+          confirmingQuit ||
+          !rendererReady ||
+          !window ||
+          window.isDestroyed()
+        )
+          return;
+        showWindow();
+        window.webContents.send('workspace:command', command);
+      },
+    },
+    senderAllowed,
+  );
+
   function setTrayVisible(visible: boolean) {
     if (!visible) {
       tray?.destroy();
       tray = undefined;
+      nativeMenus.setTray(undefined);
       return;
     }
     if (tray || quitting) return;
@@ -106,7 +150,7 @@ if (!app.requestSingleInstanceLock()) {
     if (process.platform === 'darwin') icon.setTemplateImage(true);
     tray = new Tray(icon);
     tray.on('double-click', () => showWindow());
-    if (state) menus(state.getSnapshot());
+    nativeMenus.setTray(tray);
   }
   let pendingNotificationNavigation: import('@contracts').NotificationTarget | undefined;
   let pendingTransferNavigation: import('@contracts').TransferNotificationTarget | undefined;
@@ -193,9 +237,17 @@ if (!app.requestSingleInstanceLock()) {
       },
     });
     next.webContents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
-      if (isMainFrame && !isInPlace) void workspace?.navigation();
+      if (isMainFrame && !isInPlace) {
+        rendererReady = false;
+        nativeMenus.reset();
+        void workspace?.navigation();
+      }
     });
-    next.webContents.on('render-process-gone', () => void workspace?.navigation());
+    next.webContents.on('render-process-gone', () => {
+      rendererReady = false;
+      nativeMenus.reset();
+      void workspace?.navigation();
+    });
     next.on('hide', () => {
       lifecycle.hidden();
       workspace?.cancelPrompts();
@@ -278,99 +330,6 @@ if (!app.requestSingleInstanceLock()) {
       lifecycle.fail('renderer_load_failed', error instanceof Error ? error.message : '');
     }
   }
-  function menus(snapshot: DesktopSnapshot) {
-    if (quitting) return;
-    const t = (key: MessageKey) => translate(key, snapshot.appearance.locale);
-    const settings: Electron.MenuItemConstructorOptions = {
-      label: t('settings') + '…',
-      accelerator: 'CmdOrCtrl+,',
-      click: () => showWindow(true),
-    };
-    const quit: Electron.MenuItemConstructorOptions = {
-      label: t('quit'),
-      accelerator: 'CmdOrCtrl+Q',
-      click: () => app.quit(),
-    };
-    const application: Electron.MenuItemConstructorOptions[] = [
-      { label: t('show_window'), click: () => showWindow() },
-      { label: t('about_title'), click: () => showWindow('about') },
-      {
-        label: t('updates_check'),
-        click: () => {
-          showWindow('updates');
-        },
-      },
-      settings,
-      { type: 'separator' },
-    ];
-    if (process.platform === 'darwin')
-      application.push(
-        { label: t('hide'), role: 'hide' },
-        { label: t('hide_others'), role: 'hideOthers' },
-        { label: t('show_all'), role: 'unhide' },
-        { type: 'separator' },
-      );
-    application.push(quit);
-    Menu.setApplicationMenu(
-      Menu.buildFromTemplate([
-        { label: launch.applicationName, submenu: application },
-        {
-          label: t('edit'),
-          submenu: [
-            {
-              label: t('ws_new_connection'),
-              accelerator: 'CmdOrCtrl+N',
-              click: () => {
-                showWindow();
-                workspace?.command('new');
-              },
-            },
-            {
-              label: t('ws_find'),
-              accelerator: 'CmdOrCtrl+F',
-              click: () => workspace?.command('find'),
-            },
-            { type: 'separator' },
-            { label: t('undo'), role: 'undo' },
-            { label: t('redo'), role: 'redo' },
-            { type: 'separator' },
-            { label: t('cut'), role: 'cut' },
-            { label: t('copy'), role: 'copy' },
-            { label: t('paste'), role: 'paste' },
-            { label: t('select_all'), role: 'selectAll' },
-          ],
-        },
-        {
-          label: t('window'),
-          submenu: [
-            {
-              label: t('file_editors_title'),
-              click: () => {
-                showWindow();
-                fileEditors?.show();
-              },
-            },
-            { label: t('minimize'), role: 'minimize' },
-            { label: t('zoom'), role: 'zoom' },
-            {
-              label: t('close'),
-              accelerator: 'CmdOrCtrl+W',
-              click: () => workspace?.command('close'),
-            },
-          ],
-        },
-      ]),
-    );
-    tray?.setContextMenu(
-      Menu.buildFromTemplate([
-        { label: t('show_window'), click: () => showWindow() },
-        { ...settings, label: t('settings') },
-        { type: 'separator' },
-        { ...quit, label: t('tray_quit') },
-      ]),
-    );
-    tray?.setToolTip(launch.applicationName);
-  }
   let fileEditors: FileEditingService | undefined;
   let stopNotifications: (() => void) | undefined;
   async function confirmExit(update = false): Promise<boolean> {
@@ -384,6 +343,7 @@ if (!app.requestSingleInstanceLock()) {
         fileEditors?.activeCount)
     ) {
       confirmingQuit = true;
+      nativeMenus.update(state?.getSnapshot().appearance.locale ?? 'en', true);
       showWindow();
       const locale = state?.getSnapshot().appearance.locale ?? 'en';
       const t = (key: MessageKey) => translate(key, locale);
@@ -435,6 +395,10 @@ if (!app.requestSingleInstanceLock()) {
         return false;
       } finally {
         confirmingQuit = false;
+        nativeMenus.update(
+          state?.getSnapshot().appearance.locale ?? 'en',
+          installingUpdate || quitting,
+        );
       }
     }
     return true;
@@ -443,6 +407,7 @@ if (!app.requestSingleInstanceLock()) {
     confirm: () => confirmExit(true),
     lock: (value) => {
       installingUpdate = value;
+      nativeMenus.update(state?.getSnapshot().appearance.locale ?? 'en', value);
       mcp?.setUpdating(value);
       fileEditors?.setUpdating(value);
     },
@@ -738,7 +703,10 @@ if (!app.requestSingleInstanceLock()) {
         workspace?.context(snapshot.appearance);
         if (snapshot.runtime.status === 'ready') void mcp?.refresh().catch(() => undefined);
         if (quitting) return;
-        menus(snapshot);
+        nativeMenus.update(
+          snapshot.appearance.locale,
+          installingUpdate || quitting || confirmingQuit,
+        );
         if (window && !window.isDestroyed()) {
           if (process.platform === 'darwin')
             window.setVibrancy(nativeTheme.prefersReducedTransparency ? null : 'sidebar');
@@ -773,7 +741,7 @@ if (!app.requestSingleInstanceLock()) {
       await mcp.refresh().catch(() => undefined);
       setTrayVisible(mcp.showTray);
       if (quitting) return;
-      menus(state.getSnapshot());
+      nativeMenus.update(state.getSnapshot().appearance.locale);
       await createWindow();
     })
     .catch((error) => {

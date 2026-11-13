@@ -1,3 +1,4 @@
+import { useNativeMenuActions } from '../../app/native-menu/NativeMenuProvider';
 import { TerminalNoticeOverlay } from '../terminal/TerminalFloatingNotice';
 import { AgentControlNotice } from '../terminal/AgentControlNotice';
 import { IconButton } from '../../components/ui/icon-button';
@@ -118,6 +119,18 @@ export function FileWorkspace({
   useEffect(() => {
     for (const terminal of store.terminals.values()) terminal.fit();
   }, [show, maximized, store, session?.agentControl]);
+  function setFilesOpen(open: boolean) {
+    focusToggle.current = true;
+    setOpened(open);
+    setMaximized(open && height < 372);
+  }
+  useNativeMenuActions({
+    showFiles: {
+      enabled: active && !!session,
+      checked: active && show,
+      run: () => setFilesOpen(!show),
+    },
+  });
   return (
     <div className="file-workspace" ref={root}>
       {session?.agentControl ? (
@@ -174,11 +187,7 @@ export function FileWorkspace({
                       className="file-workspace-toggle"
                       aria-expanded={true}
                       aria-controls={fileAreaId}
-                      onClick={() => {
-                        focusToggle.current = true;
-                        setOpened(false);
-                        setMaximized(false);
-                      }}
+                      onClick={() => setFilesOpen(false)}
                       label={t('files_collapse')}
                       tooltip={<>{t('files_collapse')}</>}
                     >
@@ -240,11 +249,7 @@ export function FileWorkspace({
                 aria-label={t('files_expand')}
                 aria-expanded={false}
                 aria-controls={fileAreaId}
-                onClick={() => {
-                  focusToggle.current = true;
-                  setOpened(true);
-                  if (height < 372) setMaximized(true);
-                }}
+                onClick={() => setFilesOpen(true)}
               />
             }
           >

@@ -6,6 +6,7 @@ import { DiscoveryStore } from './discovery-store';
 import { ManagedUpdates, type InstallUpdate } from './managed';
 import { MacUpdateEngine } from './mac-engine';
 import { updateSource } from './source';
+import { openApplicationLink } from '../platform/application-links';
 export function registerApplication(
   allowed: (event: Electron.IpcMainInvokeEvent) => boolean,
   options: { development: boolean; packaged: boolean; install: InstallUpdate },
@@ -64,9 +65,8 @@ export function registerApplication(
       case 'install':
         return updates.install();
       case 'project':
-        return shell.openExternal('https://github.com/sparkwild/vigilshell');
       case 'issues':
-        return shell.openExternal('https://github.com/sparkwild/vigilshell/issues');
+        return openApplicationLink(request.action);
       case 'openRelease':
         if (updates.snapshot.release)
           return shell.openExternal(

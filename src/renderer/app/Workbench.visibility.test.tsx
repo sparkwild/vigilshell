@@ -25,6 +25,7 @@ vi.mock('../features/connections/workspace-context', () => ({
       toolsReveal: 0,
       toolsTab: 'overview',
       activeTab: fixture.activeTab,
+      sessions: [],
       agentViews: fixture.agentViews,
     },
     store: { agentTerminal: (id: string) => fixture.attached.get(id) },

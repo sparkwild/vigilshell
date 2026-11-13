@@ -20,9 +20,11 @@ import { useDesktop } from './DesktopProvider';
 export function WorkbenchNavigation({
   onSettings,
   onConnected,
+  active = true,
   activityActive = false,
   policyActive = false,
 }: {
+  active?: boolean;
   onSettings(): void;
   onConnected(): void;
   activityActive?: boolean;
@@ -40,6 +42,7 @@ export function WorkbenchNavigation({
     <>
       <SidebarContent className="px-3 py-3">
         <ConnectionNavigation
+          active={active}
           onConnected={onConnected}
           showSelection={!activityActive && !policyActive}
         />

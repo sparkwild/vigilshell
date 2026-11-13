@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   guard: vi.fn(),
   mounts: 0,
   newConnection: vi.fn(),
+  hasEditor: false,
   diagnostics: vi.fn(),
   tab: vi.fn(),
   navigate: null as ((v: McpNavigation) => void) | null,
@@ -26,7 +27,7 @@ vi.mock('../features/connections/workspace-context', () => ({
   useWorkspace: () => ({
     store: {
       getSnapshot: () => ({
-        editor: null,
+        editor: state.hasEditor ? { kind: 'connection' } : null,
         sessions: [{ id: 'failed-session' }],
         agentViews: [{ context: { id: 'session' } }],
         transferWindows: [],
@@ -154,6 +155,7 @@ beforeEach(() => {
   })) as unknown as typeof window.matchMedia;
   state.guard.mockReset().mockResolvedValue(true);
   state.newConnection.mockReset();
+  state.hasEditor = false;
   state.diagnostics.mockReset();
   state.tab.mockReset();
   state.mounts = 0;
@@ -245,6 +247,19 @@ it('native routes, settings, keyboard routes all respect the policy leave guard'
   );
   expect(screen.getByText('task-one')).toBeInTheDocument();
   expect(state.mounts).toBe(1);
+});
+
+it('returns to an existing connection draft instead of replacing it through the native new command', async () => {
+  state.hasEditor = true;
+  render(<App fontFailed={false} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Settings' }));
+  expect(screen.getByRole('heading', { name: 'Settings page' })).toBeInTheDocument();
+  await act(async () => state.command!('new'));
+  await waitFor(() =>
+    expect(screen.queryByRole('heading', { name: 'Settings page' })).not.toBeInTheDocument(),
+  );
+  expect(state.newConnection).not.toHaveBeenCalled();
+  expect(state.hasEditor).toBe(true);
 });
 
 it('checks policy departure before a sidebar connection side effect', async () => {

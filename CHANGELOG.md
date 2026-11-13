@@ -8,6 +8,7 @@ See [GitHub Releases](https://github.com/sparkwild/vigilshell/releases) for publ
 
 - **Background update checks** — Check for new versions automatically by default and open update details from the workspace or About.
 - **Localized release notes** — Read release notes in the app's current language, falling back to the default language when the notes are missing or incomplete.
+- **Native menus** — Access connection actions, workspace views, and window controls from reorganized macOS menus.
 
 ### Bug Fixes
 
