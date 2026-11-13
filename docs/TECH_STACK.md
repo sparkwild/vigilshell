@@ -68,7 +68,7 @@ Dev 启动器统一管理 Main／Backend 重启：按 Main、Preload 产物内�
 
 Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本，`npm run release:check -- --notes` 同时检查发布说明与累计变更日志。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
 
-`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。产物包括 `VigilShell-<version>-macos-arm64.dmg`、同名更新 ZIP、两者的 SHA-256、ZIP blockmap、`latest-mac.yml` 和签名报告。更新元数据仅引用最终 ZIP，并核对版本、架构、大小和 SHA-512；DMG 的摘要在签名后生成。签名前规范化暂存包的资源写权限，保留执行权限和符号链接，避免 Squirrel 无法处理只读资源。打包入口始终使用 `--publish never`。
+`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。产物包括 `VigilShell-<version>-macos-arm64.dmg`、同名更新 ZIP、两者的 SHA-256、ZIP blockmap、`latest-mac.yml` 和签名报告。更新元数据仅引用最终 ZIP，并核对版本、架构、大小和 SHA-512；DMG 外层不签名，包内 App 及原生组件仍使用固定身份签名；DMG 的 SHA-256 在产物完成后生成，挂载验证前核对。签名前规范化暂存包的资源写权限，保留执行权限和符号链接，避免 Squirrel 无法处理只读资源。打包入口始终使用 `--publish never`。
 
 GitHub CI 对面向 `main` 的 PR 按路径分类。纯文档改动只运行分类和 `CI verified` 汇总，其他改动运行前后端检查。合并前要求分支跟上 `main`，并通过 `CI verified`。手动运行 CI 会对所选 ref 执行完整前后端检查。常规 CI 使用只读权限，完整安装包由手动预览和正式版本标签工作流构建。
 
@@ -88,7 +88,7 @@ Main 通过手动与后台检查访问公开 GitHub Releases 列表匿名查询�
 
 npm 许可证收集以运行时 `dependencies` 和 [Renderer 打包依赖清单](../scripts/bundled-dependencies.json) 的 `packages` 为入口，按锁文件追踪普通、可选和 peer 依赖，包含嵌套安装版本。`stylesheets` 记录只导入 CSS 的包，收集其许可证，不引入未分发的 CLI 依赖树。新增 Renderer 依赖时同步该清单；移入 `devDependencies` 不会免除已分发代码、CSS 和字体的许可证收集。
 
-打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，与应用并列放在 DMG 和 ZIP 根目录。打包校验挂载 DMG、解压 ZIP 并逐字节比对原文，同时检查 `.app` 内的许可布局、权限和签名。目录形式的 Dev 包也在 `.app` 旁提供同一份文件。
+打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，放在 DMG 的隐藏目录 `.licenses/` 中，安装窗口采用 540×280 的紧凑布局，App、拖拽箭头和 Applications 水平排列并整体居中，默认不显示许可图标；在 Finder 中按 `⌘⇧.` 可显示隐藏目录并打开许可文件。ZIP 和目录形式的 Dev 包仍在 `.app` 旁提供同一份文件，不将它复制进 App。打包校验挂载 DMG、检查可见根目录内容、解压 ZIP 并逐字节比对许可原文，同时检查 `.app` 内的许可布局、权限和签名。
 
 本地原生升级验收使用 `npm run test:update:native`，复用现有 Dev 身份和 Dev 数据；运行前完全退出 Dev。测试通过应用 IPC 验证下载、普通退出、离线恢复和递增签名包的真实替换与重启。结束后退出升级后的 Dev，运行 `node tests/e2e/restore-dev-after-update.mjs <evidence-directory>` 恢复原 Dev 外壳；该操作不回滚数据。`--application` 验收使用 Main 的完整安装协调，未指定该参数时仅探测原生更新器。
 

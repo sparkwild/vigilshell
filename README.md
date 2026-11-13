@@ -168,7 +168,7 @@ Packaging defaults to the current Node.js process architecture. You can also spe
 npm run package:release -- --arch arm64
 ```
 
-The target architecture must match the macOS host process and Rust toolchain. The script builds and verifies the signed DMG, update ZIP, checksums and `latest-mac.yml` before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
+The target architecture must match the macOS host process and Rust toolchain. The script builds an unsigned DMG containing the signed app and verifies the DMG contents, update ZIP, checksums and `latest-mac.yml` before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
 
 `npm run build` defaults to the release signing profile. Packaged builds keep their frontend, native bridges, backend resources, and Cargo output under `.cache/build/<dev|release>/<architecture>/`, separate from the live Dev application. Release builds require only the release signing configuration; they do not fall back to Dev credentials.
 

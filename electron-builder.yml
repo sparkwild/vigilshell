@@ -42,7 +42,7 @@ extraFiles:
       - VigilShell Credential Input.app/**
 afterPack: ./scripts/prepare-package.mjs
 afterSign: ./scripts/verify-package.mjs
-artifactBuildCompleted: ./scripts/sign-artifact.mjs
+artifactBuildCompleted: ./scripts/checksum-artifact.mjs
 mac:
   category: public.app-category.developer-tools
   icon: resources/icons/icon.icns
@@ -60,15 +60,19 @@ mac:
 dmg:
   sign: false
   writeUpdateInfo: false
+  background: resources/icons/dmg-background.png
+  window:
+    width: 540
+    height: 280
   contents:
     - x: 130
-      y: 220
+      y: 100
       type: file
     - x: 410
-      y: 220
+      y: 100
       type: link
       path: /Applications
     - x: 270
-      y: 315
-      type: file
-      path: node_modules/electron/dist/LICENSES.chromium.html
+      y: 230
+      type: dir
+      name: .licenses

@@ -60,7 +60,7 @@
     "version:prepare": "node scripts/prepare-version.mjs",
     "test:release": "node --test tests/development/release-policy.test.mjs tests/development/preview.test.mjs",
     "test:ci-macos": "node tests/e2e/ci-macos-startup.mjs",
-    "test:packaging": "node --test tests/development/packaging.test.mjs && python3 -B tests/development/test_licenses.py"
+    "test:packaging": "node --test tests/development/packaging.test.mjs tests/development/dmg-artifacts.test.mjs && python3 -B tests/development/test_licenses.py"
   },
   "devDependencies": {
     "@base-ui/react": "1.8.0",

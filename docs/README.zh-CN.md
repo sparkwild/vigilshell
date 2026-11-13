@@ -168,7 +168,7 @@ npm run package:release
 npm run package:release -- --arch arm64
 ```
 
-脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成构建、签名以及 DMG、更新 ZIP、校验文件和 `latest-mac.yml` 检查后，才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
+脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成应用构建与签名，生成不带外层签名的 DMG，并完成 DMG 内容、更新 ZIP、校验文件和 `latest-mac.yml` 检查后，才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
 
 `npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据。
 

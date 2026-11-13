@@ -98,8 +98,7 @@ try {
   if (!values.dir) {
     const images = (await readdir(stage)).filter((name) => name.endsWith('.dmg'));
     const image = images[0];
-    if (!image || images.length !== 1)
-      throw Error('Expected exactly one signed DMG per architecture');
+    if (!image || images.length !== 1) throw Error('Expected exactly one DMG per architecture');
     await verifyDmg(join(stage, image), name, (path) => verifyBundle(path, config, values.arch));
     await verifyUpdateArtifacts(stage, name, (path) => verifyBundle(path, config, values.arch));
   }
