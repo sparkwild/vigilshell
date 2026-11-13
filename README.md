@@ -34,7 +34,7 @@ MCP operations are subject to connection authorization and remote account permis
 
 ## Installation and running
 
-Public release installers are not available yet. The native development entry point and packaging scripts currently target macOS. You can run from source or build a DMG locally.
+Published installers are available from [GitHub Releases](https://github.com/sparkwild/vigilshell/releases). You can also run from source or build a package locally. Current native development and packaging target macOS.
 
 - **Run from source:** follow [Development](#development) to set up dependencies and signing, then start `VigilShell Dev`.
 - **Install a local build:** after [building a package](#building-a-package), open the DMG in `release/` and drag `VigilShell.app` into Applications.
@@ -112,18 +112,18 @@ List the code-signing identities available on your machine:
 security find-identity -v -p codesigning
 ```
 
-If no usable identity is available, first create or import a code-signing certificate and private key in Keychain. The configuration command does not generate certificates, and ad hoc signing cannot replace the fixed identity.
+For local development and your own packaged builds, use a code-signing certificate and private key that you create or import into Keychain. The configuration command records an existing identity; it does not generate certificates or accept ad hoc signing.
 
 Replace the placeholders below with the certificate's **40-character fingerprint** and the **absolute path** to its keychain:
 
 ```sh
 npm run signing:configure -- --profile dev \
-  --identity "<40-character-certificate-fingerprint>" \
-  --keychain "/absolute/path/login.keychain-db"
+  --identity "<DEV_CERTIFICATE_SHA1>" \
+  --keychain "<DEV_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile dev
 ```
 
-Signing configuration is stored in `~/Library/Application Support/VigilShell Signing/`. Keep using the existing identity once configured. Certificates and private keys stay outside the source repository. See [signing preparation](docs/TECH_STACK.md#签名准备) for details (in Chinese).
+Choose where to keep your certificate exports, outside the source repository. The configuration script saves the selected certificate fingerprint and keychain path for the current user in separate `dev` and `release` directories; signing uses the private key in that keychain. Keep using the existing identity once configured. See [signing preparation](docs/TECH_STACK.md#签名准备) for details (in Chinese).
 
 ### Start the development application
 
@@ -146,18 +146,18 @@ This prepares the Rust backend, communication contracts, localization code, and 
 | `npm run i18n:generate`      | Generate localization code from `messages/`                                                                             |
 | `npm run build`              | Compile backend, native bridge, and frontend resources for a production build                                           |
 | `npm run package:dev`        | Build a Dev application directory under `release/dev/`                                                                  |
-| `npm run package:release`    | Build and verify a DMG using the release profile under `release/`                                                       |
+| `npm run package:release`    | Build and verify the DMG, update ZIP and metadata under `release/`                                                       |
 
 Communication contracts are generated from Rust DTOs; localization code is generated from message sources. Edit the source and run the corresponding generator instead of editing generated files. Use Dev data for testing and debugging, preserving the production application's data and signing identity.
 
 ### Building a package
 
-Prepare a separate `release` configuration using the same process as development signing. After selecting the appropriate signing identity, run:
+Prepare a separate `release` configuration using the same process as development signing. Use an identity you manage for your own distribution, retaining it across subsequent releases. Official VigilShell releases use the maintainer's established release identity. After selecting the appropriate signing identity, run:
 
 ```sh
 npm run signing:configure -- --profile release \
-  --identity "<40-character-release-certificate-fingerprint>" \
-  --keychain "/absolute/path/login.keychain-db"
+  --identity "<RELEASE_CERTIFICATE_SHA1>" \
+  --keychain "<RELEASE_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile release
 npm run package:release
 ```
@@ -168,13 +168,15 @@ Packaging defaults to the current Node.js process architecture. You can also spe
 npm run package:release -- --arch arm64
 ```
 
-The target architecture must match the macOS host process and Rust toolchain. The script builds, signs, and verifies the DMG before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
+The target architecture must match the macOS host process and Rust toolchain. The script builds and verifies the signed DMG, update ZIP, checksums and `latest-mac.yml` before placing artifacts in `release/`. It only creates local files; it does not upload installers or create a GitHub Release.
 
 `npm run build` defaults to the release signing profile. Packaged builds keep their frontend, native bridges, backend resources, and Cargo output under `.cache/build/<dev|release>/<architecture>/`, separate from the live Dev application. Release builds require only the release signing configuration; they do not fall back to Dev credentials.
 
 ### ARM64 distribution and previews
 
-The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a temporary self-signed installer. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft with a fixed self-signed installer without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication. Update discovery opens the release page for manual installation.
+The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a temporary self-signed installer. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft with fixed self-signed installers and update metadata without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication.
+
+Under **Settings → About**, check for a stable release, download it, and choose **Restart and install**. Automatic checking and downloading are disabled. Downloaded updates remain available after restarting; an ordinary quit does not install them. The release page remains available for manual installation. Versions without the update engine must first be upgraded manually to a version that includes it.
 
 In a separate test Mac/account with no existing VigilShell data, download the DMG and its SHA-256 file from the same release, verify with `shasum -a 256 -c <file>.dmg.sha256`, then drag the application into Applications. If macOS blocks an unverified developer, use the per-app **Privacy & Security → Open Anyway** flow after checking the download source; do not disable Gatekeeper globally.
 
@@ -188,7 +190,6 @@ Connection settings and credentials are encrypted and stored locally. Unlock key
 | ----------------------------------------------- | --------------------------------------------------- |
 | VigilShell data                                 | `~/Library/Application Support/VigilShell/`         |
 | VigilShell Dev data                             | `~/Library/Application Support/VigilShell-dev/`     |
-| Development and packaging signing configuration | `~/Library/Application Support/VigilShell Signing/` |
 
 For development runs, `VIGILSHELL_DATA_DIR` can specify another absolute path. Source code and build caches are not a backup of user data. Restoring encrypted settings and credentials also requires the matching system key.
 
@@ -213,7 +214,7 @@ The following technical documents are currently in Chinese:
 
 ## License status
 
-VigilShell original code is licensed under [Apache-2.0](LICENSE). See [resources/licenses/](resources/licenses/) for third-party notices. The DMG includes the complete `LICENSES.chromium.html` from Electron alongside the app.
+VigilShell original code is licensed under [Apache-2.0](LICENSE). See [resources/licenses/](resources/licenses/) for third-party notices. The DMG and update ZIP include the complete `LICENSES.chromium.html` from Electron alongside the app.
 
 The source repository includes development skills with separate notices. [Third-party source notices](THIRD_PARTY_NOTICES.md)
 

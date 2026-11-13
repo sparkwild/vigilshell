@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { Spinner } from '../../components/ui/spinner';
+import { Progress } from '../../components/ui/progress';
 
 export function UpdateDialog({
   open,
@@ -27,6 +28,9 @@ export function UpdateDialog({
   pending,
   failure,
   onDownload,
+  onCancel,
+  onInstall,
+  onRelease,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -35,28 +39,46 @@ export function UpdateDialog({
   pending: boolean;
   failure: boolean;
   onDownload(): void;
+  onCancel(): void;
+  onInstall(): void;
+  onRelease(): void;
 }) {
   const { t } = useDesktop();
   const checking = pending || (!failure && state.phase === 'checking');
+  const downloading = state.phase === 'downloading';
+  const installing = state.phase === 'preparing' || state.phase === 'installing';
+  const ready = state.phase === 'ready' || state.phase === 'installError';
   const failed =
     !checking &&
     (failure || ['empty', 'networkError', 'rateLimited', 'invalidResponse'].includes(state.phase));
   const available = !checking && !failed && state.release;
-  const Icon = failed
-    ? TriangleAlertIcon
-    : available
-      ? CircleArrowUpIcon
-      : state.phase === 'current'
-        ? CheckCircle2Icon
-        : CircleHelpIcon;
+  const Icon =
+    failed || state.phase === 'downloadError' || state.phase === 'installError'
+      ? TriangleAlertIcon
+      : available
+        ? CircleArrowUpIcon
+        : state.phase === 'current'
+          ? CheckCircle2Icon
+          : CircleHelpIcon;
   const status = checking
     ? t('updates_checking')
     : failed
       ? t('updates_failed')
-      : t(`updates_${state.phase}`);
+      : ['installError', 'downloadError'].includes(state.phase) && state.issue
+        ? t(`updates_${state.issue}`)
+        : t(`updates_${state.phase}`);
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent closeLabel={t('ws_close')} className="flex flex-col overflow-hidden">
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!installing) onOpenChange(value);
+      }}
+    >
+      <DialogContent
+        closeLabel={t('ws_close')}
+        showCloseButton={!installing}
+        className="flex flex-col overflow-hidden"
+      >
         <DialogHeader className="min-w-0 shrink-0 pr-8">
           <DialogTitle>{t('updates_check')}</DialogTitle>
           <DialogDescription className="[overflow-wrap:anywhere]">
@@ -69,7 +91,11 @@ export function UpdateDialog({
               className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
               aria-hidden="true"
             >
-              {checking ? <Spinner className="size-5" /> : <Icon className="size-5" />}
+              {checking || downloading || installing ? (
+                <Spinner className="size-5" />
+              ) : (
+                <Icon className="size-5" />
+              )}
             </span>
             <div className="flex min-w-0 flex-col gap-1">
               <p className="font-medium">{status}</p>
@@ -80,6 +106,18 @@ export function UpdateDialog({
               ) : null}
             </div>
           </div>
+          {downloading ? (
+            <div className="flex flex-col gap-2">
+              <Progress
+                value={state.progress?.percent ?? null}
+                aria-label={t('updates_downloading')}
+              />
+              <p className="text-xs text-muted-foreground">
+                {state.progress ? `${Math.floor(state.progress.percent)}% · ` : ''}
+                {t('updates_background')}
+              </p>
+            </div>
+          ) : null}
           {available ? (
             <>
               <section className="flex min-w-0 flex-col gap-2" aria-label={t('updates_notes')}>
@@ -88,7 +126,14 @@ export function UpdateDialog({
                   {available.notes.trim() || t('updates_no_notes')}
                 </div>
               </section>
-              <p className="text-xs text-muted-foreground">{t('updates_manual')}</p>
+              {!state.canDownload ? (
+                <p className="text-xs text-muted-foreground">{t('updates_manual')}</p>
+              ) : null}
+              {!installing ? (
+                <Button variant="link" className="self-start px-0" onClick={onRelease}>
+                  {t('updates_release_page')}
+                </Button>
+              ) : null}
             </>
           ) : null}
         </DialogBody>
@@ -98,17 +143,31 @@ export function UpdateDialog({
             available ? 'flex-col-reverse sm:flex-row sm:justify-end' : 'justify-center',
           )}
         >
-          {failed ? (
+          {installing ? null : failed ? (
             <DialogClose render={<Button />}>{t('updates_dismiss')}</DialogClose>
           ) : (
             <>
-              {available ? (
+              {available && !downloading && !ready ? (
                 <Button onClick={onDownload}>
                   <CircleArrowUpIcon data-icon="inline-start" />
-                  {t('updates_download')}
+                  {t(
+                    state.canDownload
+                      ? state.phase === 'downloadError'
+                        ? 'updates_retry_download'
+                        : 'updates_download_now'
+                      : 'updates_download',
+                  )}
                 </Button>
               ) : null}
-              <DialogClose render={<Button variant="outline" />}>{t('ws_close')}</DialogClose>
+              {downloading ? (
+                <Button onClick={onCancel} disabled={state.progress?.percent === 100}>
+                  {t('ws_cancel')}
+                </Button>
+              ) : null}
+              {ready ? <Button onClick={onInstall}>{t('updates_install')}</Button> : null}
+              <DialogClose render={<Button variant="outline" />}>
+                {t(ready || downloading ? 'updates_later' : 'ws_close')}
+              </DialogClose>
             </>
           )}
         </div>

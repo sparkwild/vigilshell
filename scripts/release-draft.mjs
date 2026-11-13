@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inspectUpdateArtifacts } from './verify-update-artifacts.mjs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -97,6 +98,11 @@ async function draft() {
   const report = readJson(reportPath);
   assert.equal(report.identity, normalizeFingerprint(env.MACOS_SIGNING_IDENTITY));
   const sha256 = validatePreview(readFileSync(dmg), readFileSync(checksum, 'utf8'), report, source);
+  const update = inspectUpdateArtifacts('release', source.version, 'arm64');
+  assert.equal(
+    readFileSync(`${update.archive}.sha256`, 'utf8').trim(),
+    `${update.sha256}  ${basename(update.archive)}`,
+  );
   const runUrl = `https://github.com/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`;
   const temp = mkdtempSync(join(env.RUNNER_TEMP, 'vigilshell-release-'));
   try {
@@ -111,6 +117,7 @@ async function draft() {
           preview: false,
           signing: 'fixed-self-signed',
           sha256,
+          update: { sha256: update.sha256, metadataSha256: update.metadataSha256 },
           node: process.version,
           rust: execFileSync('rustc', ['--version'], { encoding: 'utf8' }).trim(),
           runId: env.GITHUB_RUN_ID,
@@ -122,7 +129,18 @@ async function draft() {
         2,
       ) + '\n',
     );
-    const files = [dmg, checksum, reportPath, manifest];
+    const zip = join('release', `VigilShell-${source.version}-macos-arm64.zip`);
+    const metadata = join('release', 'latest-mac.yml');
+    const files = [
+      dmg,
+      checksum,
+      zip,
+      `${zip}.sha256`,
+      `${zip}.blockmap`,
+      metadata,
+      reportPath,
+      manifest,
+    ];
     // GitHub can clear the tag association when a draft update omits the tag.
     const binding = {
       tag_name: source.tag,

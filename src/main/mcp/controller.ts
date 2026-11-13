@@ -44,6 +44,14 @@ export class McpController {
   private protections: NonNullable<AgentSnapshot['protections']> = [];
   private contexts: AgentSnapshot['contexts'] = [];
   private stopped = false;
+  private updating = false;
+  setUpdating(value: boolean) {
+    this.updating = value;
+    if (value) {
+      this.epoch++;
+      this.ports.cancelAuthorization();
+    }
+  }
   private clients: AgentClientDetection[] = [];
   private observations: AccessObservation[] = [];
   private readonly observed = new Map<string, number>();
@@ -80,6 +88,7 @@ export class McpController {
         await this.request({ operation: 'reject', digest, tool, code });
       },
       authenticate: async (digest) => {
+        if (this.updating) throw Error('service_unavailable');
         const result = await this.request({ operation: 'authenticate', digest });
         if (result.kind !== 'authenticated') throw new Error('access_denied');
         return { ...result.entry, endpointRevision: result.endpoint_revision };
@@ -526,6 +535,7 @@ export class McpController {
   }
 
   async invoke(digest: string, call: AgentCall): Promise<AgentReply> {
+    if (this.updating) return { kind: 'error', code: 'service_unavailable' };
     try {
       const result = await this.request({ operation: 'invoke', digest, call });
       if (

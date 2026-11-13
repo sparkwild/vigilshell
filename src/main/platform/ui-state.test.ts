@@ -102,6 +102,23 @@ describe('browsing state persistence', () => {
     expect(result.data).toMatchObject({ download: '/downloads' });
     expect(host.call).toHaveBeenCalledTimes(1);
   });
+  it('blocks installation when strict flushing still has an unknown save outcome', async () => {
+    const host = new FakeHost();
+    const service = new UiStateService(host as unknown as BackendClient);
+    host.timeout = true;
+    host.unknown = true;
+    await service.set('pickers', pickers, true);
+    await expect(service.flush(true)).rejects.toThrow('ui_state_not_saved');
+  });
+  it('refreshes a recovered runtime error without rewriting already saved state', async () => {
+    const host = new FakeHost();
+    const service = new UiStateService(host as unknown as BackendClient);
+    await service.set('pickers', pickers, true);
+    host.emit('unavailable');
+    await service.flush(true);
+    expect((await service.get('pickers')).error).toBeNull();
+    expect(host.call).toHaveBeenCalledTimes(1);
+  });
   it('rejects removed layout scopes and mismatched browsing data', async () => {
     const host = new FakeHost(),
       service = new UiStateService(host as unknown as BackendClient);

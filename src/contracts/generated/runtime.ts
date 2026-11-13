@@ -1408,6 +1408,21 @@ export type ApplicationRequest =
   | {
       action: "issues"
     }
+  | {
+      action: "download"
+    }
+  | {
+      action: "cancel"
+    }
+  | {
+      action: "install"
+    }
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UpdateIssue".
+ */
+export type UpdateIssue =
+  "insufficientSpace" | "readOnlyLocation" | "unsavedState"
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "UpdatePhase".
@@ -1421,6 +1436,12 @@ export type UpdatePhase =
   | "networkError"
   | "rateLimited"
   | "invalidResponse"
+  | "downloading"
+  | "ready"
+  | "preparing"
+  | "installing"
+  | "downloadError"
+  | "installError"
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "ResolvedLocale".
@@ -3893,8 +3914,20 @@ export interface ApplicationInfo {
  * via the `definition` "UpdateSnapshot".
  */
 export interface UpdateSnapshot {
+  canDownload?: boolean | null
+  issue?: UpdateIssue | null
   phase: UpdatePhase
+  progress?: UpdateProgress | null
   release?: AvailableRelease | null
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UpdateProgress".
+ */
+export interface UpdateProgress {
+  percent: number
+  total: number
+  transferred: number
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema

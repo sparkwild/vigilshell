@@ -80,6 +80,10 @@ export class FileEditingService extends EventEmitter<{
   private sessions = new Map<string, Live>();
   private opening = new Set<string>();
   private stopped = false;
+  private updating = false;
+  setUpdating(value: boolean) {
+    this.updating = value;
+  }
   private showPending = false;
   private poll: ReturnType<typeof setInterval>;
   readonly owner = randomUUID();
@@ -220,6 +224,7 @@ export class FileEditingService extends EventEmitter<{
   private async observe(live: Live) {
     if (
       this.stopped ||
+      this.updating ||
       live.ended ||
       live.busy ||
       !['synced', 'pending'].includes(live.record.phase)
@@ -336,7 +341,7 @@ export class FileEditingService extends EventEmitter<{
     destination: string | null = null,
     force = false,
   ) {
-    if (live.busy || this.stopped) throw Error('busy');
+    if (live.busy || this.stopped || this.updating) throw Error('busy');
     if (live.record.runtimeId !== this.ports.runtime()) throw Error('runtime_unavailable');
     if (live.record.pending) throw Error('result_unknown');
     live.busy = true;
@@ -567,5 +572,12 @@ export class FileEditingService extends EventEmitter<{
     this.stopped = true;
     clearInterval(this.poll);
     await this.disconnect();
+  }
+  async prepareForUpdate() {
+    for (const live of this.sessions.values()) {
+      if (live.busy || live.record.pending) throw Error('file_editing_busy');
+      if (live.writing) await live.writing;
+      await this.persist(live);
+    }
   }
 }

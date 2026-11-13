@@ -152,6 +152,7 @@ export function OperationButtonIcon({
 export function OperationStatus({
   owner,
   message,
+  messageId,
   details,
   relatedOwner,
   dismissible = false,
@@ -160,6 +161,7 @@ export function OperationStatus({
   relatedOwner?: string;
   dismissible?: boolean;
   message?: string | null;
+  messageId?: string;
   details?: ReactNode;
 }) {
   const [dismissed, setDismissed] = useState<string | null>(null);
@@ -177,7 +179,9 @@ export function OperationStatus({
   const visible = operation?.visible;
   const label = visible
     ? operation.error
-      ? errorText(state.snapshot.appearance.locale, operation.error.code)
+      ? operation.action === 'ws_test' && operation.phase === 'failed'
+        ? translate('ws_failed', state.snapshot.appearance.locale)
+        : errorText(state.snapshot.appearance.locale, operation.error.code)
       : `${translate(operation.action, state.snapshot.appearance.locale)} · ${text(state.snapshot.appearance.locale, operation.phase === 'cancelling' ? 'cancellingOperation' : 'pending')}`
     : message;
   const notice = JSON.stringify([
@@ -186,6 +190,7 @@ export function OperationStatus({
     operation?.phase,
     operation?.error?.code,
     message,
+    messageId,
   ]);
   return (
     <span

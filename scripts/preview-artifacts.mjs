@@ -43,7 +43,16 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       source,
     );
     mkdirSync('preview', { recursive: true });
-    for (const path of [`release/${name}`, `release/${name}.sha256`, reportPath])
+    const archive = `release/VigilShell-${source.version}-macos-arm64.zip`;
+    for (const path of [
+      `release/${name}`,
+      `release/${name}.sha256`,
+      archive,
+      `${archive}.sha256`,
+      `${archive}.blockmap`,
+      'release/latest-mac.yml',
+      reportPath,
+    ])
       copyFileSync(path, `preview/${basename(path)}`);
     writeFileSync(
       'preview/build.json',

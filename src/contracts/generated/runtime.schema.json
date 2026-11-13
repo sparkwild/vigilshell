@@ -6056,6 +6056,45 @@
           "required": [
             "action"
           ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "download"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "cancel"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "const": "install"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
         }
       ]
     },
@@ -13526,6 +13565,14 @@
       ],
       "x-vigil-rule": "uiScope"
     },
+    "UpdateIssue": {
+      "type": "string",
+      "enum": [
+        "insufficientSpace",
+        "readOnlyLocation",
+        "unsavedState"
+      ]
+    },
     "UpdatePhase": {
       "type": "string",
       "enum": [
@@ -13536,7 +13583,13 @@
         "empty",
         "networkError",
         "rateLimited",
-        "invalidResponse"
+        "invalidResponse",
+        "downloading",
+        "ready",
+        "preparing",
+        "installing",
+        "downloadError",
+        "installError"
       ]
     },
     "UpdatePreferencesRequest": {
@@ -13563,11 +13616,59 @@
       ],
       "x-vigil-rule": "preferencesUpdate"
     },
+    "UpdateProgress": {
+      "type": "object",
+      "properties": {
+        "percent": {
+          "type": "number",
+          "format": "double"
+        },
+        "total": {
+          "type": "number",
+          "format": "double"
+        },
+        "transferred": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "transferred",
+        "total",
+        "percent"
+      ]
+    },
     "UpdateSnapshot": {
       "type": "object",
       "properties": {
+        "canDownload": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "issue": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UpdateIssue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "phase": {
           "$ref": "#/definitions/UpdatePhase"
+        },
+        "progress": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UpdateProgress"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "release": {
           "anyOf": [

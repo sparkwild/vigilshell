@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 
-export const signingConfigDirectory = () =>
-  join(homedir(), 'Library/Application Support/VigilShell Signing');
+export const signingConfigDirectory = () => join(homedir(), 'Documents', 'Signing', 'VigilShell');
+const configPath = (directory, profile) => join(directory, profile, `${profile}.json`);
 export function normalizeFingerprint(value) {
   const fingerprint = String(value ?? '')
     .replaceAll(':', '')
@@ -24,7 +24,7 @@ function validate(profile, value) {
 const read = (path) => (existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null);
 export function readSigningConfig(profile, environment, directory = signingConfigDirectory()) {
   const saved =
-    environment.GITHUB_ACTIONS === 'true' ? {} : (read(join(directory, `${profile}.json`)) ?? {});
+    environment.GITHUB_ACTIONS === 'true' ? {} : (read(configPath(directory, profile)) ?? {});
   const prefix = `VIGILSHELL_${profile.toUpperCase()}_SIGNING_`;
   if (!(environment[`${prefix}IDENTITY`] ?? saved.identity))
     throw Error(
@@ -37,14 +37,14 @@ export function readSigningConfig(profile, environment, directory = signingConfi
 }
 export function saveSigningConfig(config, directory = signingConfigDirectory()) {
   const value = validate(config.profile, config);
-  const path = join(directory, `${value.profile}.json`);
+  const path = configPath(directory, value.profile);
   const existing = read(path);
   if (existing) {
     if (JSON.stringify(validate(value.profile, existing)) !== JSON.stringify(value))
       throw Error('Signing configuration conflict; refusing to replace an existing identity');
     return;
   }
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   // Create-only: a concurrent writer cannot silently replace the selected identity.
   writeFileSync(path, JSON.stringify(value, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
 }
@@ -53,7 +53,7 @@ export function migrateSigningConfig(profile, workspaceRoot, directory, verify) 
   const legacy = read(legacyPath);
   if (!legacy) return;
   const value = validate(profile, legacy);
-  const existing = read(join(directory, `${profile}.json`));
+  const existing = read(configPath(directory, profile));
   if (existing && JSON.stringify(validate(profile, existing)) !== JSON.stringify(value))
     throw Error('Signing configuration conflict between persistent and legacy configuration');
   verify(value);

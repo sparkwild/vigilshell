@@ -77,7 +77,7 @@ export function useConnectionEditor({
     [activeAction, setActiveAction] = useState<MessageKey | null>(null),
     [error, setError] = useState<string | null>(null),
     [conflict, setConflict] = useState<ConnectionDetails | null>(null),
-    [tested, setTested] = useState<string | null>(null),
+    [tested, setTested] = useState<{ id: string; config: string } | null>(null),
     [unknown, setUnknown] = useState<WorkspaceFailure | null>(null);
   const owner = 'editor:' + editor.token;
   const childClose = useRef<(() => Promise<void>) | null>(null);
@@ -110,6 +110,11 @@ export function useConnectionEditor({
   draftRef.current = draft;
   const auth = form.watch('auth'),
     config = form.watch();
+  const currentTestConfig = tested ? schema.safeParse(config) : null;
+  const passedTestId =
+    tested && currentTestConfig?.success && JSON.stringify(currentTestConfig.data) === tested.config
+      ? tested.id
+      : null;
   const credentialState = credentialEditorState(auth, base, draft);
   const dirty = form.formState.isDirty || credentialState.dirty;
   const credentialReady = credentialState.ready;
@@ -204,7 +209,6 @@ export function useConnectionEditor({
           draftRef.current = job.draft;
           setDraft(job.draft);
         }
-        if (action === 'ws_test') setTested(JSON.stringify(form.getValues()));
       },
     });
   async function close() {
@@ -346,10 +350,20 @@ export function useConnectionEditor({
         });
       });
       if (reply.kind !== 'operation') throw new WorkspaceFailure('protocol_mismatch');
-      await store.settled(reply);
-      setTested(JSON.stringify(values));
+      const result = await store.settled(reply);
+      const current = store.getSnapshot();
+      if (
+        result &&
+        mounted.current &&
+        current.editor?.token === editor.token &&
+        current.runtimeId === state.runtimeId
+      )
+        setTested({ id: result.id, config: JSON.stringify(values) });
     } catch (e) {
-      if (errorCode(e) !== 'cancelled') setError(errorCode(e));
+      const code = errorCode(e);
+      const failure = store.feedback.forOwner(owner);
+      if (code !== 'cancelled' && !(failure?.action === 'ws_test' && failure.error?.code === code))
+        setError(code);
     } finally {
       setBusy(false);
     }
@@ -507,8 +521,8 @@ export function useConnectionEditor({
     base,
     draft,
     error,
-    tested,
-    setTested,
+    passedTestId,
+    clearTestResult: () => setTested(null),
     unknown,
     owner,
     childClose,

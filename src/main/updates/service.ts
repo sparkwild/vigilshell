@@ -101,7 +101,7 @@ export class UpdateService extends EventEmitter<{ changed: [UpdateSnapshot] }> {
     this.stopped = true;
     clearTimeout(this.timer);
   }
-  private publish(snapshot: UpdateSnapshot) {
+  protected publish(snapshot: UpdateSnapshot) {
     if (this.stopped) return;
     this.snapshot = snapshot;
     this.emit('changed', snapshot);

@@ -36,7 +36,8 @@ test('signing requires a complete fingerprint', () => {
 test('Dev configuration cannot silently select the release identity', async () => {
   const root = await mkdtemp(join(tmpdir(), 'vigilshell-sign-config-'));
   try {
-    await writeFile(join(root, 'dev.json'), JSON.stringify(config));
+    await mkdir(join(root, 'dev'));
+    await writeFile(join(root, 'dev/dev.json'), JSON.stringify(config));
     assert.equal(
       loadSigningConfig('dev', { VIGILSHELL_RELEASE_SIGNING_IDENTITY: other }, root).identity,
       fingerprint,

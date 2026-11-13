@@ -1,11 +1,12 @@
 import { packageArchitecture } from './package-policy.mjs';
 import { packageBuildEnvironment } from './build-context.mjs';
 import { verifyDmg } from './verify-dmg.mjs';
-import { mkdir, mkdtemp, rm, readdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, readdir, writeFile } from 'node:fs/promises';
 import { publishArtifacts } from './publish-artifacts.mjs';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { join } from 'node:path';
+import { verifyUpdateArtifacts } from './verify-update-artifacts.mjs';
 import {
   loadSigningConfig,
   preflight,
@@ -52,21 +53,36 @@ execFileSync(
   },
 );
 await mkdir(join(projectRoot, '.cache/packaging'), { recursive: true });
-const stage = await mkdtemp(join(projectRoot, '.cache/packaging/build-'));
+const work = await mkdtemp(join(projectRoot, '.cache/packaging/build-'));
+const stage = join(work, 'artifacts');
 const output = join(projectRoot, config.profile === 'dev' ? 'release/dev' : 'release');
 try {
+  const builderConfiguration = join(work, 'builder.json');
+  await writeFile(
+    builderConfiguration,
+    JSON.stringify({
+      extends: join(projectRoot, 'electron-builder.yml'),
+      appId: ids.app,
+      productName: name,
+      directories: { output: stage },
+      mac: { identity: config.identity },
+      publish:
+        config.profile === 'dev'
+          ? { provider: 'generic', url: 'http://127.0.0.1/' }
+          : { provider: 'github', owner: 'sparkwild', repo: 'vigilshell', releaseType: 'draft' },
+      ...(config.profile === 'dev' ? { extraMetadata: { name: 'vigilshell-dev' } } : {}),
+    }),
+  );
   execFileSync(
     join(projectRoot, 'node_modules/.bin/electron-builder'),
     [
       '--mac',
-      ...(values.dir ? ['--dir'] : ['dmg']),
+      ...(values.dir ? ['--dir'] : ['dmg', 'zip']),
       `--${values.arch}`,
       '--publish',
       'never',
-      `--config.mac.identity=${config.identity}`,
-      `--config.appId=${ids.app}`,
-      `--config.productName=${name}`,
-      `--config.directories.output=${stage}`,
+      '--config',
+      builderConfiguration,
     ],
     {
       cwd: join(projectRoot, '.'),
@@ -85,8 +101,9 @@ try {
     if (!image || images.length !== 1)
       throw Error('Expected exactly one signed DMG per architecture');
     await verifyDmg(join(stage, image), name, (path) => verifyBundle(path, config, values.arch));
+    await verifyUpdateArtifacts(stage, name, (path) => verifyBundle(path, config, values.arch));
   }
   await publishArtifacts(stage, output);
 } finally {
-  await rm(stage, { recursive: true, force: true });
+  await rm(work, { recursive: true, force: true });
 }

@@ -1,9 +1,38 @@
-import { app, ipcMain, shell } from 'electron';
+import { app, ipcMain, shell, net } from 'electron';
 import { contractValidator } from '../../contracts/validation';
 import type { ApplicationRequest } from '@contracts';
-import { UpdateService } from './service';
-export function registerApplication(allowed: (event: Electron.IpcMainInvokeEvent) => boolean) {
-  const updates = new UpdateService(app.getVersion(), process.platform, process.arch);
+import { join } from 'node:path';
+import { ManagedUpdates, type InstallUpdate } from './managed';
+import { MacUpdateEngine } from './mac-engine';
+import { updateSource } from './source';
+export function registerApplication(
+  allowed: (event: Electron.IpcMainInvokeEvent) => boolean,
+  options: { development: boolean; packaged: boolean; install: InstallUpdate },
+) {
+  const source = updateSource(options.development, process.env);
+  const engine =
+    options.packaged && process.platform === 'darwin' && source.downloadable
+      ? new MacUpdateEngine(
+          join(app.getPath('userData'), 'updates'),
+          app.getVersion(),
+          process.arch,
+          options.development,
+          source.feed,
+        )
+      : undefined;
+  const fetcher: typeof fetch = (_input, init) => net.fetch(source.releases, init);
+  const updates = new ManagedUpdates(
+    app.getVersion(),
+    process.platform,
+    process.arch,
+    fetcher,
+    engine,
+    options.install,
+  );
+  void app
+    .whenReady()
+    .then(() => updates.restore())
+    .catch((error) => console.error('Update cache:', error.message));
   const validate = contractValidator<ApplicationRequest>('ApplicationRequest');
   ipcMain.handle('application:request', async (event, request: unknown) => {
     if (!allowed(event) || !validate(request)) throw Error('invalid_request');
@@ -17,6 +46,12 @@ export function registerApplication(allowed: (event: Electron.IpcMainInvokeEvent
         return updates.snapshot;
       case 'check':
         return updates.check();
+      case 'download':
+        return updates.download();
+      case 'cancel':
+        return updates.cancel();
+      case 'install':
+        return updates.install();
       case 'project':
         return shell.openExternal('https://github.com/sparkwild/vigilshell');
       case 'issues':

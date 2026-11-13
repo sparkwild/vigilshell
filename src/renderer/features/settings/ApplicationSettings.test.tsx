@@ -20,6 +20,9 @@ let current: UpdateSnapshot;
 let receive: (state: UpdateSnapshot) => void;
 const open = vi.fn().mockResolvedValue(undefined);
 const check = vi.fn();
+const download = vi.fn().mockResolvedValue(undefined);
+const cancel = vi.fn().mockResolvedValue(undefined);
+const install = vi.fn().mockResolvedValue(undefined);
 function publish(state: UpdateSnapshot) {
   current = state;
   receive(state);
@@ -43,6 +46,9 @@ beforeEach(() => {
   receive = () => {};
   open.mockClear();
   save.mockClear();
+  download.mockClear();
+  cancel.mockClear();
+  install.mockClear();
   check.mockReset().mockImplementation(async () => current);
   Object.defineProperty(window, 'vigilshell', {
     configurable: true,
@@ -61,11 +67,41 @@ beforeEach(() => {
         },
         open,
         check,
+        download,
+        cancel,
+        install,
       },
     },
   });
 });
 afterEach(cleanup);
+it('keeps a download running after dismissing and shows the restored ready action', async () => {
+  render(page());
+  const release = { version: '0.1.2', tag: 'v0.1.2', notes: 'Notes' };
+  await act(async () => publish({ phase: 'available', release, canDownload: true }));
+  await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
+  await userEvent.click(screen.getByRole('button', { name: 'updates_download_now' }));
+  expect(download).toHaveBeenCalledOnce();
+  await act(async () =>
+    publish({
+      phase: 'downloading',
+      release,
+      canDownload: true,
+      progress: { transferred: 5, total: 10, percent: 50 },
+    }),
+  );
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+  await userEvent.click(screen.getByRole('button', { name: 'updates_later' }));
+  expect(cancel).not.toHaveBeenCalled();
+  await act(async () => publish({ phase: 'ready', release, canDownload: true }));
+  await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
+  await userEvent.click(screen.getByRole('button', { name: 'updates_install' }));
+  expect(install).toHaveBeenCalledOnce();
+  await act(async () => publish({ phase: 'preparing', release, canDownload: true }));
+  await userEvent.keyboard('{Escape}');
+  expect(screen.getByRole('dialog')).toBeVisible();
+  expect(within(screen.getByRole('dialog')).queryByRole('button')).toBeNull();
+});
 it('keeps background discovery non-blocking and shows plain release notes only on demand', async () => {
   render(page());
   await screen.findByText('v0.1.0');

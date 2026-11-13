@@ -1,3 +1,4 @@
+import { nativeFingerprint } from './dev-runtime.mjs';
 import { createBackendBundle, backendAppName, backendBundleExecutable } from './backend-bundle.mjs';
 import { randomUUID } from 'node:crypto';
 import { cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
@@ -84,6 +85,28 @@ export async function stageBackend() {
 export async function publishCandidate() {
   const { generation } = JSON.parse(await readFile(join(runtimeRoot, 'candidate.json'), 'utf8'));
   const config = loadSigningConfig('dev');
+  const active = JSON.parse(
+    await readFile(join(runtimeRoot, 'active.json'), 'utf8').catch(() => '{}'),
+  );
+  if (
+    active.generation &&
+    active.generation !== generation &&
+    (await nativeFingerprint(join(runtimeRoot, active.generation)).catch(() => null)) ===
+      (await nativeFingerprint(join(runtimeRoot, generation)))
+  ) {
+    verifyCode(
+      join(runtimeRoot, generation, backendAppName('dev')),
+      config,
+      process.arch,
+      identifiers('dev').backend,
+    );
+    await writeFile(
+      join(runtimeRoot, 'candidate.json'),
+      JSON.stringify({ generation: active.generation }) + '\n',
+    );
+    await rm(join(runtimeRoot, generation), { recursive: true, force: true });
+    return active.generation;
+  }
   await publishBackend(runtimeRoot, generation, async (path) => {
     const manifest = JSON.parse(await readFile(join(path, 'manifest.json'), 'utf8'));
     if (manifest.identity !== config.identity || manifest.arch !== process.arch)

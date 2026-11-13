@@ -1,3 +1,4 @@
+import { createDevSupervisor } from './dev-supervisor.mjs';
 import { createProcessGroupStopper } from './process-group.mjs';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -11,6 +12,7 @@ const require = createRequire(join(root, 'package.json'));
 const developmentApp = await prepareDevApp();
 await stageBackend();
 await publishCandidate();
+const supervisor = await createDevSupervisor(root, developmentApp.executable);
 const child = spawn(
   process.execPath,
   [
@@ -26,6 +28,7 @@ const child = spawn(
     env: {
       ...process.env,
       VIGILSHELL_DEV_APP: '1',
+      VIGILSHELL_DEV_CONTROL: supervisor.path,
       VIGILSHELL_DEV_EXECUTABLE: developmentApp.executable,
       ELECTRON_EXEC_PATH: join(root, 'scripts/dev-app-electron.mjs'),
     },
@@ -33,19 +36,24 @@ const child = spawn(
 );
 const stopGroup = createProcessGroupStopper(child.pid);
 let cleanupErrorReported = false;
+let stopping;
 function stop() {
-  void stopGroup().catch((error) => {
+  void (stopping ??= Promise.all([stopGroup(), supervisor.close()])).catch((error) => {
     if (!cleanupErrorReported) console.error(error);
     cleanupErrorReported = true;
     process.exitCode = 1;
   });
 }
+supervisor.finished.then((code) => {
+  process.exitCode = code;
+  stop();
+});
 child.on('error', (error) => {
   console.error(error);
   process.exitCode = 1;
 });
 child.on('exit', (code) => {
-  process.exitCode = code ?? 0;
+  if (!stopping) process.exitCode = code ?? 0;
   stop();
 });
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, stop);

@@ -100,6 +100,24 @@ function fixture(approved: boolean) {
   };
   return { controller: new McpController(ports), ports, request, configuration, contexts };
 }
+it('pauses new agent operations and pending authorization during installation and resumes after failure', async () => {
+  const f = fixture(false);
+  f.request.mockResolvedValue({ kind: 'done' });
+  const call = { tool: 'task_cancel', task_id: 'task', request_key: 'cancel' } as const;
+  try {
+    f.controller.setUpdating(true);
+    expect(await f.controller.invoke('digest', call)).toEqual({
+      kind: 'error',
+      code: 'service_unavailable',
+    });
+    expect(f.request).not.toHaveBeenCalled();
+    expect(f.ports.cancelAuthorization).toHaveBeenCalledOnce();
+    f.controller.setUpdating(false);
+    expect(await f.controller.invoke('digest', call)).toEqual({ kind: 'done' });
+  } finally {
+    await f.controller.stop();
+  }
+});
 
 const pendingContext = (): AgentContext => ({
   id: 'new-session',

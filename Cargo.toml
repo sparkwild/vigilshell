@@ -4,7 +4,7 @@ members = ["crates/*"]
 [workspace.package]
 license = "Apache-2.0"
 publish = false
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 rust-version = "1.96"
 [workspace.dependencies]
@@ -21,6 +21,6 @@ rusqlite = { version = "=0.41.1", default-features = false, features = ["bundled
 
 # SSH and native credentials share one key parser and cryptographic provider.
 [workspace.dependencies.russh]
-version = "=0.63.3"
+version = "=0.65.0"
 default-features = false
 features = ["ring", "rsa"]
