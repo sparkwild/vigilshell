@@ -48,6 +48,7 @@ it('retains a discovered version offline when optional translated copy is invali
   const localizedNotes = {
     en: { features: ['Feature'], fixes: ['Fix'] },
     'zh-CN': { features: ['功能'], fixes: ['修复'] },
+    fr: { features: ['Fonction'], fixes: ['Correction'] },
   };
   await store.save({
     release: { version: '0.1.3', tag: 'v0.1.3', notes: '', localizedNotes },

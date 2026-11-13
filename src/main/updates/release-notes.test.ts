@@ -6,7 +6,11 @@ const document = {
   schema: 1,
   version: release.version,
   tag: release.tag,
-  languages: { en: { features: ['New feature'] }, 'zh-CN': { features: ['新功能'] } },
+  languages: {
+    en: { features: ['New feature'] },
+    'zh-CN': { features: ['新功能'] },
+    fr: { features: ['Nouvelle fonction'] },
+  },
 };
 
 it('loads bounded optional copy and preserves the selected update on every copy failure', async () => {

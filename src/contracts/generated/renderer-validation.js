@@ -1,7 +1,7 @@
 /* Generated from Rust DTOs. Run npm run contracts:generate; do not edit. */
 import { semanticRule } from '../semantic-validation';
 "use strict";
-export const validateConnectionPolicy = validate334;
+export const validateConnectionPolicy = validate331;
 const schema115 = {"type":"object","properties":{"connectionId":{"type":"string","maxLength":128,"minLength":1,"pattern":"^[A-Za-z0-9_-]+$"},"connectionRevision":{"type":"integer","format":"uint64","maximum":9007199254740991,"minimum":0},"execution":{"$ref":"#/definitions/ExecutionPolicy"},"revision":{"type":"integer","format":"uint64","maximum":9007199254740991,"minimum":0},"verifyConnect":{"type":"boolean"}},"additionalProperties":false,"required":["connectionId","connectionRevision","revision","verifyConnect","execution"]};
 const func7 = (function ucs2length(str) {
     const len = str.length;
@@ -815,7 +815,7 @@ return errors === 0;
 }
 
 
-function validate334(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate331(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(data && typeof data == "object" && !Array.isArray(data)){
@@ -1025,6 +1025,6 @@ vErrors.push(err17);
 }
 errors++;
 }
-validate334.errors = vErrors;
+validate331.errors = vErrors;
 return errors === 0;
 }

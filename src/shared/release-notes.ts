@@ -1,7 +1,12 @@
-import type { AvailableRelease, LocalizedReleaseNotes, ReleaseNoteSections } from '../contracts';
+import type { AvailableRelease, ReleaseNoteSections } from '../contracts';
+import localeSettings from '../../project.inlang/settings.json' with { type: 'json' };
+
+type LocalizedReleaseNotes = NonNullable<AvailableRelease['localizedNotes']>;
 
 export const releaseNoteSections = ['features', 'fixes', 'upgradeNotes'] as const;
 export const releaseNotesLimit = 64 * 1024;
+export const defaultReleaseNotesLocale = localeSettings.baseLocale;
+export const releaseNotesLocales = localeSettings.locales;
 const headings: Record<string, (typeof releaseNoteSections)[number]> = {
   Features: 'features',
   'Bug Fixes': 'fixes',
@@ -95,13 +100,26 @@ function sections(value: unknown): ReleaseNoteSections | undefined {
 
 /** Translation coverage is all-or-nothing so upgrade notices cannot disappear on locale changes. */
 export function normalizeLocalizedNotes(value: unknown): LocalizedReleaseNotes | undefined {
-  if (!value || typeof value !== 'object' || JSON.stringify(value).length > releaseNotesLimit)
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    JSON.stringify(value).length > releaseNotesLimit
+  )
     return;
-  const en = sections((value as LocalizedReleaseNotes).en);
-  if (!en) return;
-  const zh = sections((value as LocalizedReleaseNotes)['zh-CN']);
-  const complete = zh && releaseNoteSections.every((key) => !!en[key] === !!zh[key]);
-  return { en, ...(complete ? { 'zh-CN': zh } : {}) };
+  const languages = value as Record<string, unknown>;
+  const defaultNotes = Object.hasOwn(languages, defaultReleaseNotesLocale)
+    ? sections(languages[defaultReleaseNotesLocale])
+    : undefined;
+  if (!defaultNotes) return;
+  const result = new Map([[defaultReleaseNotesLocale, defaultNotes]]);
+  for (const [locale, content] of Object.entries(languages)) {
+    if (locale === defaultReleaseNotesLocale) continue;
+    const translated = sections(content);
+    if (translated && releaseNoteSections.every((key) => !!defaultNotes[key] === !!translated[key]))
+      result.set(locale, translated);
+  }
+  return Object.fromEntries(result);
 }
 
 export function releaseNotesFromDocument(value: unknown, version: string, tag: string) {
@@ -121,10 +139,12 @@ export function normalizeReleaseNotes(release: AvailableRelease): AvailableRelea
 
 export function selectReleaseNotes(release: AvailableRelease, locale: string) {
   const localized = normalizeLocalizedNotes(release.localizedNotes);
-  const english = localized?.en ?? parseMarkdownReleaseNotes(release.notes ?? '');
-  const translated = locale === 'zh-CN' ? localized?.['zh-CN'] : undefined;
+  const defaultNotes =
+    localized?.[defaultReleaseNotesLocale] ?? parseMarkdownReleaseNotes(release.notes ?? '');
+  const translated = localized && Object.hasOwn(localized, locale) ? localized[locale] : undefined;
   return {
-    sections: translated ?? english,
-    fallback: locale === 'zh-CN' && !translated && Object.keys(english).length > 0,
+    sections: translated ?? defaultNotes,
+    fallback:
+      locale !== defaultReleaseNotesLocale && !translated && Object.keys(defaultNotes).length > 0,
   };
 }

@@ -6113,14 +6113,13 @@
       "type": "object",
       "properties": {
         "localizedNotes": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/LocalizedReleaseNotes"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/definitions/ReleaseNoteSections"
+          }
         },
         "notes": {
           "type": "string"
@@ -8464,28 +8463,6 @@
         "en"
       ]
     },
-    "LocalizedReleaseNotes": {
-      "type": "object",
-      "properties": {
-        "en": {
-          "$ref": "#/definitions/ReleaseNoteSections"
-        },
-        "zh-CN": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ReleaseNoteSections"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "en"
-      ]
-    },
     "NativeServiceDefinition": {
       "type": "object",
       "properties": {
@@ -10083,7 +10060,10 @@
       "type": "object",
       "properties": {
         "languages": {
-          "$ref": "#/definitions/LocalizedReleaseNotes"
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ReleaseNoteSections"
+          }
         },
         "schema": {
           "type": "integer",

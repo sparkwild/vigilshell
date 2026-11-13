@@ -2,16 +2,22 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
+  defaultReleaseNotesLocale,
   parseMarkdownReleaseNotes,
+  releaseNotesLocales,
   releaseNotesFromDocument,
   releaseNotesLimit,
 } from '../src/shared/release-notes.ts';
 
 const headings = ['Features', 'Bug Fixes', 'Upgrade Notes'];
+const translatedHeadings = {
+  'zh-CN': { 新增功能: 'Features', 问题修复: 'Bug Fixes', 升级注意事项: 'Upgrade Notes' },
+};
+const localeLabels = { 'zh-CN': '简体中文' };
 
-export function readReleaseNotes(tag, root = '.', locale = 'en') {
+export function readReleaseNotes(tag, root = '.', locale = defaultReleaseNotesLocale) {
   assert(/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag), 'Invalid release tag');
-  assert(['en', 'zh-CN'].includes(locale), 'Unsupported release notes locale');
+  assert(releaseNotesLocales.includes(locale), 'Unsupported release notes locale');
   const name = `docs/releases/${tag}/${locale}.md`;
   const path = resolve(root, name);
   assert(existsSync(path), `Missing release notes: ${name}`);
@@ -24,10 +30,7 @@ export function readReleaseNotes(tag, root = '.', locale = 'en') {
   const notes = {};
   for (let index = 0; index < blocks.length; index += 2) {
     const title = blocks[index];
-    const heading =
-      locale === 'en'
-        ? title
-        : { 新增功能: 'Features', 问题修复: 'Bug Fixes', 升级注意事项: 'Upgrade Notes' }[title];
+    const heading = headings.includes(title) ? title : translatedHeadings[locale]?.[title];
     assert(headings.includes(heading), `${name} has an unsupported section: ${title}`);
     assert(!notes[heading], `${name} repeats the ${heading} section`);
     const content = blocks[index + 1].trim();
@@ -39,21 +42,23 @@ export function readReleaseNotes(tag, root = '.', locale = 'en') {
 }
 
 export function createReleaseNotesDocument(tag, root = '.') {
-  const en = readReleaseNotes(tag, root);
-  const chinese = resolve(root, `docs/releases/${tag}/zh-CN.md`);
-  let zh;
-  if (existsSync(chinese)) {
-    zh = readReleaseNotes(tag, root, 'zh-CN');
+  const defaults = readReleaseNotes(tag, root);
+  const languages = {};
+  for (const locale of releaseNotesLocales) {
+    if (
+      locale !== defaultReleaseNotesLocale &&
+      !existsSync(resolve(root, `docs/releases/${tag}/${locale}.md`))
+    )
+      continue;
+    const notes =
+      locale === defaultReleaseNotesLocale ? defaults : readReleaseNotes(tag, root, locale);
     assert.deepEqual(
-      Object.keys(zh).sort(),
-      Object.keys(en).sort(),
-      'Chinese release notes must cover all English sections',
+      Object.keys(notes).sort(),
+      Object.keys(defaults).sort(),
+      `${locale} release notes must cover all default-language sections`,
     );
+    languages[locale] = parseMarkdownReleaseNotes(renderNoteSections(notes).join('\n\n'));
   }
-  const languages = {
-    en: parseMarkdownReleaseNotes(renderNoteSections(en).join('\n\n')),
-    ...(zh ? { 'zh-CN': parseMarkdownReleaseNotes(renderNoteSections(zh).join('\n\n')) } : {}),
-  };
   const document = { schema: 1, version: tag.slice(1), tag, languages };
   assert(
     Buffer.byteLength(JSON.stringify(document, null, 2) + '\n') <= releaseNotesLimit,
@@ -61,13 +66,13 @@ export function createReleaseNotesDocument(tag, root = '.') {
   );
   const normalized = releaseNotesFromDocument(document, document.version, tag);
   assert(
-    normalized && (!zh || normalized['zh-CN']),
+    normalized && Object.keys(languages).every((locale) => normalized[locale]),
     'Release notes require valid readable content',
   );
   assert.deepEqual(
-    Object.keys(normalized.en).length,
-    Object.keys(en).length,
-    'English release notes contain an empty section',
+    Object.keys(normalized[defaultReleaseNotesLocale]).length,
+    Object.keys(defaults).length,
+    'Default-language release notes contain an empty section',
   );
   return { ...document, languages: normalized };
 }
@@ -108,7 +113,7 @@ function renderDownloadTable(installers, assetUrl) {
 
 export function renderReleaseNotes(
   notes,
-  { repository, source, assets, runUrl, previousTag, showChangelog = true, hasChinese = false },
+  { repository, source, assets, runUrl, previousTag, showChangelog = true, translatedLocales = [] },
 ) {
   const { tag, sha } = source;
   const repoUrl = `https://github.com/${repository}`;
@@ -131,7 +136,10 @@ export function renderReleaseNotes(
     build.push(`- [Compare source changes](${repoUrl}/compare/${previousTag}...${tag})`);
 
   return [
-    ...(hasChinese ? [`[简体中文](${repoUrl}/blob/${tag}/docs/releases/${tag}/zh-CN.md)`] : []),
+    ...translatedLocales.map(
+      (locale) =>
+        `[${localeLabels[locale] ?? locale}](${repoUrl}/blob/${tag}/docs/releases/${tag}/${locale}.md)`,
+    ),
     ...renderNoteSections(notes),
     ...downloads,
     `## Installation & Upgrade\n\n${installation}`,

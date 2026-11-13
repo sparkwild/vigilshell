@@ -3928,18 +3928,12 @@ export interface ApplicationInfo {
  * via the `definition` "ReleaseNotesDocument".
  */
 export interface ReleaseNotesDocument {
-  languages: LocalizedReleaseNotes
+  languages: {
+    [k: string]: ReleaseNoteSections
+  }
   schema: number
   tag: string
   version: string
-}
-/**
- * This interface was referenced by `DesktopContract`'s JSON-Schema
- * via the `definition` "LocalizedReleaseNotes".
- */
-export interface LocalizedReleaseNotes {
-  en: ReleaseNoteSections
-  "zh-CN"?: ReleaseNoteSections | null
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
@@ -3976,7 +3970,9 @@ export interface UpdateProgress {
  * via the `definition` "AvailableRelease".
  */
 export interface AvailableRelease {
-  localizedNotes?: LocalizedReleaseNotes | null
+  localizedNotes?: {
+    [k: string]: ReleaseNoteSections
+  } | null
   notes: string
   tag: string
   version: string

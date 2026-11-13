@@ -19,6 +19,7 @@ import {
 import { checkReleaseNotes, checkReleaseTag, isStableReleaseTag } from './release-policy.mjs';
 import { validatePreview } from './preview-artifacts.mjs';
 import { normalizeFingerprint } from './signing/config.mjs';
+import { defaultReleaseNotesLocale } from '../src/shared/release-notes.ts';
 
 const env = process.env;
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
@@ -219,7 +220,9 @@ async function draft() {
       },
       runUrl,
       previousTag,
-      hasChinese: !!localizedDocument.languages['zh-CN'],
+      translatedLocales: Object.keys(localizedDocument.languages).filter(
+        (locale) => locale !== defaultReleaseNotesLocale,
+      ),
     });
     const verified = api(['--method', 'PATCH', endpoint, '--input', '-'], { ...binding, body });
     verifyDraft(verified, source);

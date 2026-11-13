@@ -178,8 +178,12 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
   assert.match(multi, /^\| Linux \| <a .+alt="AppImage for x64"/m);
   assert.doesNotMatch(multi, /^\| Windows \|/m);
   assert.match(
-    renderReleaseNotes({ Features: '- Feature' }, { ...options, hasChinese: true }),
+    renderReleaseNotes({ Features: '- Feature' }, { ...options, translatedLocales: ['zh-CN'] }),
     /blob\/v0.2.0\/docs\/releases\/v0.2.0\/zh-CN.md/,
+  );
+  assert.match(
+    renderReleaseNotes({ Features: '- Feature' }, { ...options, translatedLocales: ['fr'] }),
+    /\[fr\].+blob\/v0.2.0\/docs\/releases\/v0.2.0\/fr.md/,
   );
 });
 
@@ -226,7 +230,10 @@ test('generates version-bound bilingual notes and requires complete translations
     languages: { en: { features: ['New feature'], upgradeNotes: ['Back up settings'] } },
   });
   await writeFile(join(directory, 'zh-CN.md'), '## 新增功能\n\n- 新功能\n');
-  assert.throws(() => createReleaseNotesDocument('v0.2.0', root), /cover all English sections/);
+  assert.throws(
+    () => createReleaseNotesDocument('v0.2.0', root),
+    /cover all default-language sections/,
+  );
   await writeFile(
     join(directory, 'zh-CN.md'),
     '## 新增功能\n\n- 新功能\n\n## 升级注意事项\n\n- 请备份设置\n',

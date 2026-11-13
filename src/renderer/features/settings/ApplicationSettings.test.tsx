@@ -238,12 +238,21 @@ it('switches release note language during a download without restarting the oper
       localizedNotes: {
         en: { features: ['English feature'], upgradeNotes: ['Back up'] },
         'zh-CN': { features: ['中文功能'], upgradeNotes: ['请备份'] },
+        fr: { features: ['Fonction'], upgradeNotes: ['Sauvegarder'] },
       },
     },
   };
   const view = render(page());
   await userEvent.click(screen.getByRole('button', { name: 'workspace-update' }));
   expect(await screen.findByText('English feature')).toBeVisible();
+  display.locale = 'fr';
+  view.rerender(page());
+  expect(screen.getByText('Fonction')).toBeVisible();
+  expect(screen.getByText('Sauvegarder')).toBeVisible();
+  display.locale = 'de';
+  view.rerender(page());
+  expect(screen.getByText('English feature')).toBeVisible();
+  expect(screen.getByText('Back up')).toBeVisible();
   display.locale = 'zh-CN';
   view.rerender(page());
   expect(screen.getByText('中文功能')).toBeVisible();

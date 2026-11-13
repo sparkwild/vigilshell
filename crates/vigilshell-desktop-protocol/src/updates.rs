@@ -25,13 +25,7 @@ pub struct ReleaseNoteSections {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub upgrade_notes: Vec<String>,
 }
-#[derive(Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct LocalizedReleaseNotes {
-    pub en: ReleaseNoteSections,
-    #[serde(rename = "zh-CN", default, skip_serializing_if = "Option::is_none")]
-    pub zh_cn: Option<ReleaseNoteSections>,
-}
+pub type LocalizedReleaseNotes = std::collections::BTreeMap<String, ReleaseNoteSections>;
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ReleaseNotesDocument {
@@ -117,4 +111,25 @@ pub struct ApplicationContract {
     pub state: UpdateSnapshot,
     pub request: ApplicationRequest,
     pub release_notes: ReleaseNotesDocument,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ReleaseNotesDocument;
+
+    #[test]
+    fn release_notes_preserve_locale_keys_without_requiring_a_specific_language() {
+        let value = serde_json::json!({
+            "schema": 1,
+            "version": "0.2.0",
+            "tag": "v0.2.0",
+            "languages": {
+                "fr": { "features": ["Fonction"] },
+                "ja-JP": { "features": ["新機能"] }
+            }
+        });
+        let document: ReleaseNotesDocument = serde_json::from_value(value.clone()).unwrap();
+        assert!(document.languages.contains_key("fr"));
+        assert_eq!(serde_json::to_value(document).unwrap(), value);
+    }
 }
