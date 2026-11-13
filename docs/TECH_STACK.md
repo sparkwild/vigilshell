@@ -44,15 +44,17 @@ Tokio 固定为 `1.53.3`；加密依赖的锁文件包含 `crypto-bigint 0.7.10`
 
 ## 签名准备
 
-macOS 使用独立的 Dev／release 应用身份，当前为固定证书自签名、无公证，`hardenedRuntime: false`。配置采用完整 SHA-1 证书指纹及钥匙串绝对路径：
+macOS 使用独立的 Dev／release 应用身份，当前为固定证书自签名、无公证，`hardenedRuntime: false`。开发者自行创建或导入代码签名证书及私钥，并选择证书导出文件的保管位置。将示例中的占位参数替换为完整的 40 位 SHA-1 证书指纹和证书所在钥匙串的绝对路径：
 
 ```sh
 security find-identity -v -p codesigning
-npm run signing:configure -- --profile dev --identity <40位指纹> --keychain /绝对路径/login.keychain-db
+npm run signing:configure -- --profile dev \
+  --identity "<DEV_CERTIFICATE_SHA1>" \
+  --keychain "<DEV_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile dev
 ```
 
-正式打包使用 `--profile release`。配置位于 `~/Library/Application Support/VigilShell Signing/`；证书与私钥留在仓库外，已有配置沿用当前身份。实现见[签名配置](../scripts/signing/config.mjs)与[打包脚本](../scripts/package-macos.mjs)。
+正式打包使用 `--profile release` 单独配置对应的证书指纹和钥匙串路径。配置脚本按当前用户将配置分别保存到 `dev`、`release` 目录，实际签名从所选钥匙串读取私钥；证书导出文件及私钥不存入源码仓库。同一发行线的后续版本保持签名身份连续，官方发行使用维护者管理的固定正式身份。实现见[签名配置](../scripts/signing/config.mjs)与[打包脚本](../scripts/package-macos.mjs)。
 
 本地热更新沿用现有 Dev 身份、`out/`、`target/debug/` 和 `.cache/{notification-native,mcp-native}/`。打包构建通过统一上下文把前端、原生桥、后端资源和 Cargo 输出放到 `.cache/build/<dev|release>/<arm64|x64>/` 的 `out/`、`native/`、`backend/`、`cargo/`，不覆盖热更新产物。`package:dev` 使用 Dev 签名和 `development-package` 模式，`package:release` 使用 release 签名和 `production` 模式；构建模式与身份不匹配时失败。原生桥在编译阶段即采用所选身份，不要求 release 构建配置 Dev 证书。
 

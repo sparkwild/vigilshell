@@ -82,8 +82,9 @@ test('CI signing reads only explicit selected-profile settings, never saved mach
   const directory = join(root, 'signing');
   const identity = 'A'.repeat(40);
   for (const profile of ['dev', 'release']) {
+    await mkdir(join(directory, profile));
     await writeFile(
-      join(directory, `${profile}.json`),
+      join(directory, profile, `${profile}.json`),
       JSON.stringify({ identity, keychain: '/saved/keychain' }),
     );
     assert.equal(readSigningConfig(profile, {}, directory).keychain, '/saved/keychain');
@@ -149,8 +150,9 @@ for (const profile of ['dev', 'release']) {
 
 test('release native build refuses Dev-only configuration before compiling or writing outputs', async (t) => {
   const root = await fixture(t);
+  await mkdir(join(root, 'signing/dev'));
   await writeFile(
-    join(root, 'signing/dev.json'),
+    join(root, 'signing/dev/dev.json'),
     JSON.stringify({ identity: 'A'.repeat(40), keychain: '/dev/keychain' }),
   );
   await assert.rejects(

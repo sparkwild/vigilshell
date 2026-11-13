@@ -112,18 +112,18 @@ List the code-signing identities available on your machine:
 security find-identity -v -p codesigning
 ```
 
-If no usable identity is available, first create or import a code-signing certificate and private key in Keychain. The configuration command does not generate certificates, and ad hoc signing cannot replace the fixed identity.
+For local development and your own packaged builds, use a code-signing certificate and private key that you create or import into Keychain. The configuration command records an existing identity; it does not generate certificates or accept ad hoc signing.
 
 Replace the placeholders below with the certificate's **40-character fingerprint** and the **absolute path** to its keychain:
 
 ```sh
 npm run signing:configure -- --profile dev \
-  --identity "<40-character-certificate-fingerprint>" \
-  --keychain "/absolute/path/login.keychain-db"
+  --identity "<DEV_CERTIFICATE_SHA1>" \
+  --keychain "<DEV_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile dev
 ```
 
-Signing configuration is stored in `~/Library/Application Support/VigilShell Signing/`. Keep using the existing identity once configured. Certificates and private keys stay outside the source repository. See [signing preparation](docs/TECH_STACK.md#签名准备) for details (in Chinese).
+Choose where to keep your certificate exports, outside the source repository. The configuration script saves the selected certificate fingerprint and keychain path for the current user in separate `dev` and `release` directories; signing uses the private key in that keychain. Keep using the existing identity once configured. See [signing preparation](docs/TECH_STACK.md#签名准备) for details (in Chinese).
 
 ### Start the development application
 
@@ -152,12 +152,12 @@ Communication contracts are generated from Rust DTOs; localization code is gener
 
 ### Building a package
 
-Prepare a separate `release` configuration using the same process as development signing. After selecting the appropriate signing identity, run:
+Prepare a separate `release` configuration using the same process as development signing. Use an identity you manage for your own distribution, retaining it across subsequent releases. Official VigilShell releases use the maintainer's established release identity. After selecting the appropriate signing identity, run:
 
 ```sh
 npm run signing:configure -- --profile release \
-  --identity "<40-character-release-certificate-fingerprint>" \
-  --keychain "/absolute/path/login.keychain-db"
+  --identity "<RELEASE_CERTIFICATE_SHA1>" \
+  --keychain "<RELEASE_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile release
 npm run package:release
 ```
@@ -190,7 +190,6 @@ Connection settings and credentials are encrypted and stored locally. Unlock key
 | ----------------------------------------------- | --------------------------------------------------- |
 | VigilShell data                                 | `~/Library/Application Support/VigilShell/`         |
 | VigilShell Dev data                             | `~/Library/Application Support/VigilShell-dev/`     |
-| Development and packaging signing configuration | `~/Library/Application Support/VigilShell Signing/` |
 
 For development runs, `VIGILSHELL_DATA_DIR` can specify another absolute path. Source code and build caches are not a backup of user data. Restoring encrypted settings and credentials also requires the matching system key.
 

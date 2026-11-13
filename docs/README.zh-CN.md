@@ -112,18 +112,18 @@ rustup toolchain install 1.96.0 --profile minimal --component rustfmt --componen
 security find-identity -v -p codesigning
 ```
 
-如果没有可用身份，需要先在钥匙串中创建或导入代码签名证书及私钥。配置命令不会自动生成证书，也不支持用临时签名代替固定身份。
+本地开发和自行打包使用开发者自己创建或导入钥匙串的代码签名证书及私钥。配置命令只记录已有身份，不会生成证书，也不支持用临时签名代替固定身份。
 
 将下面的占位内容替换为实际的 **40 位证书指纹**和证书所在钥匙串的**绝对路径**：
 
 ```sh
 npm run signing:configure -- --profile dev \
-  --identity "<40位证书指纹>" \
-  --keychain "/绝对路径/login.keychain-db"
+  --identity "<DEV_CERTIFICATE_SHA1>" \
+  --keychain "<DEV_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile dev
 ```
 
-签名配置保存在 `~/Library/Application Support/VigilShell Signing/`。已有配置应继续使用原身份；证书和私钥不存入源码仓库。更多约定见[签名准备](TECH_STACK.md#签名准备)。
+证书导出文件由开发者自行选择源码仓库之外的位置保管。配置脚本按当前用户将所选证书指纹和钥匙串路径分别保存到 `dev`、`release` 目录，实际签名使用该钥匙串中的私钥。已有配置应继续使用原身份。更多约定见[签名准备](TECH_STACK.md#签名准备)。
 
 ### 启动开发应用
 
@@ -152,12 +152,12 @@ npm run dev:app
 
 ### 本地打包
 
-按开发签名的方式，另行准备 `release` 配置。选择对应签名身份后执行：
+按开发签名的方式，另行准备 `release` 配置。自行分发使用自己管理的身份，同一发行线的后续版本沿用该身份；官方发行使用维护者管理的既有正式身份。选择对应签名身份后执行：
 
 ```sh
 npm run signing:configure -- --profile release \
-  --identity "<release证书的40位指纹>" \
-  --keychain "/绝对路径/login.keychain-db"
+  --identity "<RELEASE_CERTIFICATE_SHA1>" \
+  --keychain "<RELEASE_KEYCHAIN_ABSOLUTE_PATH>"
 npm run signing:check -- --profile release
 npm run package:release
 ```
@@ -190,7 +190,6 @@ npm run package:release -- --arch arm64
 | ------------------- | --------------------------------------------------- |
 | VigilShell 数据     | `~/Library/Application Support/VigilShell/`         |
 | VigilShell Dev 数据 | `~/Library/Application Support/VigilShell-dev/`     |
-| 开发与打包签名配置  | `~/Library/Application Support/VigilShell Signing/` |
 
 开发运行可通过 `VIGILSHELL_DATA_DIR` 指定其他绝对路径。源码和构建缓存不等同于用户数据备份；恢复加密配置和凭据还需要匹配的系统密钥。
 
