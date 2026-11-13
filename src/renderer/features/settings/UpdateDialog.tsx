@@ -2,7 +2,7 @@ import type { ApplicationInfo, UpdateSnapshot } from '@contracts';
 import { cn } from 'cn';
 import {
   CheckCircle2Icon,
-  CircleArrowUpIcon,
+  CircleFadingArrowUpIcon,
   CircleHelpIcon,
   ExternalLinkIcon,
   TriangleAlertIcon,
@@ -69,7 +69,7 @@ export function UpdateDialog({
     failed || state.phase === 'downloadError' || state.phase === 'installError'
       ? TriangleAlertIcon
       : available
-        ? CircleArrowUpIcon
+        ? CircleFadingArrowUpIcon
         : state.phase === 'current'
           ? CheckCircle2Icon
           : CircleHelpIcon;
@@ -215,7 +215,6 @@ export function UpdateDialog({
                 </DialogClose>
                 {available && !downloading && !ready ? (
                   <Button onClick={onDownload}>
-                    <CircleArrowUpIcon data-icon="inline-start" />
                     {t(
                       state.canDownload
                         ? state.phase === 'downloadError'
