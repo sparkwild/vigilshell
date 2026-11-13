@@ -5949,6 +5949,9 @@
         "info": {
           "$ref": "#/definitions/ApplicationInfo"
         },
+        "release_notes": {
+          "$ref": "#/definitions/ReleaseNotesDocument"
+        },
         "request": {
           "$ref": "#/definitions/ApplicationRequest"
         },
@@ -5959,7 +5962,8 @@
       "required": [
         "info",
         "state",
-        "request"
+        "request",
+        "release_notes"
       ]
     },
     "ApplicationInfo": {
@@ -6108,6 +6112,16 @@
     "AvailableRelease": {
       "type": "object",
       "properties": {
+        "localizedNotes": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LocalizedReleaseNotes"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "notes": {
           "type": "string"
         },
@@ -8450,6 +8464,28 @@
         "en"
       ]
     },
+    "LocalizedReleaseNotes": {
+      "type": "object",
+      "properties": {
+        "en": {
+          "$ref": "#/definitions/ReleaseNoteSections"
+        },
+        "zh-CN": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ReleaseNoteSections"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "en"
+      ]
+    },
     "NativeServiceDefinition": {
       "type": "object",
       "properties": {
@@ -10017,6 +10053,57 @@
       "additionalProperties": false,
       "required": [
         "offset"
+      ]
+    },
+    "ReleaseNoteSections": {
+      "type": "object",
+      "properties": {
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fixes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "upgradeNotes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReleaseNotesDocument": {
+      "type": "object",
+      "properties": {
+        "languages": {
+          "$ref": "#/definitions/LocalizedReleaseNotes"
+        },
+        "schema": {
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "tag": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "version",
+        "tag",
+        "languages"
       ]
     },
     "RemoteEntry": {

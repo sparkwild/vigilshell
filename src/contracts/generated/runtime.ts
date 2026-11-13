@@ -3911,6 +3911,7 @@ export interface PolicyLimitPatch {
  */
 export interface ApplicationContract {
   info: ApplicationInfo
+  release_notes: ReleaseNotesDocument
   request: ApplicationRequest
   state: UpdateSnapshot
 }
@@ -3921,6 +3922,33 @@ export interface ApplicationContract {
 export interface ApplicationInfo {
   name: string
   version: string
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ReleaseNotesDocument".
+ */
+export interface ReleaseNotesDocument {
+  languages: LocalizedReleaseNotes
+  schema: number
+  tag: string
+  version: string
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "LocalizedReleaseNotes".
+ */
+export interface LocalizedReleaseNotes {
+  en: ReleaseNoteSections
+  "zh-CN"?: ReleaseNoteSections | null
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ReleaseNoteSections".
+ */
+export interface ReleaseNoteSections {
+  features?: string[]
+  fixes?: string[]
+  upgradeNotes?: string[]
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
@@ -3948,6 +3976,7 @@ export interface UpdateProgress {
  * via the `definition` "AvailableRelease".
  */
 export interface AvailableRelease {
+  localizedNotes?: LocalizedReleaseNotes | null
   notes: string
   tag: string
   version: string

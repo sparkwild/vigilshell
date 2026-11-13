@@ -11,7 +11,11 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, join } from 'node:path';
-import { readReleaseNotes, renderReleaseNotes } from './release-notes.mjs';
+import {
+  createReleaseNotesDocument,
+  readReleaseNotes,
+  renderReleaseNotes,
+} from './release-notes.mjs';
 import { checkReleaseNotes, checkReleaseTag, isStableReleaseTag } from './release-policy.mjs';
 import { validatePreview } from './preview-artifacts.mjs';
 import { normalizeFingerprint } from './signing/config.mjs';
@@ -106,6 +110,9 @@ async function draft() {
   const runUrl = `https://github.com/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`;
   const temp = mkdtempSync(join(env.RUNNER_TEMP, 'vigilshell-release-'));
   try {
+    const localizedNotes = join(temp, 'release-notes.json');
+    const localizedDocument = createReleaseNotesDocument(source.tag);
+    writeFileSync(localizedNotes, JSON.stringify(localizedDocument, null, 2) + '\n');
     const manifest = join(temp, 'build.json');
     writeFileSync(
       manifest,
@@ -118,6 +125,9 @@ async function draft() {
           signing: 'fixed-self-signed',
           sha256,
           update: { sha256: update.sha256, metadataSha256: update.metadataSha256 },
+          releaseNotesSha256: createHash('sha256')
+            .update(readFileSync(localizedNotes))
+            .digest('hex'),
           node: process.version,
           rust: execFileSync('rustc', ['--version'], { encoding: 'utf8' }).trim(),
           runId: env.GITHUB_RUN_ID,
@@ -140,6 +150,7 @@ async function draft() {
       metadata,
       reportPath,
       manifest,
+      localizedNotes,
     ];
     // GitHub can clear the tag association when a draft update omits the tag.
     const binding = {
@@ -208,6 +219,7 @@ async function draft() {
       },
       runUrl,
       previousTag,
+      hasChinese: !!localizedDocument.languages['zh-CN'],
     });
     const verified = api(['--method', 'PATCH', endpoint, '--input', '-'], { ...binding, body });
     verifyDraft(verified, source);

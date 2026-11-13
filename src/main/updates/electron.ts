@@ -32,6 +32,7 @@ export function registerApplication(
     options.install,
     {
       releases: source.releases,
+      notes: source.notes,
       store: new DiscoveryStore(
         join(app.getPath('userData'), 'updates', 'discovery.json'),
         `${source.releases}|${process.platform}|${process.arch}`,

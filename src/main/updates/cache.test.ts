@@ -72,3 +72,21 @@ it('preserves an older ready update when committing a replacement receipt fails'
   await expect(cache.save(next, info, source)).rejects.toThrow('disk_full');
   expect((await cache.load())?.release.version).toBe('0.1.2');
 });
+
+it('restores bilingual copy offline and never discards a verified ZIP for malformed copy', async () => {
+  const { cache, directory } = await fixture();
+  const saved = (await cache.load())!;
+  const localizedNotes = {
+    en: { features: ['Feature'], upgradeNotes: ['Back up'] },
+    'zh-CN': { features: ['功能'], upgradeNotes: ['备份'] },
+  };
+  await cache.write({ ...saved, release: { ...saved.release, localizedNotes } });
+  expect((await cache.load())?.release.localizedNotes).toEqual(localizedNotes);
+  const path = join(directory, 'pending.json');
+  const broken = JSON.parse(await readFile(path, 'utf8'));
+  broken.release.notes = null;
+  broken.release.localizedNotes = { en: { features: [42] } };
+  await writeFile(path, JSON.stringify(broken));
+  expect((await cache.load())?.release).toEqual({ ...release, notes: '' });
+  expect((await readFile(cache.archive)).length).toBeGreaterThan(0);
+});

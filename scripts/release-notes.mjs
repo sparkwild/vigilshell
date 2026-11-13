@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import {
+  parseMarkdownReleaseNotes,
+  releaseNotesFromDocument,
+  releaseNotesLimit,
+} from '../src/shared/release-notes.ts';
 
 const headings = ['Features', 'Bug Fixes', 'Upgrade Notes'];
 
-export function readReleaseNotes(tag, root = '.') {
-  const name = `docs/releases/${tag}.md`;
+export function readReleaseNotes(tag, root = '.', locale = 'en') {
+  assert(/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag), 'Invalid release tag');
+  assert(['en', 'zh-CN'].includes(locale), 'Unsupported release notes locale');
+  const name = `docs/releases/${tag}/${locale}.md`;
   const path = resolve(root, name);
   assert(existsSync(path), `Missing release notes: ${name}`);
   const [intro, ...blocks] = readFileSync(path, 'utf8')
@@ -16,8 +23,12 @@ export function readReleaseNotes(tag, root = '.') {
 
   const notes = {};
   for (let index = 0; index < blocks.length; index += 2) {
-    const heading = blocks[index];
-    assert(headings.includes(heading), `${name} has an unsupported section: ${heading}`);
+    const title = blocks[index];
+    const heading =
+      locale === 'en'
+        ? title
+        : { 新增功能: 'Features', 问题修复: 'Bug Fixes', 升级注意事项: 'Upgrade Notes' }[title];
+    assert(headings.includes(heading), `${name} has an unsupported section: ${title}`);
     assert(!notes[heading], `${name} repeats the ${heading} section`);
     const content = blocks[index + 1].trim();
     assert(content, `${name} has an empty ${heading} section`);
@@ -25,6 +36,40 @@ export function readReleaseNotes(tag, root = '.') {
   }
   assert(Object.keys(notes).length, `${name} requires at least one release notes section`);
   return notes;
+}
+
+export function createReleaseNotesDocument(tag, root = '.') {
+  const en = readReleaseNotes(tag, root);
+  const chinese = resolve(root, `docs/releases/${tag}/zh-CN.md`);
+  let zh;
+  if (existsSync(chinese)) {
+    zh = readReleaseNotes(tag, root, 'zh-CN');
+    assert.deepEqual(
+      Object.keys(zh).sort(),
+      Object.keys(en).sort(),
+      'Chinese release notes must cover all English sections',
+    );
+  }
+  const languages = {
+    en: parseMarkdownReleaseNotes(renderNoteSections(en).join('\n\n')),
+    ...(zh ? { 'zh-CN': parseMarkdownReleaseNotes(renderNoteSections(zh).join('\n\n')) } : {}),
+  };
+  const document = { schema: 1, version: tag.slice(1), tag, languages };
+  assert(
+    Buffer.byteLength(JSON.stringify(document, null, 2) + '\n') <= releaseNotesLimit,
+    'Release notes exceed 64 KiB',
+  );
+  const normalized = releaseNotesFromDocument(document, document.version, tag);
+  assert(
+    normalized && (!zh || normalized['zh-CN']),
+    'Release notes require valid readable content',
+  );
+  assert.deepEqual(
+    Object.keys(normalized.en).length,
+    Object.keys(en).length,
+    'English release notes contain an empty section',
+  );
+  return { ...document, languages: normalized };
 }
 
 export function renderNoteSections(notes, heading = '##') {
@@ -63,7 +108,7 @@ function renderDownloadTable(installers, assetUrl) {
 
 export function renderReleaseNotes(
   notes,
-  { repository, source, assets, runUrl, previousTag, showChangelog = true },
+  { repository, source, assets, runUrl, previousTag, showChangelog = true, hasChinese = false },
 ) {
   const { tag, sha } = source;
   const repoUrl = `https://github.com/${repository}`;
@@ -86,6 +131,7 @@ export function renderReleaseNotes(
     build.push(`- [Compare source changes](${repoUrl}/compare/${previousTag}...${tag})`);
 
   return [
+    ...(hasChinese ? [`[简体中文](${repoUrl}/blob/${tag}/docs/releases/${tag}/zh-CN.md)`] : []),
     ...renderNoteSections(notes),
     ...downloads,
     `## Installation & Upgrade\n\n${installation}`,

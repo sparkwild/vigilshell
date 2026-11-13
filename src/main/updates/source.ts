@@ -15,6 +15,7 @@ export function updateSource(development: boolean, environment: NodeJS.ProcessEn
       downloadable: true,
       releases: `${prefix}/releases`,
       feed: (tag: string) => `${prefix}/${encodeURIComponent(tag)}/`,
+      notes: (tag: string) => `${prefix}/${encodeURIComponent(tag)}/release-notes.json`,
     };
   }
   return {
@@ -22,5 +23,7 @@ export function updateSource(development: boolean, environment: NodeJS.ProcessEn
     releases: 'https://api.github.com/repos/sparkwild/vigilshell/releases?per_page=100',
     feed: (tag: string) =>
       `https://github.com/sparkwild/vigilshell/releases/download/${encodeURIComponent(tag)}/`,
+    notes: (tag: string) =>
+      `https://github.com/sparkwild/vigilshell/releases/download/${encodeURIComponent(tag)}/release-notes.json`,
   };
 }

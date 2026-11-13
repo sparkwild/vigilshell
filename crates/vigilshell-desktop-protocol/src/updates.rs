@@ -12,6 +12,33 @@ pub struct AvailableRelease {
     pub version: String,
     pub tag: String,
     pub notes: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub localized_notes: Option<LocalizedReleaseNotes>,
+}
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReleaseNoteSections {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fixes: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub upgrade_notes: Vec<String>,
+}
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct LocalizedReleaseNotes {
+    pub en: ReleaseNoteSections,
+    #[serde(rename = "zh-CN", default, skip_serializing_if = "Option::is_none")]
+    pub zh_cn: Option<ReleaseNoteSections>,
+}
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReleaseNotesDocument {
+    pub schema: u8,
+    pub version: String,
+    pub tag: String,
+    pub languages: LocalizedReleaseNotes,
 }
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -89,4 +116,5 @@ pub struct ApplicationContract {
     pub info: ApplicationInfo,
     pub state: UpdateSnapshot,
     pub request: ApplicationRequest,
+    pub release_notes: ReleaseNotesDocument,
 }

@@ -9,7 +9,11 @@ import {
   checkVersions,
   renderChangelog,
 } from '../../scripts/release-policy.mjs';
-import { readReleaseNotes, renderReleaseNotes } from '../../scripts/release-notes.mjs';
+import {
+  createReleaseNotesDocument,
+  readReleaseNotes,
+  renderReleaseNotes,
+} from '../../scripts/release-notes.mjs';
 
 test('release tag must match the stable project version exactly', () => {
   const version = checkVersions();
@@ -71,9 +75,9 @@ test('release notes require content and reserve generated sections for the workf
   t.after(() => rm(root, { recursive: true, force: true }));
   assert.throws(() => readReleaseNotes('v0.2.0', root), /Missing release notes/);
 
-  const dir = join(root, 'docs', 'releases');
+  const dir = join(root, 'docs', 'releases', 'v0.2.0');
   await mkdir(dir, { recursive: true });
-  const path = join(dir, 'v0.2.0.md');
+  const path = join(dir, 'en.md');
   for (const [markdown, error] of [
     ['## Features\n', /empty Features/],
     ['', /requires at least one release notes section/],
@@ -173,6 +177,10 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
   assert.match(multi, /^\| macOS \| .+<br><a .+alt="DMG for Intel x64"/m);
   assert.match(multi, /^\| Linux \| <a .+alt="AppImage for x64"/m);
   assert.doesNotMatch(multi, /^\| Windows \|/m);
+  assert.match(
+    renderReleaseNotes({ Features: '- Feature' }, { ...options, hasChinese: true }),
+    /blob\/v0.2.0\/docs\/releases\/v0.2.0\/zh-CN.md/,
+  );
 });
 
 test('changelog preflight rejects history out of sync with the version notes', async (t) => {
@@ -180,10 +188,15 @@ test('changelog preflight rejects history out of sync with the version notes', a
   t.after(() => rm(root, { recursive: true, force: true }));
   const dir = join(root, 'docs', 'releases');
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, 'v0.2.2.md'), '## Features\n\n- Earlier change\n');
-  const latest = join(dir, 'v0.2.10.md');
+  await mkdir(join(dir, 'v0.2.2'), { recursive: true });
+  await mkdir(join(dir, 'v0.2.10'), { recursive: true });
+  await writeFile(join(dir, 'v0.2.2', 'en.md'), '## Features\n\n- Earlier change\n');
+  const latest = join(dir, 'v0.2.10', 'en.md');
   await writeFile(latest, '## Features\n\n- Recent change\n\n## Bug Fixes\n\n- Fixed behavior\n');
-  await writeFile(join(dir, 'v0.2.10.zh-CN.md'), 'Translated notes');
+  await writeFile(
+    join(dir, 'v0.2.10', 'zh-CN.md'),
+    '## 新增功能\n\n- 中文功能\n\n## 问题修复\n\n- 中文修复\n',
+  );
 
   assert.throws(() => checkReleaseNotes('v0.2.10', root), /CHANGELOG.md is missing or out of date/);
   const log = renderChangelog(root);
@@ -192,6 +205,51 @@ test('changelog preflight rejects history out of sync with the version notes', a
   assert.doesNotMatch(log, /Translated notes/);
   await writeFile(join(root, 'CHANGELOG.md'), log);
   assert.doesNotThrow(() => checkReleaseNotes('v0.2.10', root));
-  await writeFile(latest, '## Features\n\n- Updated change\n');
+  await writeFile(latest, '## Features\n\n- Updated change\n\n## Bug Fixes\n\n- Fixed behavior\n');
   assert.throws(() => checkReleaseNotes('v0.2.10', root), /CHANGELOG.md is missing or out of date/);
+});
+
+test('generates version-bound bilingual notes and requires complete translations only when provided', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'vigil-bilingual-notes-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const directory = join(root, 'docs/releases/v0.2.0');
+  await mkdir(directory, { recursive: true });
+  await writeFile(
+    join(directory, 'en.md'),
+    '## Features\n\n- **New** feature\n\n## Upgrade Notes\n\n- Back up settings\n',
+  );
+  const english = createReleaseNotesDocument('v0.2.0', root);
+  assert.deepEqual(english, {
+    schema: 1,
+    tag: 'v0.2.0',
+    version: '0.2.0',
+    languages: { en: { features: ['New feature'], upgradeNotes: ['Back up settings'] } },
+  });
+  await writeFile(join(directory, 'zh-CN.md'), '## 新增功能\n\n- 新功能\n');
+  assert.throws(() => createReleaseNotesDocument('v0.2.0', root), /cover all English sections/);
+  await writeFile(
+    join(directory, 'zh-CN.md'),
+    '## 新增功能\n\n- 新功能\n\n## 升级注意事项\n\n- 请备份设置\n',
+  );
+  const document = createReleaseNotesDocument('v0.2.0', root);
+  assert.deepEqual(document.languages['zh-CN'], {
+    features: ['新功能'],
+    upgradeNotes: ['请备份设置'],
+  });
+  const { default: Ajv } = await import('ajv');
+  const ajv = new Ajv({ strict: false, validateFormats: false });
+  ajv.addSchema(
+    JSON.parse(await readFile('src/contracts/generated/runtime.schema.json', 'utf8')),
+    'contract',
+  );
+  assert(ajv.getSchema('contract#/definitions/ReleaseNotesDocument')(document));
+  assert.throws(() => readReleaseNotes('../v0.2.0', root), /Invalid release tag/);
+  await writeFile(join(directory, 'zh-CN.md'), '## 下载\n\n- 不应包含下载信息\n');
+  assert.throws(() => createReleaseNotesDocument('v0.2.0', root), /unsupported section/);
+  await rm(join(directory, 'zh-CN.md'));
+  await writeFile(
+    join(directory, 'en.md'),
+    '## Features\n\n' + ('- ' + 'x'.repeat(645) + '\n').repeat(100),
+  );
+  assert.throws(() => createReleaseNotesDocument('v0.2.0', root), /exceed 64 KiB/);
 });

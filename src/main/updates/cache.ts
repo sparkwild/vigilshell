@@ -14,6 +14,7 @@ import {
 import { join } from 'node:path';
 import type { AvailableRelease } from '@contracts';
 import type { UpdateInfo } from 'electron-updater';
+import { normalizeReleaseNotes } from '../../shared/release-notes';
 
 export interface PendingUpdate {
   schema: 1;
@@ -120,14 +121,9 @@ export class UpdateCache {
       }
       throw error;
     }
-    if (
-      value.schema !== 1 ||
-      typeof value.installing !== 'boolean' ||
-      !value.release ||
-      typeof value.release.notes !== 'string' ||
-      value.release.notes.length > 65536
-    )
+    if (value.schema !== 1 || typeof value.installing !== 'boolean' || !value.release)
       throw Error('invalid_cache');
+    value.release = normalizeReleaseNotes(value.release);
     if (!newer(value.release.version, this.current)) {
       await this.clear();
       return;

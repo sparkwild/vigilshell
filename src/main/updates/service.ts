@@ -4,10 +4,12 @@ import { automaticUpdateChecksEnabled } from '../../shared/application-features'
 import type { DiscoveryStore } from './discovery-store';
 import { UpdateScheduler, rateLimitUntil } from './scheduler';
 import { selectRelease } from './releases';
+import { loadReleaseNotes } from './release-notes';
 export { selectRelease } from './releases';
 export interface DiscoveryOptions {
   store?: DiscoveryStore;
   releases?: string;
+  notes?(tag: string): string;
   inspect?(release: AvailableRelease): Promise<boolean>;
 }
 export class UpdateService extends EventEmitter<{ changed: [UpdateSnapshot] }> {
@@ -115,14 +117,34 @@ export class UpdateService extends EventEmitter<{ changed: [UpdateSnapshot] }> {
         throw Error('invalidResponse');
       }
       const selected = selectRelease(data, this.current, this.platform, this.arch);
-      const canDownload = !!(
-        selected.canDownload &&
-        selected.release &&
-        this.discovery.inspect &&
-        (await this.discovery.inspect(selected.release).catch(() => false))
-      );
+      const release = selected.release;
+      const hasNotes =
+        release &&
+        (data as { tag_name: string; assets: { name: string; state: string }[] }[])
+          .find((item) => item.tag_name === release.tag)
+          ?.assets.some(
+            (asset) => asset.name === 'release-notes.json' && asset.state === 'uploaded',
+          );
+      const [canDownload, withNotes] = await Promise.all([
+        selected.canDownload && release && this.discovery.inspect
+          ? this.discovery.inspect(release).catch(() => false)
+          : false,
+        hasNotes && release
+          ? loadReleaseNotes(
+              release,
+              this.discovery.notes?.(release.tag) ??
+                `https://github.com/sparkwild/vigilshell/releases/download/${release.tag}/release-notes.json`,
+              this.fetcher,
+            )
+          : release,
+      ]);
       success = true;
-      this.publish({ ...selected, canDownload, checkPhase: selected.phase as UpdateCheckPhase });
+      this.publish({
+        ...selected,
+        release: withNotes,
+        canDownload,
+        checkPhase: selected.phase as UpdateCheckPhase,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       const checkPhase =

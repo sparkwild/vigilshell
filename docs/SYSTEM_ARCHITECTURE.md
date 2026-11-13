@@ -70,6 +70,8 @@ Backend 使用 Tokio 管理异步任务，SQLite 与系统密钥访问由独立�
 
 ## 应用信息与更新
 
+Main 拥有发行说明的获取、版本绑定校验和中英文缓存；共享纯函数负责三个章节的正文提取、格式规范化及完整翻译回退。发布脚本复用同一规范化逻辑，从版本目录生成说明附件。AvailableRelease 保留旧 `notes` 字段并提供可选的 `localizedNotes`，发现缓存和下载回执独立容错，不因说明错误丢弃有效更新包。Renderer 依据 DesktopProvider 的实际语言即时选择正文；语言切换不请求版本、不触发下载，也不改变更新任务状态。
+
 Main UpdateService 统一拥有发行发现快照；UpdateScheduler 管理就绪后延迟、每日检查、唤醒合并和失败退避。自动检查默认开启，使用已有 Rust／SQLite 偏好保存链路，以成功保存的值调度。DiscoveryStore 在应用数据目录中原子保存发现版本与调度记录，按更新源、平台和架构隔离；发现记录与已验证的 ZIP 安装回执独立。检查状态与任务状态分开，后台失败保留已知新版，下载或待安装期间暂停发现。Renderer ApplicationProvider 订阅唯一快照，UpdateController 统一管理工作区、关于页和菜单的更新弹窗，不切换页面。应用信息只提供产品名称与实际包版本，外部链接由 Main 按具名动作解析。
 
 ManagedUpdates 统一拥有检查、下载、取消与安装快照，复用 UpdateService 的发行筛选和调度；Renderer 页面与菜单消费同一应用级订阅。MacUpdateEngine 适配 electron-updater 与原生 Squirrel，UpdateCache 在应用数据目录的 `updates/` 中保存不可变 ZIP 和安装回执，不使用 SQLite 偏好表。每个应用仅执行一个更新操作，缓存恢复先于用户检查。有已验证待安装包时优先展示当前任务，不切换到另一发行版本。

@@ -42,3 +42,30 @@ it('treats corrupt records and write failures as recoverable discovery failures'
     blocked.save({ release: null, canDownload: false, schedule: initialSchedule() }),
   ).resolves.toBeUndefined();
 });
+
+it('retains a discovered version offline when optional translated copy is invalid', async () => {
+  const { path, store } = await fixture();
+  const localizedNotes = {
+    en: { features: ['Feature'], fixes: ['Fix'] },
+    'zh-CN': { features: ['功能'], fixes: ['修复'] },
+  };
+  await store.save({
+    release: { version: '0.1.3', tag: 'v0.1.3', notes: '', localizedNotes },
+    canDownload: true,
+    schedule: initialSchedule(),
+  });
+  expect((await store.load())?.release?.localizedNotes).toEqual(localizedNotes);
+  const record = {
+    schema: 1,
+    source: 'dev|arm64',
+    current: '0.1.2',
+    release: { version: '0.1.3', tag: 'v0.1.3', notes: null, localizedNotes: {} },
+    canDownload: true,
+    schedule: initialSchedule(),
+  };
+  await writeFile(path, JSON.stringify(record));
+  expect(await store.load()).toMatchObject({
+    canDownload: true,
+    release: { version: '0.1.3', notes: '' },
+  });
+});

@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import type { AvailableRelease } from '@contracts';
 import { newer } from './cache';
 import { initialSchedule, type ScheduleRecord, updateDay } from './scheduler';
+import { normalizeReleaseNotes } from '../../shared/release-notes';
 export interface DiscoveryRecord {
   schema: 1;
   source: string;
@@ -37,14 +38,9 @@ export class DiscoveryStore {
       )
         throw Error('invalid_schedule');
       const release = value.release;
-      if (
-        release &&
-        (typeof release.version !== 'string' ||
-          release.tag !== `v${release.version}` ||
-          typeof release.notes !== 'string' ||
-          release.notes.length > 65536)
-      )
+      if (release && (typeof release.version !== 'string' || release.tag !== `v${release.version}`))
         throw Error('invalid_release');
+      if (release) value.release = normalizeReleaseNotes(release);
       if (release && !newer(release.version, this.current)) value.release = null;
       if (value.current !== this.current || value.schedule.lastSuccess > Date.now())
         value.schedule = initialSchedule();

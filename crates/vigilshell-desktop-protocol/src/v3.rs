@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 use vigilshell_domain as domain;
 
-pub const PROTOCOL_VERSION: u8 = 15;
+pub const PROTOCOL_VERSION: u8 = 16;
 pub const MAX_FRAME_BYTES: usize = 64 * 1024;
 pub const MAX_AGENT_FRAME_BYTES: usize = 1024 * 1024;
 pub const MAX_REQUEST_ID_CHARS: usize = 128;
