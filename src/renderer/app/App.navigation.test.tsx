@@ -136,27 +136,22 @@ vi.mock('../features/mcp/AgentActivity', () => ({
   ),
 }));
 vi.mock('../features/settings/SettingsView', () => ({
-  SettingsView: ({
-    onBack,
-    initialCategory,
-    checkUpdates,
-  }: {
-    onBack(): void;
-    initialCategory: string;
-    checkUpdates: boolean;
-  }) => (
+  SettingsView: ({ onBack, initialCategory }: { onBack(): void; initialCategory: string }) => (
     <div>
       <h1>Settings page</h1>
-      <output aria-label="Settings route">
-        {initialCategory}
-        {checkUpdates ? ':check' : ''}
-      </output>
+      <output aria-label="Settings route">{initialCategory}</output>
       <button onClick={onBack}>Back from settings</button>
     </div>
   ),
 }));
 afterEach(cleanup);
 beforeEach(() => {
+  Element.prototype.getAnimations = () => [];
+  window.matchMedia = vi.fn(() => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {},
+  })) as unknown as typeof window.matchMedia;
   state.guard.mockReset().mockResolvedValue(true);
   state.newConnection.mockReset();
   state.diagnostics.mockReset();
@@ -166,6 +161,10 @@ beforeEach(() => {
     configurable: true,
     value: {
       rendererReady: vi.fn(),
+      application: {
+        info: vi.fn(async () => ({ name: 'VigilShell', version: '0.1.2' })),
+        check: vi.fn(async () => ({ phase: 'current', release: null })),
+      },
       notifications: {
         ...notificationApiFixture(),
         onNavigate: (receive: typeof state.notification) => {
@@ -323,15 +322,19 @@ it('returns to the homepage for a notification whose terminal is gone without op
   expect(state.newConnection).not.toHaveBeenCalled();
 });
 
-it('routes the menu update command to About after the leave guard, with an explicit check intent', async () => {
+it('opens menu updates over the current page without invoking its leave guard or remounting the workspace', async () => {
   render(<App fontFailed={false} />);
   await userEvent.click(screen.getByRole('button', { name: 'Policies' }));
-  state.guard.mockResolvedValue(false);
+  state.guard.mockClear().mockResolvedValue(false);
   await act(async () => state.settings?.('updates'));
+  expect(screen.getByRole('dialog')).toBeVisible();
+  expect(screen.queryByLabelText('Settings route')).toBeNull();
+  expect(state.guard).not.toHaveBeenCalled();
+  expect(state.mounts).toBe(1);
+  await userEvent.keyboard('{Escape}');
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.getByRole('heading', { name: 'Policy page' })).toBeVisible();
   state.guard.mockResolvedValue(true);
-  await act(async () => state.settings?.('updates'));
-  expect(screen.getByLabelText('Settings route')).toHaveTextContent('about:check');
   await act(async () => state.settings?.('about'));
   expect(screen.getByLabelText('Settings route')).toHaveTextContent(/^about$/);
 });

@@ -1303,7 +1303,7 @@
   "application_failed": "Operation failed. Please retry.",
   "updates_title": "Updates",
   "updates_auto": "Automatically check for updates",
-  "updates_auto_description": "Check after startup and every 24 hours while running.",
+  "updates_auto_description": "Check in the background once a day. Download and install when you choose.",
   "updates_idle": "Not checked yet",
   "updates_checking": "Checking…",
   "updates_current": "You are up to date",
@@ -1338,5 +1338,6 @@
   "updates_insufficientSpace": "Free up disk space, then try again.",
   "updates_readOnlyLocation": "Move VigilShell to a writable application folder before installing.",
   "updates_unsavedState": "Complete pending saves and file editing before trying again.",
-  "updates_install_body": "The app will restart. Active sessions will disconnect, transfers will be cancelled, and unsaved form changes will be discarded."
+  "updates_install_body": "The app will restart. Active sessions will disconnect, transfers will be cancelled, and unsaved form changes will be discarded.",
+  "updates_available_version": "New version {version} available"
 }

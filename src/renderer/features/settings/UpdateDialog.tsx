@@ -31,6 +31,7 @@ export function UpdateDialog({
   onCancel,
   onInstall,
   onRelease,
+  returnFocus,
 }: {
   open: boolean;
   onOpenChange(open: boolean): void;
@@ -42,6 +43,7 @@ export function UpdateDialog({
   onCancel(): void;
   onInstall(): void;
   onRelease(): void;
+  returnFocus?(): HTMLElement | false;
 }) {
   const { t } = useDesktop();
   const checking = pending || (!failure && state.phase === 'checking');
@@ -75,6 +77,7 @@ export function UpdateDialog({
       }}
     >
       <DialogContent
+        finalFocus={returnFocus}
         closeLabel={t('ws_close')}
         showCloseButton={!installing}
         className="flex flex-col overflow-hidden"

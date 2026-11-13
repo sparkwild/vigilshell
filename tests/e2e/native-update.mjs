@@ -1,3 +1,4 @@
+import { verifyDiscoveryUi } from './update-discovery-ui.mjs';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -141,6 +142,7 @@ const server = createServer((request, response) => {
           body: 'VigilShell native update acceptance.',
           assets: [
             { name: `VigilShell-${targetVersion}-macos-arm64.dmg`, state: 'uploaded' },
+            { name: 'latest-mac.yml', state: 'uploaded' },
             { name: archiveName, state: 'uploaded' },
           ],
         },
@@ -186,7 +188,15 @@ await mkdir(join(evidence, 'original'));
 assert(existsSync(live), 'Existing VigilShell Dev shell is required');
 await rename(live, original);
 await cp(base, live, { recursive: true, verbatimSymlinks: true, preserveTimestamps: true });
-await writeFile(join(evidence, 'restore.json'), JSON.stringify({ live, original }));
+const discoveryPath = join(
+  homedir(),
+  'Library/Application Support/VigilShell-dev/updates/discovery.json',
+);
+const discoveryBackup = existsSync(discoveryPath) ? readFileSync(discoveryPath, 'utf8') : null;
+await writeFile(
+  join(evidence, 'restore.json'),
+  JSON.stringify({ live, original, discoveryBackup }),
+);
 const executable = join(live, 'Contents/MacOS/VigilShell Dev');
 const environment = { ...process.env };
 for (const key of [
@@ -259,7 +269,7 @@ try {
         global.__nativeSignatureError = error.message;
       });
     });
-    await page.evaluate(() => window.vigilshell.application.check());
+    await verifyDiscoveryUi(application, page, evidence, result);
     assert.equal(
       (await page.evaluate(() => window.vigilshell.application.download())).phase,
       'ready',
@@ -475,6 +485,8 @@ try {
     await rename(original, live);
     result.needsDevShellRestoration = false;
     result.devShellRestored = true;
+    if (discoveryBackup !== null) await writeFile(discoveryPath, discoveryBackup, { mode: 0o600 });
+    else if (existsSync(discoveryPath)) await unlink(discoveryPath);
   }
   await writeFile(
     join(evidence, 'result.json'),

@@ -1,3 +1,4 @@
+import { UpdateController, useOpenUpdate } from '../features/settings/UpdateController';
 import { hasNotificationTarget } from '../features/notifications/target-availability';
 import type { NotificationTarget } from '@contracts';
 import { NotificationDestination } from '../features/notifications/NotificationDestination';
@@ -20,7 +21,17 @@ import { SettingsView } from '../features/settings/SettingsView';
 import { useDesktop } from './DesktopProvider';
 import { usePageNavigation } from './use-page-navigation';
 
-export function App({ fontFailed }: { fontFailed: boolean }) {
+export function App(props: { fontFailed: boolean }) {
+  return (
+    <UiProvider>
+      <UpdateController>
+        <Application {...props} />
+      </UpdateController>
+    </UiProvider>
+  );
+}
+function Application({ fontFailed }: { fontFailed: boolean }) {
+  const openUpdate = useOpenUpdate();
   const { store: workspaceStore } = useWorkspace();
   const { t } = useDesktop();
   const { register, registerOverlay, navigate } = usePageNavigation();
@@ -39,7 +50,6 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
   const [settingsRoute, setSettingsRoute] = useState({
     category: 'general' as SettingsCategory,
     version: 0,
-    checkUpdates: false,
   });
   const returnFocus = useRef<HTMLElement | null>(null);
   const rememberFocus = useCallback(() => {
@@ -71,22 +81,20 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
   }, [navigate, restoreWorkbench]);
   const openSettings = useCallback(
     (section?: 'notifications' | 'about' | 'updates') => {
+      if (section === 'updates') {
+        openUpdate();
+        return;
+      }
       void navigate(() => {
         rememberFocus();
         setSettingsRoute((current) => ({
-          category:
-            section === 'updates'
-              ? 'about'
-              : section === 'notifications' || section === 'about'
-                ? section
-                : 'general',
+          category: section === 'notifications' || section === 'about' ? section : 'general',
           version: current.version + 1,
-          checkUpdates: section === 'updates',
         }));
         setView('settings');
       });
     },
-    [navigate, rememberFocus],
+    [navigate, rememberFocus, openUpdate],
   );
   const showAgentTarget = useCallback(
     (target: McpNavigation) => {
@@ -203,7 +211,6 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
               setSettingsRoute((old) => ({
                 category: target.kind === 'runtime' ? 'general' : 'mcp',
                 version: old.version + 1,
-                checkUpdates: false,
               }));
               setView('settings');
               break;
@@ -264,62 +271,59 @@ export function App({ fontFailed }: { fontFailed: boolean }) {
     [view, goBack, navigate, restoreWorkbench, workspaceStore],
   );
   return (
-    <UiProvider>
-      <ConfirmationProvider>
-        <SessionAuthorization />
-        <div className="relative h-full">
-          <FileEditorsDialog
+    <ConfirmationProvider>
+      <SessionAuthorization />
+      <div className="relative h-full">
+        <FileEditorsDialog
+          onUnavailable={goHome}
+          notificationTarget={editorTarget}
+          navigationVersion={notificationNavigation}
+          registerLeaveGuard={registerOverlay}
+        />
+        {notificationTarget ? (
+          <NotificationDestination
             onUnavailable={goHome}
-            notificationTarget={editorTarget}
-            navigationVersion={notificationNavigation}
-            registerLeaveGuard={registerOverlay}
+            target={notificationTarget}
+            close={() => setNotificationTarget(null)}
           />
-          {notificationTarget ? (
-            <NotificationDestination
-              onUnavailable={goHome}
-              target={notificationTarget}
-              close={() => setNotificationTarget(null)}
-            />
-          ) : null}
-          <TransferConflictDialog />
-          <NavigationInteractionProvider>
-            <Workbench
-              onSettings={openSettings}
-              active={view !== 'settings'}
-              beforeConnectionAction={() => navigate(restoreWorkbench)}
-              policyContent={
-                view === 'policy' ? (
-                  <AgentPolicyPage
-                    target={policyTarget}
-                    session={policySession}
-                    setSession={setPolicySession}
-                    onBack={goBack}
-                    register={register}
-                  />
-                ) : undefined
-              }
-              activityTarget={view === 'activity' ? activityTarget : undefined}
-              onReturnToTerminal={goBack}
-            />
-          </NavigationInteractionProvider>
-          {view === 'settings' ? (
-            <SettingsView
-              registerExitGuard={register}
-              initialCategory={settingsRoute.category}
-              navigationVersion={settingsRoute.version}
-              checkUpdates={settingsRoute.checkUpdates}
-              onBack={goBack}
-            />
-          ) : null}
-          {fontFailed ? (
-            <div className="absolute inset-x-6 top-12">
-              <Alert>
-                <AlertDescription>{t('font_unavailable')}</AlertDescription>
-              </Alert>
-            </div>
-          ) : null}
-        </div>
-      </ConfirmationProvider>
-    </UiProvider>
+        ) : null}
+        <TransferConflictDialog />
+        <NavigationInteractionProvider>
+          <Workbench
+            onSettings={openSettings}
+            active={view !== 'settings'}
+            beforeConnectionAction={() => navigate(restoreWorkbench)}
+            policyContent={
+              view === 'policy' ? (
+                <AgentPolicyPage
+                  target={policyTarget}
+                  session={policySession}
+                  setSession={setPolicySession}
+                  onBack={goBack}
+                  register={register}
+                />
+              ) : undefined
+            }
+            activityTarget={view === 'activity' ? activityTarget : undefined}
+            onReturnToTerminal={goBack}
+          />
+        </NavigationInteractionProvider>
+        {view === 'settings' ? (
+          <SettingsView
+            registerExitGuard={register}
+            initialCategory={settingsRoute.category}
+            navigationVersion={settingsRoute.version}
+            onBack={goBack}
+          />
+        ) : null}
+        {fontFailed ? (
+          <div className="absolute inset-x-6 top-12">
+            <Alert>
+              <AlertDescription>{t('font_unavailable')}</AlertDescription>
+            </Alert>
+          </div>
+        ) : null}
+      </div>
+    </ConfirmationProvider>
   );
 }

@@ -47,7 +47,21 @@ pub enum UpdateIssue {
 }
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub enum UpdateCheckPhase {
+    Idle,
+    Checking,
+    Current,
+    Available,
+    Empty,
+    NetworkError,
+    RateLimited,
+    InvalidResponse,
+}
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateSnapshot {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub check_phase: Option<UpdateCheckPhase>,
     pub phase: UpdatePhase,
     pub release: Option<AvailableRelease>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

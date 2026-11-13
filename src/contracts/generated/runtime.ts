@@ -1419,6 +1419,19 @@ export type ApplicationRequest =
     }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UpdateCheckPhase".
+ */
+export type UpdateCheckPhase =
+  | "idle"
+  | "checking"
+  | "current"
+  | "available"
+  | "empty"
+  | "networkError"
+  | "rateLimited"
+  | "invalidResponse"
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "UpdateIssue".
  */
 export type UpdateIssue =
@@ -3915,6 +3928,7 @@ export interface ApplicationInfo {
  */
 export interface UpdateSnapshot {
   canDownload?: boolean | null
+  checkPhase?: UpdateCheckPhase | null
   issue?: UpdateIssue | null
   phase: UpdatePhase
   progress?: UpdateProgress | null

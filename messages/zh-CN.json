@@ -1303,7 +1303,7 @@
   "application_failed": "操作失败，请重试。",
   "updates_title": "更新",
   "updates_auto": "自动检查新版本",
-  "updates_auto_description": "启动就绪后检查，运行期间每 24 小时检查一次。",
+  "updates_auto_description": "每天在后台检查一次，由你选择何时下载和安装。",
   "updates_idle": "尚未检查",
   "updates_checking": "正在检查…",
   "updates_current": "已是最新版本",
@@ -1338,5 +1338,6 @@
   "updates_insufficientSpace": "磁盘空间不足，请清理空间后重试。",
   "updates_readOnlyLocation": "请先将 VigilShell 安装到可写的应用目录，再重试。",
   "updates_unsavedState": "请先完成保存或文件编辑，再重试安装。",
-  "updates_install_body": "应用将重启。活动会话会断开，传输会取消，尚未保存的表单修改将被丢弃。"
+  "updates_install_body": "应用将重启。活动会话会断开，传输会取消，尚未保存的表单修改将被丢弃。",
+  "updates_available_version": "发现新版本 {version}"
 }

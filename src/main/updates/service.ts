@@ -1,132 +1,112 @@
 import { EventEmitter } from 'node:events';
-import type { AvailableRelease, UpdateSnapshot } from '@contracts';
+import type { AvailableRelease, UpdateCheckPhase, UpdateSnapshot } from '@contracts';
 import { automaticUpdateChecksEnabled } from '../../shared/application-features';
-const day = 24 * 60 * 60 * 1000;
-// Release versions follow the project's stable X.Y.Z grammar.
-function version(value: string): number[] | null {
-  const m = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(value);
-  if (!m) return null;
-  const parts = [Number(m[1]), Number(m[2]), Number(m[3])];
-  return parts.every(Number.isSafeInteger) ? parts : null;
-}
-function compare(a: number[], b: number[]) {
-  for (let i = 0; i < 3; i++) {
-    if (a[i] !== b[i]) return a[i]! > b[i]! ? 1 : -1;
-  }
-  return 0;
-}
-export function selectRelease(
-  data: unknown,
-  current: string,
-  platform: string,
-  arch: string,
-): UpdateSnapshot {
-  if (!Array.isArray(data) || !version(current)) throw Error('invalidResponse');
-  const installed = version(current)!;
-  const releases: AvailableRelease[] = [];
-  for (const item of data) {
-    if (
-      !item ||
-      typeof item !== 'object' ||
-      typeof item.tag_name !== 'string' ||
-      typeof item.draft !== 'boolean' ||
-      typeof item.prerelease !== 'boolean' ||
-      !Array.isArray(item.assets)
-    )
-      throw Error('invalidResponse');
-    const candidate = version(item.tag_name);
-    if (item.draft || item.prerelease || !item.tag_name.startsWith('v') || !candidate) continue;
-    const v = item.tag_name.replace(/^v/, '');
-    if (
-      platform !== 'darwin' ||
-      !item.assets.some(
-        (a: { name?: string; state?: string }) =>
-          a.name === `VigilShell-${v}-macos-${arch}.dmg` && a.state === 'uploaded',
-      )
-    )
-      continue;
-    if (item.body != null && typeof item.body !== 'string') throw Error('invalidResponse');
-    releases.push({ version: v, tag: item.tag_name, notes: (item.body ?? '').slice(0, 65536) });
-  }
-  releases.sort((a, b) => compare(version(b.version)!, version(a.version)!));
-  const newest = releases[0];
-  return {
-    phase: !newest
-      ? 'empty'
-      : compare(version(newest.version)!, installed) > 0
-        ? 'available'
-        : 'current',
-    release: newest && compare(version(newest.version)!, installed) > 0 ? newest : null,
-  };
+import type { DiscoveryStore } from './discovery-store';
+import { UpdateScheduler, rateLimitUntil } from './scheduler';
+import { selectRelease } from './releases';
+export { selectRelease } from './releases';
+export interface DiscoveryOptions {
+  store?: DiscoveryStore;
+  releases?: string;
+  inspect?(release: AvailableRelease): Promise<boolean>;
 }
 export class UpdateService extends EventEmitter<{ changed: [UpdateSnapshot] }> {
   snapshot: UpdateSnapshot = { phase: 'idle', release: null };
   private flight?: Promise<UpdateSnapshot>;
-  private timer?: ReturnType<typeof setTimeout>;
-  private enabled = false;
-  private due = 0;
   private stopped = false;
+  protected readonly scheduler: UpdateScheduler;
+  protected readonly initialized: Promise<void>;
   constructor(
     private current: string,
     private platform: string,
     private arch: string,
     private fetcher = fetch,
+    private discovery: DiscoveryOptions = {},
   ) {
     super();
+    this.scheduler = new UpdateScheduler(() => this.check('background'));
+    this.initialized = this.restoreDiscovery();
   }
-  configure(enabled: boolean) {
-    enabled = automaticUpdateChecksEnabled && enabled;
-    if (this.enabled === enabled || this.stopped) return;
-    this.enabled = enabled;
-    clearTimeout(this.timer);
-    if (enabled) {
-      this.due = Date.now() + 30000;
-      this.schedule();
+  private async restoreDiscovery() {
+    const record = await this.discovery.store?.load();
+    if (record) {
+      this.scheduler.restore(record.schedule);
+      this.publish({
+        phase: record.release ? 'available' : 'idle',
+        release: record.release,
+        canDownload: record.canDownload,
+      });
     }
   }
-  private schedule() {
-    clearTimeout(this.timer);
-    if (this.enabled && !this.stopped)
-      this.timer = setTimeout(
-        () => {
-          void this.check();
-        },
-        Math.max(0, this.due - Date.now()),
-      );
+  configure(enabled: boolean) {
+    void this.initialized.then(() =>
+      this.scheduler.configure(automaticUpdateChecksEnabled && enabled),
+    );
   }
   resume() {
-    if (this.enabled && Date.now() >= this.due) void this.check();
+    this.scheduler.resume();
   }
   stop() {
     this.stopped = true;
-    clearTimeout(this.timer);
+    this.scheduler.stop();
   }
   protected publish(snapshot: UpdateSnapshot) {
     if (this.stopped) return;
     this.snapshot = snapshot;
+    this.scheduler.pause(
+      ['downloading', 'ready', 'preparing', 'installing', 'installError'].includes(snapshot.phase),
+    );
     this.emit('changed', snapshot);
   }
-  check(): Promise<UpdateSnapshot> {
+  check(origin: 'manual' | 'background' = 'manual'): Promise<UpdateSnapshot> {
+    if (
+      origin === 'background' &&
+      ['downloading', 'ready', 'preparing', 'installing', 'installError'].includes(
+        this.snapshot.phase,
+      )
+    )
+      return Promise.resolve(this.snapshot);
     if (this.flight) return this.flight;
-    this.publish({ ...this.snapshot, phase: 'checking' });
-    this.flight = this.run().finally(() => {
-      this.flight = undefined;
-      this.due = Date.now() + day;
-      this.schedule();
-    });
+    this.flight = this.initialized
+      .then(async () => {
+        if (this.stopped) return this.snapshot;
+        if (Date.now() < this.scheduler.record.notBefore) {
+          this.publish({ ...this.snapshot, checkPhase: 'rateLimited' });
+          return this.snapshot;
+        }
+        this.scheduler.pause(true);
+        this.publish({ ...this.snapshot, checkPhase: 'checking' });
+        this.scheduler.pause(true);
+        await this.run();
+        return this.snapshot;
+      })
+      .finally(() => {
+        this.flight = undefined;
+      });
     return this.flight;
   }
   private async run() {
+    let success = false,
+      notBefore = 0;
     try {
       const response = await this.fetcher(
-        'https://api.github.com/repos/sparkwild/vigilshell/releases?per_page=100',
+        this.discovery.releases ??
+          'https://api.github.com/repos/sparkwild/vigilshell/releases?per_page=100',
         {
           headers: { Accept: 'application/vnd.github+json' },
           signal: AbortSignal.timeout(15000),
           credentials: 'omit',
         },
       );
-      if (response.status === 429 || response.status === 403) throw Error('rateLimited');
+      if (
+        response.status === 429 ||
+        (response.status === 403 &&
+          (response.headers.get('x-ratelimit-remaining') === '0' ||
+            response.headers.has('retry-after')))
+      ) {
+        notBefore = rateLimitUntil(response);
+        throw Error('rateLimited');
+      }
       if (!response.ok) throw Error('networkError');
       let data: unknown;
       try {
@@ -134,19 +114,42 @@ export class UpdateService extends EventEmitter<{ changed: [UpdateSnapshot] }> {
       } catch {
         throw Error('invalidResponse');
       }
-      this.publish(selectRelease(data, this.current, this.platform, this.arch));
+      const selected = selectRelease(data, this.current, this.platform, this.arch);
+      const canDownload = !!(
+        selected.canDownload &&
+        selected.release &&
+        this.discovery.inspect &&
+        (await this.discovery.inspect(selected.release).catch(() => false))
+      );
+      success = true;
+      this.publish({ ...selected, canDownload, checkPhase: selected.phase as UpdateCheckPhase });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
+      const checkPhase =
+        message === 'rateLimited'
+          ? 'rateLimited'
+          : message === 'invalidResponse'
+            ? 'invalidResponse'
+            : 'networkError';
       this.publish({
         ...this.snapshot,
-        phase:
-          message === 'rateLimited'
-            ? 'rateLimited'
-            : message === 'invalidResponse'
-              ? 'invalidResponse'
-              : 'networkError',
+        phase: this.snapshot.release ? this.snapshot.phase : checkPhase,
+        checkPhase,
       });
+    } finally {
+      this.scheduler.pause(true);
+      this.scheduler.finish(success, notBefore);
+      await this.discovery.store?.save({
+        release: this.snapshot.release ?? null,
+        canDownload: this.snapshot.canDownload === true,
+        schedule: this.scheduler.record,
+      });
+      if (!this.stopped)
+        this.scheduler.pause(
+          ['downloading', 'ready', 'preparing', 'installing', 'installError'].includes(
+            this.snapshot.phase,
+          ),
+        );
     }
-    return this.snapshot;
   }
 }

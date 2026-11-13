@@ -167,6 +167,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-switch-checked: var(--switch-checked);
+  --color-update-accent: var(--switch-checked);
   --color-switch-thumb: var(--switch-thumb);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);

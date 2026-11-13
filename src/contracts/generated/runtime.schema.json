@@ -13565,6 +13565,19 @@
       ],
       "x-vigil-rule": "uiScope"
     },
+    "UpdateCheckPhase": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "checking",
+        "current",
+        "available",
+        "empty",
+        "networkError",
+        "rateLimited",
+        "invalidResponse"
+      ]
+    },
     "UpdateIssue": {
       "type": "string",
       "enum": [
@@ -13645,6 +13658,16 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "checkPhase": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UpdateCheckPhase"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "issue": {

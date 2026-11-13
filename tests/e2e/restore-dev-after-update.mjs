@@ -36,4 +36,12 @@ if (pending?.release?.notes === 'VigilShell native update acceptance.') {
     if (name === 'pending.json' || /^archive(?:-[a-f0-9]{128})?\.zip(?:\.tmp)?$/.test(name))
       await unlink(join(cache, name));
 }
+if ('discoveryBackup' in state) {
+  if (state.discoveryBackup !== null)
+    await writeFile(join(cache, 'discovery.json'), state.discoveryBackup, { mode: 0o600 });
+  else
+    await unlink(join(cache, 'discovery.json')).catch((error) => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+}
 console.log('Restored the original Dev shell without reverting Dev data.');

@@ -1,5 +1,5 @@
 import applicationIcon from '../../../../resources/icons/app-icon-source.png';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshCwIcon, CodeXmlIcon, ExternalLinkIcon, MessageSquareIcon } from 'lucide-react';
 import type { ApplicationInfo } from '@contracts';
 import { automaticUpdateChecksEnabled } from '../../../shared/application-features';
@@ -16,29 +16,15 @@ import { Spinner } from '../../components/ui/spinner';
 import { Switch } from '../../components/ui/switch';
 import { Row } from './components/SettingsControls';
 import { usePreferences } from './use-preferences';
-import { UpdateDialog } from './UpdateDialog';
+import { useOpenUpdate } from './UpdateController';
 
-export function UpdateBadge() {
-  const state = useApplicationState();
-  const { t } = useDesktop();
-  return state.release ? <Badge variant="secondary">{t('updates_available')}</Badge> : null;
-}
-
-export function ApplicationSettings({
-  checkRequest = 0,
-  onCheckRequestHandled,
-}: {
-  checkRequest?: number;
-  onCheckRequestHandled?(): void;
-}) {
+export function ApplicationSettings() {
   const { t } = useDesktop();
   const state = useApplicationState();
   const preferences = usePreferences();
   const [info, setInfo] = useState<ApplicationInfo>();
   const [failure, setFailure] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [updateFailure, setUpdateFailure] = useState(false);
+  const openUpdate = useOpenUpdate();
   useEffect(() => {
     let active = true;
     void window.vigilshell.application
@@ -53,40 +39,12 @@ export function ApplicationSettings({
       active = false;
     };
   }, []);
-  const check = useCallback(() => {
-    setDialogOpen(true);
-    setPending(true);
-    setUpdateFailure(false);
-    void window.vigilshell.application
-      .check()
-      .catch(() => setUpdateFailure(true))
-      .finally(() => setPending(false));
-  }, []);
-  useEffect(() => {
-    if (checkRequest) {
-      onCheckRequestHandled?.();
-      check();
-    }
-  }, [checkRequest, onCheckRequestHandled, check]);
   const run = (action: () => Promise<unknown>) => {
     setFailure(false);
     void action().catch(() => setFailure(true));
   };
-  const activeUpdate = ['downloading', 'ready', 'preparing', 'installing', 'installError'].includes(
-    state.phase,
-  );
-  const checking = (pending && !activeUpdate) || state.phase === 'checking';
-  const showUpdate =
-    !!state.release &&
-    [
-      'available',
-      'downloading',
-      'ready',
-      'preparing',
-      'installing',
-      'downloadError',
-      'installError',
-    ].includes(state.phase);
+  const checking = state.checkPhase === 'checking';
+  const showUpdate = !!state.release;
   return (
     <div className="flex flex-col gap-7">
       <section
@@ -104,16 +62,7 @@ export function ApplicationSettings({
             {t('about_description')}
           </p>
         </div>
-        <Button
-          size="lg"
-          variant="secondary"
-          onClick={() => {
-            if (showUpdate || checking) {
-              setUpdateFailure(false);
-              setDialogOpen(true);
-            } else check();
-          }}
-        >
+        <Button size="lg" variant="secondary" onClick={openUpdate}>
           {checking || ['downloading', 'preparing', 'installing'].includes(state.phase) ? (
             <Spinner data-icon="inline-start" aria-hidden="true" />
           ) : (
@@ -153,11 +102,6 @@ export function ApplicationSettings({
             <Alert>
               <AlertDescription>{t('application_failed')}</AlertDescription>
             </Alert>
-          ) : null}
-          {state.phase !== 'idle' ? (
-            <p className="text-xs text-muted-foreground" role="status">
-              {t(`updates_${state.phase}`)}
-            </p>
           ) : null}
         </section>
       ) : null}
@@ -200,33 +144,6 @@ export function ApplicationSettings({
         </Card>
       </section>
       <p className="pb-2 text-center text-xs text-muted-foreground">© 2026 sparkwild</p>
-      <UpdateDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        state={state}
-        info={info}
-        pending={pending && !activeUpdate}
-        failure={updateFailure}
-        onDownload={() => {
-          setUpdateFailure(false);
-          void (
-            state.canDownload
-              ? window.vigilshell.application.download()
-              : window.vigilshell.application.open('openRelease')
-          ).catch(() => setUpdateFailure(true));
-        }}
-        onCancel={() => {
-          void window.vigilshell.application.cancel().catch(() => setUpdateFailure(true));
-        }}
-        onInstall={() => {
-          void window.vigilshell.application.install().catch(() => setUpdateFailure(true));
-        }}
-        onRelease={() => {
-          void window.vigilshell.application
-            .open('openRelease')
-            .catch(() => setUpdateFailure(true));
-        }}
-      />
     </div>
   );
 }

@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { translate } from '../../shared/i18n/messages';
 import { WorkbenchNavigation } from './WorkbenchNavigation';
+import type { UpdateSnapshot } from '@contracts';
+const update = vi.hoisted(() => ({
+  state: { phase: 'idle', release: null } as UpdateSnapshot,
+  open: vi.fn(),
+}));
+vi.mock('./ApplicationProvider', () => ({ useApplicationState: () => update.state }));
+vi.mock('../features/settings/UpdateController', () => ({ useOpenUpdate: () => update.open }));
 vi.mock('./DesktopProvider', () => ({
   useDesktop: () => ({ t: (key: Parameters<typeof translate>[0]) => translate(key, 'en') }),
 }));
@@ -30,10 +37,30 @@ vi.mock('../features/mcp/model', () => ({
 vi.mock('../features/notifications/NotificationFeedbackProvider', () => ({
   useNotificationFeedback: () => [],
 }));
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  update.state = { phase: 'idle', release: null };
+  update.open.mockClear();
+});
 it('does not expose file task or editing entries in the sidebar', () => {
   render(<WorkbenchNavigation onSettings={vi.fn()} onConnected={vi.fn()} />);
   expect(screen.queryByRole('button', { name: 'File tasks' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Editing files' })).toBeNull();
   expect(screen.getAllByRole('button')).toHaveLength(3);
+});
+
+it('places the update control beside settings with independent actions and fixed width', () => {
+  update.state = { phase: 'available', release: { version: '0.1.3', tag: 'v0.1.3', notes: '' } };
+  const settings = vi.fn();
+  render(<WorkbenchNavigation onSettings={settings} onConnected={vi.fn()} />);
+  const button = screen.getByTestId('open-update');
+  expect(button).toHaveAttribute('data-size', 'icon');
+  expect(button).toHaveAttribute('data-variant', 'update');
+  expect(button.querySelector('.lucide-circle-fading-arrow-up')).not.toBeNull();
+  expect(button.parentElement).toBe(screen.getByTestId('open-settings').parentElement);
+  fireEvent.click(button);
+  expect(update.open).toHaveBeenCalledOnce();
+  expect(settings).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByTestId('open-settings'));
+  expect(settings).toHaveBeenCalledOnce();
 });

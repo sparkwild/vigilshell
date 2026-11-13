@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import type { UpdateSnapshot } from '@contracts';
-import { ApplicationSettings, UpdateBadge } from './ApplicationSettings';
+import { ApplicationSettings } from './ApplicationSettings';
+import { UpdateBadge } from './UpdateIndicators';
+import { UpdateController, useOpenUpdate } from './UpdateController';
 import { ApplicationProvider } from '../../app/ApplicationProvider';
 const save = vi.fn().mockResolvedValue(false);
 vi.mock('../../app/DesktopProvider', () => ({ useDesktop: () => ({ t: (key: string) => key }) }));
@@ -27,11 +29,18 @@ function publish(state: UpdateSnapshot) {
   current = state;
   receive(state);
 }
-function page(props: Parameters<typeof ApplicationSettings>[0] = {}) {
+function ExtraEntry() {
+  const open = useOpenUpdate();
+  return <button onClick={open}>workspace-update</button>;
+}
+function page() {
   return (
     <ApplicationProvider>
-      <UpdateBadge />
-      <ApplicationSettings {...props} />
+      <UpdateController>
+        <UpdateBadge />
+        <ExtraEntry />
+        <ApplicationSettings />
+      </UpdateController>
     </ApplicationProvider>
   );
 }
@@ -112,6 +121,8 @@ it('keeps background discovery non-blocking and shows plain release notes only o
     }),
   );
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.getByText('updates_available')).toHaveAttribute('data-variant', 'update');
   expect(check).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
   const dialog = screen.getByRole('dialog', { name: 'updates_check' });
@@ -122,7 +133,7 @@ it('keeps background discovery non-blocking and shows plain release notes only o
   expect(open).toHaveBeenCalledWith('openRelease');
   await userEvent.keyboard('{Escape}');
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  expect(screen.getByRole('switch')).toBeChecked();
   expect(save).not.toHaveBeenCalled();
 });
 it('reopens a running check without a second request and keeps its result after closing', async () => {
@@ -166,32 +177,36 @@ it.each(['empty', 'networkError', 'rateLimited', 'invalidResponse'] as const)(
     expect(check).toHaveBeenCalledOnce();
   },
 );
-it('handles a menu check request once and reports IPC failure in the dialog', async () => {
-  const handled = vi.fn();
-  check.mockRejectedValue(Error('unavailable'));
-  const view = render(page({ checkRequest: 1, onCheckRequestHandled: handled }));
-  await within(await screen.findByRole('dialog')).findByText('updates_failed');
-  expect(handled).toHaveBeenCalledOnce();
-  expect(check).toHaveBeenCalledOnce();
-  view.rerender(page({ checkRequest: 0, onCheckRequestHandled: handled }));
+it('shares workspace and about entries without duplicating the dialog or checking a known release', async () => {
+  current = {
+    phase: 'available',
+    release: { version: '0.1.1', tag: 'v0.1.1', notes: 'Cached notes' },
+    checkPhase: 'networkError',
+  };
+  render(page());
+  await screen.findByText('v0.1.0');
+  await userEvent.click(screen.getByRole('button', { name: 'workspace-update' }));
+  expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  expect(within(screen.getByRole('dialog')).getByText('Cached notes')).toBeVisible();
+  expect(check).not.toHaveBeenCalled();
   await userEvent.keyboard('{Escape}');
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  view.rerender(page({ checkRequest: 2, onCheckRequestHandled: handled }));
-  await screen.findByRole('dialog');
-  expect(check).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole('button', { name: 'workspace-update' })).toHaveFocus();
+  await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
+  expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  expect(check).not.toHaveBeenCalled();
 });
-
-it('does not present a cached release as a successful result after a failed check', async () => {
-  const release = { version: '0.1.1', tag: 'v0.1.1', notes: 'Cached notes' };
-  current = { phase: 'available', release };
-  check.mockImplementation(async () => publish({ phase: 'networkError', release }));
-  render(page({ checkRequest: 1 }));
-  const dialog = await screen.findByRole('dialog');
-  await within(dialog).findByText('updates_failed');
-  expect(within(dialog).queryByText('Cached notes')).toBeNull();
-  expect(within(dialog).queryByRole('button', { name: 'updates_download' })).toBeNull();
-  await userEvent.click(within(dialog).getByRole('button', { name: 'updates_dismiss' }));
+it('shows a generic IPC failure and allows closing the shared dialog', async () => {
+  check.mockRejectedValue(Error('unavailable'));
+  render(page());
+  await userEvent.click(screen.getByRole('button', { name: 'workspace-update' }));
+  await within(await screen.findByRole('dialog')).findByText('updates_failed');
+  await userEvent.click(screen.getByRole('button', { name: 'updates_dismiss' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  await userEvent.click(screen.getByRole('button', { name: 'updates_check' }));
-  expect(check).toHaveBeenCalledTimes(2);
+});
+it('keeps the saved switch value when saving fails', async () => {
+  render(page());
+  await userEvent.click(screen.getByRole('switch'));
+  expect(save).toHaveBeenCalledWith({ autoCheckUpdates: false });
+  expect(screen.getByRole('switch')).toBeChecked();
 });
