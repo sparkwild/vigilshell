@@ -2380,7 +2380,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vigilshell-application"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "base64",
  "encoding_rs",
@@ -2401,7 +2401,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-application-contracts"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "vigilshell-domain",
  "zeroize",
@@ -2409,7 +2409,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-backend"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "libc",
  "rusqlite",
@@ -2430,7 +2430,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-credentials"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "chacha20poly1305",
  "core-foundation",
@@ -2457,7 +2457,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-desktop-protocol"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "schemars",
  "serde",
@@ -2469,7 +2469,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-domain"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "schemars",
  "serde",
@@ -2480,7 +2480,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-local-files"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "cap-std",
  "libc",
@@ -2492,7 +2492,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-storage-sqlite"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "rusqlite",
  "rusqlite_migration",
@@ -2507,7 +2507,7 @@ dependencies = [
 
 [[package]]
 name = "vigilshell-transport-russh"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "base64",
  "encoding_rs",

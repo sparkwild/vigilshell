@@ -1,18 +1,14 @@
 ## Features
 
-- **In-app macOS updates** — Check for stable releases under Settings → About, download an update, and choose Restart and install. Downloaded updates remain available after restarting VigilShell.
-- **Update progress and safeguards** — View download progress or cancel a download. VigilShell verifies update metadata and downloaded files, checks installation space, and saves pending application state before restarting to install.
+- **In-app macOS updates** — Download stable updates in VigilShell and restart to install when ready.
+- **Download progress** — Track or cancel downloads and keep completed downloads available after restarting the app.
 
 ## Bug Fixes
 
-- **Dependency maintenance** — Update the SSH and filesystem dependencies to include upstream security fixes.
-
-- **Connection test feedback** — Connection tests now show their results reliably. Success messages apply to the tested configuration, and running another test can show its result again after an earlier message was dismissed.
-- **Connection notices** — Keep the close button aligned with the notice header, including notices with additional actions or details.
+- **Security updates** — Include upstream security fixes for SSH connections and local file operations.
+- **Connection tests** — Show results for the tested configuration reliably, including after an earlier result was dismissed.
+- **Connection notices** — Keep close buttons aligned when notices include actions or details.
 
 ## Upgrade Notes
 
-- This release includes the features and fixes prepared for 0.1.2. The 0.1.2 tag is retained as a source baseline, but no 0.1.2 installer was published.
-
-- Upgrade from 0.1.1 or earlier by downloading the DMG and replacing the application manually. The in-app update engine is available starting with 0.1.3 for subsequent releases.
-- Update checks and downloads are initiated manually. An ordinary quit does not install a downloaded update; use Restart and install when you are ready.
+- Users on 0.1.1 or earlier must install 0.1.3 manually; subsequent releases can be installed through in-app updates.
