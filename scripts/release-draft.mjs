@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { inspectUpdateArtifacts } from './verify-update-artifacts.mjs';
+import { releaseContext } from './release-context.mjs';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -17,6 +18,8 @@ import { validatePreview } from './preview-artifacts.mjs';
 import { normalizeFingerprint } from './signing/config.mjs';
 
 const env = process.env;
+const context = releaseContext(env);
+const controlRoot = fileURLToPath(new URL('..', import.meta.url));
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const gh = (args, input) => execFileSync('gh', args, { encoding: 'utf8', input }).trim();
@@ -24,10 +27,11 @@ const api = (args, body) => JSON.parse(gh(['api', ...args], body && JSON.stringi
 const releases = `repos/${env.GITHUB_REPOSITORY}/releases`;
 
 function verifyTag(source) {
-  assert.equal(env.GITHUB_REF, `refs/tags/${source.tag}`);
+  assert.equal(source.tag, context.tag);
+  const ref = `refs/tags/${source.tag}`;
   assert.equal(
-    git('ls-remote', '--refs', 'origin', env.GITHUB_REF),
-    `${source.tagObject}\t${env.GITHUB_REF}`,
+    git('ls-remote', '--refs', 'origin', ref),
+    `${source.tagObject}\t${ref}`,
     'Release tag is missing or has moved',
   );
 }
@@ -39,19 +43,22 @@ function requireUnusedRelease(tag) {
 }
 
 function qualify() {
-  assert(env.GITHUB_REF.startsWith('refs/tags/'));
-  const tag = env.GITHUB_REF.slice('refs/tags/'.length);
+  const { tag } = context;
+  assert.equal(git('status', '--porcelain'), '', 'Release requires a clean product checkout');
+  verifyControl();
   const version = checkReleaseTag(tag);
   checkReleaseNotes(tag);
   const sha = git('rev-parse', 'HEAD');
-  assert.equal(git('rev-parse', `${env.GITHUB_REF}^{commit}`), sha);
-  assert.equal(git('rev-parse', `${env.GITHUB_SHA}^{commit}`), sha);
+  assert.equal(git('rev-parse', `refs/tags/${tag}^{commit}`), sha);
+  if (context.recovery) assert.equal(sha, context.expectedSha, 'Recovery source SHA mismatch');
+  else assert.equal(git('rev-parse', `${env.GITHUB_SHA}^{commit}`), sha);
   const source = {
     tag,
     version,
     sha,
-    tagObject: git('rev-parse', env.GITHUB_REF),
+    tagObject: git('rev-parse', `refs/tags/${tag}`),
     tree: git('rev-parse', 'HEAD^{tree}'),
+    ...(context.recovery ? { recovery: { controlSha: context.controlSha } } : {}),
   };
   verifyTag(source);
   git('merge-base', '--is-ancestor', sha, 'refs/remotes/origin/main');
@@ -78,14 +85,35 @@ function verifyDraft(release, source) {
   assert.equal(release.published_at, null);
 }
 
-async function draft() {
+function verifyControl() {
+  if (!context.recovery) return;
+  assert.equal(git('-C', controlRoot, 'rev-parse', 'HEAD'), context.controlSha);
+  assert.equal(
+    git('-C', controlRoot, 'status', '--porcelain'),
+    '',
+    'Recovery control checkout changed',
+  );
+}
+
+function verifySource() {
+  verifyControl();
   const { previousTag, ...source } = JSON.parse(env.RELEASE_SOURCE);
   assert.equal(checkReleaseTag(source.tag), source.version);
-  const notes = readReleaseNotes(source.tag);
+  if (context.recovery) {
+    assert.equal(source.sha, context.expectedSha);
+    assert.equal(source.recovery?.controlSha, context.controlSha);
+  } else assert.equal(source.recovery, undefined);
+  checkReleaseNotes(source.tag);
   assert.equal(git('rev-parse', 'HEAD'), source.sha);
   assert.equal(git('rev-parse', 'HEAD^{tree}'), source.tree);
   assert.equal(git('status', '--porcelain'), '', 'Release build changed the checkout');
   verifyTag(source);
+  return { previousTag, source };
+}
+
+async function draft() {
+  const { previousTag, source } = verifySource();
+  const notes = readReleaseNotes(source.tag);
   requireUnusedRelease(source.tag);
 
   const evidence = join(env.RUNNER_TEMP, 'vigilshell-ci-evidence');
@@ -98,6 +126,7 @@ async function draft() {
   const report = readJson(reportPath);
   assert.equal(report.identity, normalizeFingerprint(env.MACOS_SIGNING_IDENTITY));
   const sha256 = validatePreview(readFileSync(dmg), readFileSync(checksum, 'utf8'), report, source);
+  const { inspectUpdateArtifacts } = await import('./verify-update-artifacts.mjs');
   const update = inspectUpdateArtifacts('release', source.version, 'arm64');
   assert.equal(
     readFileSync(`${update.archive}.sha256`, 'utf8').trim(),
@@ -221,15 +250,16 @@ async function draft() {
   }
 }
 
-assert.equal(env.GITHUB_EVENT_NAME, 'push');
-assert.equal(env.GITHUB_REF_TYPE, 'tag');
 switch (process.argv[2]) {
   case 'qualify':
     qualify();
+    break;
+  case 'verify-source':
+    verifySource();
     break;
   case 'draft':
     await draft();
     break;
   default:
-    throw Error('Use qualify or draft');
+    throw Error('Use qualify, verify-source or draft');
 }
