@@ -63,10 +63,15 @@ export class ManagedUpdates extends UpdateService {
       .then((result) => {
         if (
           this.pending &&
-          result.phase === 'available' &&
-          result.release?.version === this.pending.release.version
+          ((result.phase === 'available' &&
+            result.release?.version === this.pending.release.version) ||
+            ['networkError', 'rateLimited', 'invalidResponse'].includes(result.phase))
         )
-          this.publish({ ...result, phase: this.pending.failed ? 'installError' : 'ready' });
+          // A failed discovery request does not invalidate the verified local package.
+          this.publish({
+            phase: this.pending.failed ? 'installError' : 'ready',
+            release: this.pending.release,
+          });
         return this.snapshot;
       })
       .finally(() => {

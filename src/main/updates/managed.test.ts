@@ -109,3 +109,47 @@ it('does not arm or quit when installation is cancelled, and reports preparation
   expect((await f.service.install()).phase).toBe('installError');
   expect(f.engine.commit).not.toHaveBeenCalled();
 });
+
+it.each(['network', 'rate-limit', 'invalid-json', 'invalid-release'])(
+  'keeps a downloaded package installable after %s recheck failure',
+  async (failure) => {
+    const f = fixture();
+    await f.service.download();
+    if (failure === 'network') f.fetcher.mockRejectedValue(Error('offline'));
+    else if (failure === 'rate-limit')
+      f.fetcher.mockResolvedValue(new Response('', { status: 429 }));
+    else f.fetcher.mockResolvedValue(new Response(failure === 'invalid-json' ? '{' : '{}'));
+    expect((await f.service.check()).phase).toBe('ready');
+    expect(f.service.snapshot.release).toEqual(release);
+    expect(f.engine.cache.clear).not.toHaveBeenCalled();
+    expect((await f.service.install()).phase).toBe('installing');
+    expect(f.engine.prepare).toHaveBeenCalledOnce();
+    expect(f.engine.commit).toHaveBeenCalledOnce();
+  },
+);
+it.each([false, true])(
+  'restores the cached release after failed recheck even with a newer selection (installing=%s)',
+  async (installing) => {
+    const f = fixture();
+    vi.mocked(f.engine.cache.load).mockResolvedValue({ release, installing } as PendingUpdate);
+    await f.service.restore();
+    f.service.snapshot = {
+      phase: 'available',
+      release: { version: '0.1.3', tag: 'v0.1.3', notes: 'Newer' },
+      canDownload: true,
+    };
+    f.fetcher.mockRejectedValue(Error('offline'));
+    const result = await f.service.check();
+    expect(result.phase).toBe(installing ? 'installError' : 'ready');
+    expect(result.release).toEqual(release);
+    expect((await f.service.install()).phase).toBe('installing');
+    expect(f.engine.prepare).toHaveBeenCalledOnce();
+  },
+);
+it('keeps discovery failures visible when no verified package is pending', async () => {
+  const f = fixture();
+  f.fetcher.mockRejectedValue(Error('offline'));
+  expect((await f.service.check()).phase).toBe('networkError');
+  await f.service.install();
+  expect(f.engine.prepare).not.toHaveBeenCalled();
+});
