@@ -8,8 +8,15 @@ import { ApplicationSettings } from './ApplicationSettings';
 import { UpdateBadge } from './UpdateIndicators';
 import { UpdateController, useOpenUpdate } from './UpdateController';
 import { ApplicationProvider } from '../../app/ApplicationProvider';
+const display = vi.hoisted(() => ({ locale: 'en' }));
 const save = vi.fn().mockResolvedValue(false);
-vi.mock('../../app/DesktopProvider', () => ({ useDesktop: () => ({ t: (key: string) => key }) }));
+vi.mock('../../app/DesktopProvider', () => ({
+  useDesktop: () => ({
+    t: (key: string, inputs?: Record<string, string>) =>
+      key === 'updates_versions' ? `${inputs!.current} → ${inputs!.next}` : key,
+    snapshot: { appearance: { locale: display.locale } },
+  }),
+}));
 vi.mock('./use-preferences', () => ({
   usePreferences: () => ({
     preferences: { autoCheckUpdates: true },
@@ -51,6 +58,7 @@ beforeEach(() => {
     addEventListener() {},
     removeEventListener() {},
   })) as unknown as typeof window.matchMedia;
+  display.locale = 'en';
   current = { phase: 'idle', release: null };
   receive = () => {};
   open.mockClear();
@@ -91,6 +99,7 @@ it('keeps a download running after dismissing and shows the restored ready actio
   await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
   await userEvent.click(screen.getByRole('button', { name: 'updates_download_now' }));
   expect(download).toHaveBeenCalledOnce();
+  expect(install).not.toHaveBeenCalled();
   await act(async () =>
     publish({
       phase: 'downloading',
@@ -103,6 +112,7 @@ it('keeps a download running after dismissing and shows the restored ready actio
   await userEvent.click(screen.getByRole('button', { name: 'updates_later' }));
   expect(cancel).not.toHaveBeenCalled();
   await act(async () => publish({ phase: 'ready', release, canDownload: true }));
+  expect(install).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
   await userEvent.click(screen.getByRole('button', { name: 'updates_install' }));
   expect(install).toHaveBeenCalledOnce();
@@ -117,7 +127,11 @@ it('keeps background discovery non-blocking and shows plain release notes only o
   await act(async () =>
     publish({
       phase: 'available',
-      release: { version: '0.1.1', tag: 'v0.1.1', notes: '<script>unsafe</script>' },
+      release: {
+        version: '0.1.1',
+        tag: 'v0.1.1',
+        notes: '## Features\n- Safe copy\n<script>unsafe</script>\n## Downloads\nHidden installers',
+      },
     }),
   );
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -125,10 +139,11 @@ it('keeps background discovery non-blocking and shows plain release notes only o
   expect(screen.getByText('updates_available')).toHaveAttribute('data-variant', 'update');
   expect(check).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole('button', { name: 'updates_view' }));
-  const dialog = screen.getByRole('dialog', { name: 'updates_check' });
-  expect(within(dialog).getByText('<script>unsafe</script>')).toBeVisible();
+  const dialog = screen.getByRole('dialog', { name: 'updates_discovered' });
+  expect(within(dialog).getByText('Safe copy')).toBeVisible();
+  expect(within(dialog).queryByText('Hidden installers')).toBeNull();
   expect(dialog.querySelector('script')).toBeNull();
-  expect(within(dialog).getByText('v0.1.1')).toBeVisible();
+  expect(await within(dialog).findByText('v0.1.0 → v0.1.1')).toBeVisible();
   await userEvent.click(within(dialog).getByRole('button', { name: 'updates_download' }));
   expect(open).toHaveBeenCalledWith('openRelease');
   await userEvent.keyboard('{Escape}');
@@ -180,7 +195,7 @@ it.each(['empty', 'networkError', 'rateLimited', 'invalidResponse'] as const)(
 it('shares workspace and about entries without duplicating the dialog or checking a known release', async () => {
   current = {
     phase: 'available',
-    release: { version: '0.1.1', tag: 'v0.1.1', notes: 'Cached notes' },
+    release: { version: '0.1.1', tag: 'v0.1.1', notes: '## Features\n- Cached notes' },
     checkPhase: 'networkError',
   };
   render(page());
@@ -209,4 +224,92 @@ it('keeps the saved switch value when saving fails', async () => {
   await userEvent.click(screen.getByRole('switch'));
   expect(save).toHaveBeenCalledWith({ autoCheckUpdates: false });
   expect(screen.getByRole('switch')).toBeChecked();
+});
+
+it('switches release note language during a download without restarting the operation', async () => {
+  current = {
+    phase: 'downloading',
+    canDownload: true,
+    progress: { percent: 50, transferred: 5, total: 10 },
+    release: {
+      version: '0.2.0',
+      tag: 'v0.2.0',
+      notes: '',
+      localizedNotes: {
+        en: { features: ['English feature'], upgradeNotes: ['Back up'] },
+        'zh-CN': { features: ['中文功能'], upgradeNotes: ['请备份'] },
+      },
+    },
+  };
+  const view = render(page());
+  await userEvent.click(screen.getByRole('button', { name: 'workspace-update' }));
+  expect(await screen.findByText('English feature')).toBeVisible();
+  display.locale = 'zh-CN';
+  view.rerender(page());
+  expect(screen.getByText('中文功能')).toBeVisible();
+  expect(screen.getByText('请备份')).toBeVisible();
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+  expect(check).not.toHaveBeenCalled();
+  expect(download).not.toHaveBeenCalled();
+  await act(async () =>
+    publish({
+      ...current,
+      release: {
+        ...current.release!,
+        localizedNotes: {
+          en: { features: ['English fallback'], upgradeNotes: ['Back up'] },
+          'zh-CN': { features: ['不完整'] },
+        },
+      },
+    }),
+  );
+  expect(screen.getByText('English fallback')).toBeVisible();
+  expect(screen.getByText('Back up')).toBeVisible();
+  expect(screen.queryByText('updates_notes_fallback')).not.toBeInTheDocument();
+  expect(screen.queryByText('不完整')).toBeNull();
+});
+
+it('keeps the release link and separate download/install actions in the compact footer', async () => {
+  const release = { version: '0.2.0', tag: 'v0.2.0', notes: '## Features\n- Feature' };
+  current = { phase: 'available', release, canDownload: true };
+  render(page());
+  await userEvent.click(screen.getByRole('button', { name: 'workspace-update' }));
+  expect(screen.getByRole('heading', { name: 'updates_discovered' })).toBeVisible();
+  expect(await screen.findByText('v0.1.0 → v0.2.0')).toBeVisible();
+  const actions = within(screen.getByTestId('update-actions'));
+  const link = actions.getByRole('button', { name: 'updates_release_page' });
+  expect(link.querySelector('svg[data-icon="inline-end"]')).not.toBeNull();
+  await userEvent.click(link);
+  expect(open).toHaveBeenCalledWith('openRelease');
+  expect(download).not.toHaveBeenCalled();
+  await act(async () =>
+    publish({
+      phase: 'downloading',
+      release,
+      canDownload: true,
+      progress: { percent: 100, transferred: 10, total: 10 },
+    }),
+  );
+  expect(actions.getByRole('button', { name: 'ws_cancel' })).toBeDisabled();
+  await act(async () =>
+    publish({
+      phase: 'downloading',
+      release,
+      canDownload: true,
+      progress: { percent: 50, transferred: 5, total: 10 },
+    }),
+  );
+  await userEvent.click(actions.getByRole('button', { name: 'ws_cancel' }));
+  expect(cancel).toHaveBeenCalledOnce();
+  await act(async () => publish({ phase: 'downloadError', release, canDownload: true }));
+  await userEvent.click(actions.getByRole('button', { name: 'updates_retry_download' }));
+  expect(download).toHaveBeenCalledOnce();
+  expect(install).not.toHaveBeenCalled();
+  await act(async () =>
+    publish({ phase: 'installError', release, canDownload: true, issue: 'readOnlyLocation' }),
+  );
+  expect(screen.getByRole('heading', { name: 'updates_install_failed_title' })).toBeVisible();
+  expect(screen.getByText('updates_readOnlyLocation')).toBeVisible();
+  await userEvent.click(actions.getByRole('button', { name: 'updates_install' }));
+  expect(install).toHaveBeenCalledOnce();
 });
