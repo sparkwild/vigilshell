@@ -635,8 +635,6 @@
   "ws_error_credential_corrupt": "Saved connection credentials are damaged. Configure the password or private key again",
   "ws_error_credential_format_unsupported": "This application version cannot read the saved credentials. Check the application version",
   "connection_help_vault": "Check the local credential vault and its original Keychain key. Retrying authentication or entering a new SSH password does not repair a missing vault key",
-  "native_vault_key": "VigilShell Data Encryption Key",
-  "native_vault_key_dev": "VigilShell Dev Data Encryption Key",
   "ws_credential_storage_notice": "Saved passwords and private keys are encrypted on this Mac. The data encryption key is protected by macOS Keychain",
   "ws_keychain_help_title": "About Keychain access",
   "ws_keychain_help": "If macOS requests access, enter your login keychain password in the system dialog. It is usually your Mac login password, not your server password",

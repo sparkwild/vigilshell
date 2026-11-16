@@ -76,6 +76,8 @@ xterm 实例与 React 挂载解耦，切换标签或隐藏工作区不重建 SSH
 
 Backend 使用 Tokio 管理异步任务，SQLite 与系统密钥访问由独立线程处理。密码库协调器归 Backend 进程所有，连接配置和凭据共享解锁能力；密钥及凭据正文不进入 Renderer。
 
+macOS 钥匙串新条目使用固定英文名称：正式版为 `VigilShell Data Encryption Key`，Dev 为 `VigilShell Dev Data Encryption Key`，不随应用或系统语言变化。密钥按固定 service 与 namespace／版本组成的 account 查找，名称不参与查找；已有条目的名称、密钥内容和访问控制保持不变。
+
 普通窗口关闭隐藏应用；显式退出统一收尾。Renderer 重载不重启 Backend，Backend 重启不恢复 SSH 会话。外部编辑工作副本由 Main 独立管理，终端关闭不直接销毁编辑任务。
 
 ## 应用信息与更新

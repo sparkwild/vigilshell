@@ -635,8 +635,6 @@
   "ws_error_credential_corrupt": "已保存的连接凭据损坏，请重新配置密码或私钥",
   "ws_error_credential_format_unsupported": "当前应用无法读取已保存的凭据，请检查应用版本",
   "connection_help_vault": "请检查本地密码库及其原有钥匙串密钥，重新认证或输入 SSH 密码不能修复缺失的密码库密钥",
-  "native_vault_key": "VigilShell 数据加密密钥",
-  "native_vault_key_dev": "VigilShell Dev 数据加密密钥",
   "ws_credential_storage_notice": "保存的密码和私钥在本机加密存储，数据加密密钥由 macOS 钥匙串保护",
   "ws_keychain_help_title": "钥匙串授权说明",
   "ws_keychain_help": "若 macOS 请求授权，请在系统窗口输入“登录”钥匙串密码，通常与 Mac 登录密码相同。这里需要的不是服务器密码",
