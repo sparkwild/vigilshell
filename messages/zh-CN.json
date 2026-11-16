@@ -1232,8 +1232,6 @@
   "activity_summary": "操作摘要",
   "activity_agent": "智能体",
   "activity_initiated": "发起时间",
-  "activity_duration": "执行耗时",
-  "activity_duration_unknown": "未知",
   "activity_close": "关闭活动页",
   "policy_back_list": "返回权限列表",
   "policy_download_only": "仅下载",

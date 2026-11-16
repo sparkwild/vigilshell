@@ -1232,8 +1232,6 @@
   "activity_summary": "Summary",
   "activity_agent": "Agent",
   "activity_initiated": "Initiated",
-  "activity_duration": "Execution time",
-  "activity_duration_unknown": "Unknown",
   "activity_close": "Close activity view",
   "policy_back_list": "Back to permissions",
   "policy_download_only": "Download only",
