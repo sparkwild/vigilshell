@@ -98,4 +98,4 @@ npm 许可证收集以运行时 `dependencies` 和 [Renderer 打包依赖清单]
 
 Dev 打包应用只有设置 `VIGILSHELL_DEV_UPDATE_FEED` 时才开放内部下载，且地址限于 HTTP loopback；正式构建忽略该变量，固定使用公开 Releases。原生热更新外壳不执行应用替换。Dev 和正式更新缓存使用独立名称，发行元数据不会决定本机数据或缓存目录。
 
-macOS 发行保留 ARM64 与 x64 两套独立 DMG／ZIP，不生成 Universal 包。共享 `latest-mac.yml` 包含两个 ZIP，打包阶段分别验证单架构元数据，汇总阶段验证完整架构集合。客户端始终选择当前应用的 `process.arch`，下载适配器将候选文件收窄到该架构后再调用 electron-updater；x64 应用在 Rosetta 下也保持 x64，缓存校验与离线安装沿用同一选择。Rust 第三方许可证按两个 macOS 目标的运行时依赖并集生成。
+macOS 发行保留 ARM64 与 x64 两套独立 DMG／ZIP，不生成 Universal 包。共享 `latest-mac.yml` 包含两个 ZIP，打包阶段分别验证单架构元数据，汇总阶段验证完整架构集合。客户端始终选择当前应用的 `process.arch`，下载适配器将候选文件收窄到该架构后再调用 electron-updater；x64 应用在 Rosetta 下也保持 x64，缓存校验与离线安装沿用同一选择。Rust 第三方许可证按两个 macOS 目标的运行时依赖并集生成；打包先按锁文件获取两个目标的依赖，再离线核对许可证，避免依赖构建机器已有缓存。

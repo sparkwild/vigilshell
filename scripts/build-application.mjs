@@ -14,6 +14,12 @@ const npm = process.env.npm_execpath;
 if (!npm) throw Error('Use npm run build');
 execFileSync(process.execPath, ['scripts/dev-preflight.mjs', '--process-only'], options);
 if (process.platform === 'darwin') preflight(loadSigningConfig(profile, env));
+// License artifacts cover both macOS packages, including dependencies absent on this host.
+execFileSync(
+  'cargo',
+  ['fetch', '--locked', '--target', 'aarch64-apple-darwin', '--target', 'x86_64-apple-darwin'],
+  options,
+);
 for (const args of [
   ['backend:build', '--', '--release'],
   ['contracts:generate'],
