@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { closeApplication, waitUntil, withCleanup } from '../e2e/ci-macos-lifecycle.mjs';
 import { releaseStartupContext } from '../e2e/ci-macos-context.mjs';
+import {
+  assertHostedVaultContext,
+  assertFixtureMarker,
+  assertVaultRejected,
+} from '../e2e/ci-vault.mjs';
 import { stopHostedBundle } from '../e2e/ci-update-cleanup.mjs';
 
 function hostedContext(arch = 'arm64', exists = () => false) {
@@ -187,3 +192,118 @@ for (const [name, github, runner] of [
     assert.match(result.stderr, /Startup smoke requires a disposable GitHub-hosted macOS runner/);
   });
 }
+
+// Pure guard tests only: never launch the app, query a database or access Keychain.
+function validateVaultContext(options, name = 'VigilShell') {
+  return assertHostedVaultContext(
+    options.environment,
+    options.platform,
+    options.arch,
+    `${options.home}/Library/Application Support/${name}`,
+    options.home,
+    options.exists,
+  );
+}
+for (const arch of ['arm64', 'x64']) {
+  for (const name of ['VigilShell', 'VigilShell-dev']) {
+    test(`vault fixture accepts fresh hosted ${arch} ${name} context`, () => {
+      validateVaultContext(hostedContext(arch), name);
+    });
+  }
+}
+for (const [key, value] of [
+  ['GITHUB_ACTIONS', undefined],
+  ['RUNNER_ENVIRONMENT', 'self-hosted'],
+  ['RUNNER_OS', 'Linux'],
+  ['EXPECTED_ARCH', 'x64'],
+  ['RUNNER_TEMP', ''],
+]) {
+  test(`vault fixture refuses unsafe ${key}`, () => {
+    const options = hostedContext();
+    options.environment[key] = value;
+    assert.throws(() => validateVaultContext(options));
+  });
+}
+test('vault fixture refuses existing data, unsupported architecture and unrelated paths', () => {
+  assert.throws(() => validateVaultContext(hostedContext('arm64', () => true)));
+  assert.throws(() => validateVaultContext(hostedContext('ia32')));
+  assert.throws(() => validateVaultContext(hostedContext(), '../OtherApp'));
+  const options = hostedContext();
+  options.platform = 'linux';
+  assert.throws(() => validateVaultContext(options));
+});
+
+test('vault marker checks reject common loss of name or notes', () => {
+  assertFixtureMarker({ name: 'fixture', notes: 'fixture' }, 'fixture');
+  for (const config of [
+    {},
+    { name: 'fixture' },
+    { notes: 'fixture' },
+    { name: 'wrong', notes: 'fixture' },
+  ]) {
+    assert.throws(() => assertFixtureMarker(config, 'fixture'));
+  }
+});
+function repliesPage(...replies) {
+  return {
+    evaluate: async () => {
+      assert(replies.length, 'Unexpected IPC call');
+      return replies.shift();
+    },
+  };
+}
+const missingReply = {
+  ok: false,
+  code: 'vault_key_missing',
+  requestId: 'request',
+  runtimeId: 'runtime',
+};
+test('vault blocked probe accepts backend get/create rejection', async () => {
+  for (const method of ['getConnection', 'createConnection'])
+    await assertVaultRejected(repliesPage(missingReply), method, {});
+});
+test('vault blocked probe accepts asynchronously failed create', async () => {
+  await assertVaultRejected(
+    repliesPage(
+      { ok: true, value: { operation: { id: 'operation', phase: 'working' } } },
+      {
+        ok: true,
+        value: {
+          operation: {
+            id: 'operation',
+            phase: 'failed',
+            error: 'vault_key_missing',
+            connection: null,
+          },
+        },
+      },
+    ),
+    'createConnection',
+    {},
+  );
+});
+test('vault blocked probe rejects readable data, successful saves and unrelated errors', async () => {
+  await assert.rejects(() =>
+    assertVaultRejected(repliesPage({ ok: true, value: { connection: {} } }), 'getConnection', {}),
+  );
+  for (const reply of [
+    { ok: false, code: 'runtime_unavailable' },
+    { ok: false, code: 'vault_key_missing' },
+  ])
+    await assert.rejects(() => assertVaultRejected(repliesPage(reply), 'getConnection', {}));
+  for (const operation of [
+    { id: 'operation', phase: 'success', error: null, connection: {} },
+    { id: 'operation', phase: 'failed', error: 'invalid_input', connection: null },
+  ]) {
+    await assert.rejects(() =>
+      assertVaultRejected(
+        repliesPage(
+          { ok: true, value: { operation: { id: 'operation' } } },
+          { ok: true, value: { operation } },
+        ),
+        'createConnection',
+        {},
+      ),
+    );
+  }
+});

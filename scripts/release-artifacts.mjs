@@ -86,7 +86,17 @@ export function aggregateReleaseBuilds(
   runId,
   runAttempt,
   preview = false,
+  previewAttempts,
 ) {
+  if (previewAttempts !== undefined) {
+    assert.equal(preview, true, 'Cross-attempt reuse is preview-only');
+    assert.deepEqual(Object.keys(previewAttempts).sort(), [...releaseArchitectures].sort());
+    assert.match(runAttempt, /^[1-9][0-9]*$/);
+    for (const attempt of Object.values(previewAttempts)) {
+      assert.match(attempt, /^[1-9][0-9]*$/);
+      assert(BigInt(attempt) <= BigInt(runAttempt), 'Future preview attempt');
+    }
+  }
   mkdirSync(output, { recursive: true });
   const builds = {};
   const reports = {};
@@ -104,7 +114,7 @@ export function aggregateReleaseBuilds(
     assert.equal(build.signing, preview ? 'disposable-self-signed' : 'fixed-self-signed');
     assert.equal(build.identity, normalizeFingerprint(preview ? build.identity : identity));
     assert.equal(build.runId, runId);
-    assert.equal(build.runAttempt, runAttempt);
+    assert.equal(build.runAttempt, previewAttempts?.[arch] ?? runAttempt);
     assert.equal(build.nativeStartup, true);
     assert.equal(build.signingCleanup, true);
     if (preview) assert.equal(build.nativeUpdate, true);

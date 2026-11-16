@@ -21,6 +21,7 @@ import { _electron as electron } from 'playwright';
 import { loadSigningConfig, preflight, verifyBundle } from '../../scripts/macos-signing.mjs';
 import { packageBuildEnvironment } from '../../scripts/build-context.mjs';
 import { closeApplication, waitUntil } from './ci-macos-lifecycle.mjs';
+import { hostedVaultProbe } from './ci-vault.mjs';
 import { stopHostedBundle } from './ci-update-cleanup.mjs';
 
 // Native mode probes Squirrel directly; --application exercises product IPC and shutdown.
@@ -38,6 +39,9 @@ if (hosted) {
     'Hosted update verification requires fresh Dev data',
   );
 }
+const vault = hosted
+  ? hostedVaultProbe(join(homedir(), 'Library/Application Support/VigilShell-dev'))
+  : null;
 const config = loadSigningConfig('dev');
 preflight(config);
 execFileSync(process.execPath, ['scripts/dev-preflight.mjs', '--process-only']);
@@ -350,6 +354,11 @@ try {
       installing ? 'native install' : 'ordinary quit',
       'probe',
     );
+    if (vault) {
+      if (!installing) await vault.seed(page);
+      else await vault.verify(page);
+      result.vault = { initialized: true, restartDecryption: installing };
+    }
     if (applicationFlow) {
       if (!installing) {
         const found = await page.evaluate(() => window.vigilshell.application.check());
@@ -486,6 +495,26 @@ try {
     verifyBundle(live, config, process.arch);
     if (applicationFlow) assert.equal(requests.length, offlineRequestCount);
     upgraded = true;
+    if (vault) {
+      // The auto-relaunched process is not a Playwright child. Stop only this owned bundle,
+      // then inspect the installed application through an ordinary launch, with the SAME data.
+      await stopHostedBundle(live, () =>
+        processes().map((match) => ({ pid: Number(match[1]), executable: match[3] })),
+      );
+      application = await electron.launch({
+        executablePath: executable,
+        env: environment,
+        timeout: 60000,
+      });
+      child = application.process();
+      const updatedPage = await application.firstWindow();
+      await updatedPage.getByTestId('workbench').waitFor({ timeout: 60000 });
+      assert.equal(await application.evaluate(({ app }) => app.getVersion()), targetVersion);
+      await vault.verify(updatedPage);
+      result.vault.updatedConfigurationDecryption = true;
+      await closeApplication(application, child);
+      application = undefined;
+    }
     assert(
       !requests.some((path) => path.endsWith(`macos-${otherArchitecture}.zip`)),
       'Downloaded the wrong architecture',
@@ -508,14 +537,28 @@ try {
       result.cleanupError = error.stack;
     });
   server.close();
+  let hostedStopped = false;
   if (hosted)
     await stopHostedBundle(live, () =>
       processes().map((match) => ({ pid: Number(match[1]), executable: match[3] })),
-    ).catch((error) => {
+    )
+      .then(() => {
+        hostedStopped = true;
+      })
+      .catch((error) => {
+        result.passed = false;
+        result.cleanupError = error.stack;
+        process.exitCode = 1;
+      });
+  if (vault && hostedStopped) {
+    try {
+      vault.cleanup();
+    } catch {
       result.passed = false;
-      result.cleanupError = error.stack;
+      result.vaultCleanupFailed = true;
       process.exitCode = 1;
-    });
+    }
+  }
   if (!upgraded && !processes().some((match) => match[3] === executable)) {
     const { rm } = await import('node:fs/promises');
     await rm(live, { recursive: true });

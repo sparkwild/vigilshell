@@ -20,6 +20,21 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   } else if (process.argv[2] === 'merge') {
     const { aggregateReleaseBuilds } = await import('./release-artifacts.mjs');
     const input = '.cache/preview-builds';
+    const selection = JSON.parse(readFileSync(`${input}/selection.json`, 'utf8'));
+    assert.equal(selection.sha, git('rev-parse', 'HEAD'));
+    assert.equal(selection.runId, process.env.GITHUB_RUN_ID);
+    assert.equal(selection.aggregationAttempt, process.env.GITHUB_RUN_ATTEMPT);
+    assert.deepEqual(Object.keys(selection.artifacts).sort(), ['arm64', 'x64']);
+    const attempts = {};
+    for (const arch of ['arm64', 'x64']) {
+      const item = selection.artifacts[arch];
+      assert(Number.isSafeInteger(item.id) && item.id > 0);
+      assert.equal(
+        item.name,
+        `preview-macos-${arch}-${selection.sha}-${selection.runId}-${item.attempt}`,
+      );
+      attempts[arch] = item.attempt;
+    }
     const build = JSON.parse(readFileSync(`${input}/arm64/build.json`, 'utf8'));
     const source = { sha: build.sha, tree: build.tree, version: build.version };
     assert.equal(git('rev-parse', 'HEAD'), source.sha);
@@ -32,6 +47,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       process.env.GITHUB_RUN_ID,
       process.env.GITHUB_RUN_ATTEMPT,
       true,
+      attempts,
     );
     mkdirSync('preview', { recursive: true });
     for (const file of ['latest-mac.yml', 'signing-report.json'])
@@ -42,6 +58,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         {
           ...source,
           preview: true,
+          aggregation: selection,
           architectures: assembled.builds,
           metadataSha256: assembled.metadataSha256,
         },

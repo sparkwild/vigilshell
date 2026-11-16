@@ -5,6 +5,10 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
+import {
+  selectPreviewArtifacts,
+  assertSuccessfulPreviewJob,
+} from '../../scripts/preview-reuse.mjs';
 import { aggregateReleaseBuilds } from '../../scripts/release-artifacts.mjs';
 import { inspectUpdateArtifacts } from '../../scripts/verify-update-artifacts.mjs';
 
@@ -134,12 +138,28 @@ test('preview CLI completes aggregation with independently downloaded native bui
     f.change(arch, {
       tag: undefined,
       tagObject: undefined,
+      runAttempt: arch === 'arm64' ? '1' : '2',
       preview: true,
       signing: 'disposable-self-signed',
       nativeUpdate: true,
     });
     cpSync(join(f.root, arch), join(input, arch), { recursive: true });
   }
+  json(join(input, 'selection.json'), {
+    sha: source.sha,
+    runId: '10',
+    aggregationAttempt: '2',
+    artifacts: Object.fromEntries(
+      ['arm64', 'x64'].map((arch, index) => [
+        arch,
+        {
+          id: index + 1,
+          name: `preview-macos-${arch}-${source.sha}-10-${arch === 'arm64' ? '1' : '2'}`,
+          attempt: arch === 'arm64' ? '1' : '2',
+        },
+      ]),
+    ),
+  });
   const bin = join(f.root, 'bin');
   mkdirSync(bin);
   writeFileSync(
@@ -160,4 +180,214 @@ test('preview CLI completes aggregation with independently downloaded native bui
   });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(readFileSync(join(f.root, 'preview/latest-mac.yml'))).files.length, 2);
+  const manifest = JSON.parse(readFileSync(join(f.root, 'preview/build.json')));
+  assert.equal(manifest.architectures.arm64.runAttempt, '1');
+  assert.equal(manifest.architectures.x64.runAttempt, '2');
+  assert.equal(manifest.aggregation.artifacts.arm64.attempt, '1');
+});
+
+function previewFixture(t) {
+  const f = fixture(t);
+  for (const arch of ['arm64', 'x64'])
+    f.change(arch, { preview: true, signing: 'disposable-self-signed', nativeUpdate: true });
+  f.change('arm64', { runAttempt: '1' });
+  return {
+    ...f,
+    merge: (attempts = { arm64: '1', x64: '2' }) =>
+      aggregateReleaseBuilds(
+        f.root,
+        join(f.root, 'reused'),
+        source,
+        undefined,
+        '10',
+        '2',
+        true,
+        attempts,
+      ),
+  };
+}
+test('preview reuses exact earlier attempt and preserves each original build manifest', (t) => {
+  const f = previewFixture(t);
+  const original = readFileSync(join(f.root, 'arm64/build.json'), 'utf8');
+  const result = f.merge();
+  assert.equal(result.builds.arm64.runAttempt, '1');
+  assert.equal(result.builds.x64.runAttempt, '2');
+  assert.equal(readFileSync(join(f.root, 'arm64/build.json'), 'utf8'), original);
+  assert.deepEqual(result.builds.arm64, JSON.parse(original));
+});
+for (const change of [
+  { runId: '11' },
+  { sha: 'e'.repeat(40) },
+  { tree: 'e'.repeat(40) },
+  { nativeStartup: false },
+  { nativeUpdate: false },
+  { signingCleanup: false },
+  { runAttempt: '2' },
+])
+  test(`preview reuse rejects changed provenance ${JSON.stringify(change)}`, (t) => {
+    const f = previewFixture(t);
+    f.change('arm64', change);
+    assert.throws(() => f.merge());
+  });
+test('cross-attempt preview still checks digests and cannot weaken release rules', (t) => {
+  const f = previewFixture(t);
+  for (const attempts of [{ arm64: '1' }, { arm64: '1', x64: '3' }, { arm64: '0', x64: '2' }])
+    assert.throws(() => f.merge(attempts));
+  writeFileSync(join(f.root, 'arm64/VigilShell-0.1.5-macos-arm64.zip.blockmap'), 'changed');
+  assert.throws(() => f.merge(), /Changed arm64/);
+  const release = fixture(t);
+  assert.throws(
+    () =>
+      aggregateReleaseBuilds(
+        release.root,
+        join(release.root, 'bad'),
+        source,
+        identity,
+        '10',
+        '2',
+        false,
+        { arm64: '2', x64: '2' },
+      ),
+    /preview-only/,
+  );
+});
+function artifact(arch, attempt, values = {}) {
+  return {
+    id: arch === 'arm64' ? 1 : 2,
+    expired: false,
+    name: `preview-macos-${arch}-${source.sha}-10-${attempt}`,
+    workflow_run: { id: 10 },
+    ...values,
+  };
+}
+test('selection uses latest verified same-run same-SHA artifact per architecture', () => {
+  const chosen = selectPreviewArtifacts(
+    [
+      artifact('arm64', '1'),
+      artifact('x64', '1'),
+      artifact('x64', '2'),
+      artifact('arm64', '3'),
+      artifact('arm64', '1', { name: 'diagnostics-arm64-10-2' }),
+      artifact('arm64', '1', { name: `preview-macos-arm64-${'e'.repeat(40)}-10-2` }),
+    ],
+    source.sha,
+    '10',
+    '2',
+  );
+  assert.equal(chosen.arm64.attempt, '1');
+  assert.equal(chosen.x64.attempt, '2');
+});
+test('selection refuses missing, expired, duplicate and foreign-run artifacts', () => {
+  const arm = artifact('arm64', '1');
+  const intel = artifact('x64', '2');
+  for (const artifacts of [
+    [arm],
+    [arm, { ...intel, expired: true }],
+    [arm, intel, intel],
+    [arm, { ...intel, workflow_run: { id: 11 } }],
+  ])
+    assert.throws(() => selectPreviewArtifacts(artifacts, source.sha, '10', '2'));
+});
+test('reuse requires a successful architecture job in its exact run and attempt', () => {
+  const job = {
+    name: 'package-arm64',
+    run_id: 10,
+    run_attempt: 1,
+    status: 'completed',
+    conclusion: 'success',
+  };
+  assertSuccessfulPreviewJob([job], 'arm64', '1', '10');
+  for (const change of [
+    { conclusion: 'cancelled' },
+    { conclusion: 'failure' },
+    { status: 'in_progress' },
+    { name: 'package-x64' },
+    { run_id: 11 },
+    { run_attempt: 2 },
+  ])
+    assert.throws(() => assertSuccessfulPreviewJob([{ ...job, ...change }], 'arm64', '1', '10'));
+  assert.throws(() => assertSuccessfulPreviewJob([job, job], 'arm64', '1', '10'));
+});
+
+test('preview download paginates lists, accepts legacy job names, and fetches immutable IDs', (t) => {
+  const f = fixture(t);
+  const bin = join(f.root, 'bin');
+  mkdirSync(bin);
+  const zip = join(f.root, 'fixture.zip');
+  const made = spawnSync('python3', [
+    '-c',
+    'import sys,zipfile; z=zipfile.ZipFile(sys.argv[1],"w"); z.writestr("build.json","{}"); z.close()',
+    zip,
+  ]);
+  assert.equal(made.status, 0);
+  const calls = join(f.root, 'calls.jsonl');
+  writeFileSync(join(bin, 'git'), `#!/bin/sh\necho ${source.sha}\n`, { mode: 0o755 });
+  writeFileSync(
+    join(bin, 'gh'),
+    `#!${process.execPath}
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(args) + '\\n');
+const endpoint = args.at(-1);
+if (args[0] !== 'api') process.exit(9);
+if (endpoint.endsWith('/artifacts?per_page=100')) {
+  if (!args.includes('--paginate') || !args.includes('--slurp')) process.exit(8);
+  process.stdout.write(JSON.stringify([{artifacts:[${JSON.stringify(artifact('arm64', '1'))}]},{artifacts:[${JSON.stringify(artifact('x64', '2'))}]}]));
+} else if (endpoint.includes('/attempts/')) {
+  if (!args.includes('--paginate') || !args.includes('--slurp')) process.exit(8);
+  const arm = endpoint.includes('/attempts/1/');
+  process.stdout.write(JSON.stringify([{jobs:[]},{jobs:[{name:arm?'package (arm64, macos-15, aarch64-apple-darwin)':'package-x64',run_id:10,run_attempt:arm?1:2,status:'completed',conclusion:'success'}]}]));
+} else if (/^repos\\/owner\\/repo\\/actions\\/artifacts\\/[12]\\/zip$/.test(endpoint)) {
+  if (process.env.FIXTURE_DELETED_ID === "1") process.exit(22);
+  process.stdout.write(fs.readFileSync(${JSON.stringify(zip)}));
+} else process.exit(7);
+`,
+    { mode: 0o755 },
+  );
+  const result = spawnSync(process.execPath, [resolve('scripts/preview-reuse.mjs')], {
+    cwd: f.root,
+    encoding: 'utf8',
+    timeout: 10000,
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH}`,
+      GITHUB_REPOSITORY: 'owner/repo',
+      GITHUB_RUN_ID: '10',
+      GITHUB_RUN_ATTEMPT: '2',
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const selection = JSON.parse(readFileSync(join(f.root, '.cache/preview-builds/selection.json')));
+  assert.equal(selection.artifacts.arm64.id, 1);
+  assert.equal(selection.artifacts.x64.id, 2);
+  const requests = readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(
+    requests.filter((args) => args.at(-1).endsWith('/zip')),
+    [
+      ['api', 'repos/owner/repo/actions/artifacts/1/zip'],
+      ['api', 'repos/owner/repo/actions/artifacts/2/zip'],
+    ],
+  );
+  for (const arch of ['arm64', 'x64'])
+    assert.equal(
+      readFileSync(join(f.root, `.cache/preview-builds/${arch}/build.json`), 'utf8'),
+      '{}',
+    );
+  const retry = join(f.root, 'deleted-id');
+  mkdirSync(retry);
+  const deleted = spawnSync(process.execPath, [resolve('scripts/preview-reuse.mjs')], {
+    cwd: retry,
+    encoding: 'utf8',
+    timeout: 10000,
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH}`,
+      GITHUB_REPOSITORY: 'owner/repo',
+      GITHUB_RUN_ID: '10',
+      GITHUB_RUN_ATTEMPT: '2',
+      FIXTURE_DELETED_ID: '1',
+    },
+  });
+  assert.notEqual(deleted.status, 0, 'Deleted artifact ID must fail without name fallback');
+  assert.throws(() => readFileSync(join(retry, '.cache/preview-builds/selection.json')));
 });
