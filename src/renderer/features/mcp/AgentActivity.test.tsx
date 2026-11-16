@@ -158,7 +158,14 @@ it('locates notification tasks in the summary list without loading details', asy
 it('keeps field tooltips but removes detail columns and row navigation', async () => {
   render(<AgentActivity target={{ view: 'activity' }} />);
   const summary = await screen.findByText('uname -a');
-  expect(screen.getAllByRole('columnheader')).toHaveLength(7);
+  expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+    '智能体',
+    '活动类型',
+    '操作摘要',
+    '连接',
+    '状态',
+    '发起时间',
+  ]);
   expect(screen.queryByRole('columnheader', { name: '详情' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '详情' })).not.toBeInTheDocument();
   const reads = f.request.mock.calls.length;
@@ -343,26 +350,6 @@ it('shows and copies the full multiline command without fetching details', async
   await userEvent.click(within(popup).getByRole('button', { name: '复制' }));
   expect(window.vigilshell.copyText).toHaveBeenCalledWith(command);
   expect(f.request).toHaveBeenCalledTimes(reads);
-});
-
-it.each([
-  { uncertain: true },
-  { phase: 'interruptedUnknown' },
-  { startedAt: null },
-  { finishedAt: null },
-  { startedAt: 300, finishedAt: 100 },
-  { phase: 'requestAccepted' },
-])('renders an unavailable duration as a dash for bridge records: %j', async (fields) => {
-  const original = f.request.getMockImplementation()!;
-  f.request.mockImplementation(async (request: AgentUiRequest) => {
-    const result = await original(request);
-    if (request.action === 'activitySummaries') Object.assign(result.reply.items[0], fields);
-    return result;
-  });
-  render(<AgentActivity target={{ view: 'activity' }} />);
-  const summary = await screen.findByText('uname -a');
-  const row = summary.closest('[role="row"]')! as HTMLElement;
-  expect(within(row).getAllByRole('gridcell').at(-1)).toHaveTextContent(/^—$/);
 });
 
 it.each([

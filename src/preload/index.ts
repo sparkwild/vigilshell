@@ -120,8 +120,10 @@ const bridge: DesktopApi = {
     return () => ipcRenderer.removeListener('workspace:event', receive);
   },
   onWorkspaceCommand(listener) {
-    const receive = (_event: Electron.IpcRendererEvent, value: 'new' | 'close' | 'find') =>
-      listener(value);
+    const receive = (
+      _event: Electron.IpcRendererEvent,
+      value: import('@contracts').NativeMenuCommand,
+    ) => listener(value);
     ipcRenderer.on('workspace:command', receive);
     return () => ipcRenderer.removeListener('workspace:command', receive);
   },
@@ -136,6 +138,7 @@ const bridge: DesktopApi = {
   },
   attachTerminalPort: (id) => ipcRenderer.send('workspace:terminal-port', id),
   setWorkspaceUi: (value) => ipcRenderer.send('workspace:ui', value),
+  setNativeMenuState: (value) => ipcRenderer.send('workspace:menu-state', value),
   copyText: (text) => ipcRenderer.invoke('workspace:copy', text),
   readClipboard: () => ipcRenderer.invoke('workspace:clipboard'),
   hideWindow: () => ipcRenderer.send('workspace:hide'),

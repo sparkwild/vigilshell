@@ -2,9 +2,11 @@ import { app, ipcMain, shell, net } from 'electron';
 import { contractValidator } from '../../contracts/validation';
 import type { ApplicationRequest } from '@contracts';
 import { join } from 'node:path';
+import { DiscoveryStore } from './discovery-store';
 import { ManagedUpdates, type InstallUpdate } from './managed';
 import { MacUpdateEngine } from './mac-engine';
 import { updateSource } from './source';
+import { openApplicationLink } from '../platform/application-links';
 export function registerApplication(
   allowed: (event: Electron.IpcMainInvokeEvent) => boolean,
   options: { development: boolean; packaged: boolean; install: InstallUpdate },
@@ -20,7 +22,8 @@ export function registerApplication(
           source.feed,
         )
       : undefined;
-  const fetcher: typeof fetch = (_input, init) => net.fetch(source.releases, init);
+  const fetcher: typeof fetch = (input, init) =>
+    net.fetch(input instanceof URL ? input.href : input, init);
   const updates = new ManagedUpdates(
     app.getVersion(),
     process.platform,
@@ -28,6 +31,15 @@ export function registerApplication(
     fetcher,
     engine,
     options.install,
+    {
+      releases: source.releases,
+      notes: source.notes,
+      store: new DiscoveryStore(
+        join(app.getPath('userData'), 'updates', 'discovery.json'),
+        `${source.releases}|${process.platform}|${process.arch}`,
+        app.getVersion(),
+      ),
+    },
   );
   void app
     .whenReady()
@@ -53,9 +65,8 @@ export function registerApplication(
       case 'install':
         return updates.install();
       case 'project':
-        return shell.openExternal('https://github.com/sparkwild/vigilshell');
       case 'issues':
-        return shell.openExternal('https://github.com/sparkwild/vigilshell/issues');
+        return openApplicationLink(request.action);
       case 'openRelease':
         if (updates.snapshot.release)
           return shell.openExternal(

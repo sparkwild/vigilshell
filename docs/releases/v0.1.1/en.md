@@ -7,6 +7,6 @@
 
 ## Bug Fixes
 
-- **Smaller macOS installer** — The Apple Silicon download removes duplicate frontend dependencies and unused development files while retaining the app's fonts and features.
+- **Smaller macOS installer** — Reduce the Apple Silicon installer download size.
 - **Chromium notices** — Find the full Chromium license notices beside the app in the disk image.
 - **Startup screen** — The loading indicator and its label stay aligned.

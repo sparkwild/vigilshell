@@ -1,3 +1,4 @@
+import { useNativeMenuActions } from './native-menu/NativeMenuProvider';
 import { RuntimeFeedback } from './RuntimeFeedback';
 import { AgentActivity } from '../features/mcp/AgentActivity';
 import type { McpNavigation } from '../../contracts/mcp';
@@ -180,6 +181,38 @@ export function Workbench({
     else toolsRef.current.collapse();
   }
 
+  const menuActive = active && !auxiliaryVisible;
+  const hasMenuSession =
+    menuActive &&
+    workspaceState.sessions.some((session) => session.id === workspaceState.activeTab);
+  useNativeMenuActions({
+    toggleSidebar: {
+      enabled: active,
+      checked: !layout.collapsed,
+      run: () => setSidebarOpen(layout.collapsed),
+    },
+    toggleTools: {
+      enabled: menuActive,
+      checked: menuActive && !toolsLayout.collapsed,
+      run: () => setToolsOpen(toolsLayout.collapsed),
+    },
+    showMonitor: {
+      enabled: hasMenuSession,
+      checked: menuActive && !toolsLayout.collapsed && workspaceState.toolsTab === 'overview',
+      run: () => {
+        workspace.selectToolsTab('overview');
+        setToolsOpen(true);
+      },
+    },
+    showTransfers: {
+      enabled: hasMenuSession,
+      checked: menuActive && !toolsLayout.collapsed && workspaceState.toolsTab === 'transfers',
+      run: () => {
+        workspace.selectToolsTab('transfers');
+        setToolsOpen(true);
+      },
+    },
+  });
   return (
     <WorkspaceUi
       active={active}
@@ -255,6 +288,7 @@ export function Workbench({
               >
                 <div className="native-titlebar" aria-hidden="true" />
                 <WorkbenchNavigation
+                  active={menuActive}
                   onSettings={onSettings}
                   onConnected={() => {
                     setPreviewOpen(false);

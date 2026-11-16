@@ -88,7 +88,10 @@ export interface WorkspaceDesktop {
   ): () => void;
   workspace: WorkspaceApi;
   onWorkspaceEvent(listener: (event: WorkspaceNotification) => void): () => void;
-  onWorkspaceCommand(listener: (command: 'new' | 'close' | 'find') => void): () => void;
+  onWorkspaceCommand(
+    listener: (command: import('@contracts').NativeMenuCommand) => void,
+  ): () => void;
+  setNativeMenuState(state: import('@contracts').NativeMenuState): void;
   attachTerminalPort(sessionId: string): void;
   setWorkspaceUi(state: WorkspaceUiState): void;
   copyText(text: string): Promise<void>;

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useNativeMenuActions } from '../../app/native-menu/NativeMenuProvider';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { errorText } from './text';
 import { ConnectionUnlock } from './ConnectionUnlock';
@@ -19,12 +21,15 @@ import { renderConnectionNode } from './navigation/ConnectionTreeNode';
 
 export function ConnectionTree({
   onConnected,
+  active = true,
   showSelection = true,
 }: {
+  active?: boolean;
   onConnected(): void;
   showSelection?: boolean;
 }) {
   const model = useConnectionNavigation({ onConnected });
+  const [connectionFocused, setConnectionFocused] = useState(true);
   const {
     t,
     state,
@@ -39,9 +44,52 @@ export function ConnectionTree({
     visible,
   } = model;
   const renderNode = (node: Node) => renderConnectionNode(node, model);
+  const selected =
+    state.selected && state.connections.find((connection) => connection.id === state.selected?.id);
+  const available = active && showSelection && state.available;
+  const canUseSelected =
+    !!selected &&
+    available &&
+    connectionFocused &&
+    !state.groupEditing &&
+    !state.operations.isBusy('connection:' + selected.id);
+  useNativeMenuActions({
+    newGroup: {
+      enabled: available && !state.groupBusy && !state.groupEditing,
+      run: () => {
+        state.setNavigation((previous) => ({ ...previous, view: 'groups' }));
+        return state.createGroup(surfaceId);
+      },
+    },
+    connect: {
+      enabled: canUseSelected,
+      run: () => (selected ? model.activate('c:' + selected.id) : undefined),
+    },
+    connectNew: {
+      enabled: canUseSelected,
+      run: () => {
+        if (selected) safely(state.store.connect(selected.id, true));
+      },
+    },
+    editConnection: {
+      enabled: canUseSelected,
+      run: () => {
+        if (selected) safely(state.store.editConnection(selected.id));
+      },
+    },
+  });
   return (
     <Tabs
-      render={<section />}
+      render={
+        <section
+          onFocusCapture={(event) => {
+            const key = (event.target as HTMLElement)
+              .closest('[data-key]')
+              ?.getAttribute('data-key');
+            if (key) setConnectionFocused(key.startsWith('c:'));
+          }}
+        />
+      }
       className="connection-navigation"
       aria-label={t('connections')}
       value={state.navigation.view}
@@ -76,6 +124,7 @@ export function ConnectionTree({
           onSelectionChange={(keys) => {
             if (keys !== 'all') {
               const key = String(keys.values().next().value ?? '');
+              setConnectionFocused(key.startsWith('c:'));
               if (key.startsWith('c:')) {
                 safely(state.store.select({ kind: 'connection', id: key.slice(2) }));
               }

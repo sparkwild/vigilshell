@@ -360,9 +360,6 @@ export class WorkspaceIpc {
   get activeCount() {
     return [...this.sessions.values()].filter(terminalIsActive).length;
   }
-  command(command: 'new' | 'close' | 'find') {
-    this.window()?.webContents.send('workspace:command', command);
-  }
   context(appearance: Appearance) {
     this.appearance = appearance;
     if (this.host.instanceId && this.attachedRuntime === this.host.instanceId)

@@ -29,5 +29,7 @@ export function prepareVersion(version, root = '.') {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   assert.equal(process.argv.length, 3, 'Use npm run version:prepare -- X.Y.Z');
   prepareVersion(process.argv[2]);
-  console.log('Version files updated. Review and commit before creating a tag.');
+  console.log(
+    `Version files updated. Add the default-language notes and optional <locale>.md translations under docs/releases/v${process.argv[2]}/, then run npm run changelog:generate.`,
+  );
 }

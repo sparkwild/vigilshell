@@ -6,6 +6,7 @@ function fixture() {
   const engine: UpdateEngine = {
     cache: { load: vi.fn(async () => undefined), clear: vi.fn(async () => {}) },
     download: vi.fn(async () => {}),
+    inspect: vi.fn(async () => true),
     prepare: vi.fn(async () => {}),
     commit: vi.fn(),
     cancel: vi.fn(() => true),
@@ -49,7 +50,7 @@ it('preserves the selected version after download failure and supports explicit 
   expect(f.service.snapshot.release).toEqual(release);
   expect((await f.service.download()).phase).toBe('ready');
 });
-it('can discover a newer release without discarding an older pending package', async () => {
+it('keeps the pending package selected instead of checking a newer release', async () => {
   const f = fixture();
   vi.mocked(f.engine.cache.load).mockResolvedValue({ release, installing: false } as PendingUpdate);
   await f.service.restore();
@@ -67,8 +68,8 @@ it('can discover a newer release without discarding an older pending package', a
     ),
   );
   const check = f.service.check();
-  expect(f.service.check()).toBe(check);
-  expect((await check).release?.version).toBe('0.1.3');
+  expect((await check).release?.version).toBe(release.version);
+  expect(f.fetcher).not.toHaveBeenCalled();
   expect(f.engine.cache.clear).not.toHaveBeenCalled();
 });
 it('keeps ready when an explicit recheck finds the already downloaded release', async () => {
@@ -127,29 +128,11 @@ it.each(['network', 'rate-limit', 'invalid-json', 'invalid-release'])(
     expect(f.engine.commit).toHaveBeenCalledOnce();
   },
 );
-it.each([false, true])(
-  'restores the cached release after failed recheck even with a newer selection (installing=%s)',
-  async (installing) => {
-    const f = fixture();
-    vi.mocked(f.engine.cache.load).mockResolvedValue({ release, installing } as PendingUpdate);
-    await f.service.restore();
-    f.service.snapshot = {
-      phase: 'available',
-      release: { version: '0.1.3', tag: 'v0.1.3', notes: 'Newer' },
-      canDownload: true,
-    };
-    f.fetcher.mockRejectedValue(Error('offline'));
-    const result = await f.service.check();
-    expect(result.phase).toBe(installing ? 'installError' : 'ready');
-    expect(result.release).toEqual(release);
-    expect((await f.service.install()).phase).toBe('installing');
-    expect(f.engine.prepare).toHaveBeenCalledOnce();
-  },
-);
 it('keeps discovery failures visible when no verified package is pending', async () => {
   const f = fixture();
   f.fetcher.mockRejectedValue(Error('offline'));
-  expect((await f.service.check()).phase).toBe('networkError');
+  expect((await f.service.check()).checkPhase).toBe('networkError');
+  expect(f.service.snapshot.phase).toBe('available');
   await f.service.install();
   expect(f.engine.prepare).not.toHaveBeenCalled();
 });

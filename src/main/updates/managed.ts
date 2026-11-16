@@ -1,12 +1,13 @@
 import type { UpdateProgress, UpdateSnapshot } from '@contracts';
 import type { AvailableRelease } from '@contracts';
 import type { PendingUpdate } from './cache';
-import { UpdateService } from './service';
+import { UpdateService, type DiscoveryOptions } from './service';
 
 export type InstallUpdate = (prepare: () => Promise<void>, commit: () => void) => Promise<boolean>;
 export interface UpdateEngine {
   cache: { load(): Promise<PendingUpdate | undefined>; clear(): Promise<void> };
   download(release: AvailableRelease, progress: (value: UpdateProgress) => void): Promise<void>;
+  inspect(release: AvailableRelease): Promise<boolean>;
   prepare(): Promise<void>;
   commit(): void;
   cancel(): boolean;
@@ -25,12 +26,16 @@ export class ManagedUpdates extends UpdateService {
     fetcher: typeof fetch,
     private engine: UpdateEngine | undefined,
     private installUpdate: InstallUpdate,
+    discovery: DiscoveryOptions = {},
   ) {
-    super(current, platform, arch, fetcher);
-    this.snapshot = { ...this.snapshot, canDownload: !!engine };
+    super(current, platform, arch, fetcher, {
+      ...discovery,
+      inspect: engine ? (release) => engine.inspect(release) : undefined,
+    });
+    this.snapshot = { ...this.snapshot, canDownload: false };
   }
   protected override publish(snapshot: UpdateSnapshot) {
-    super.publish({ ...snapshot, canDownload: !!this.engine });
+    super.publish({ ...snapshot, canDownload: !!this.engine && snapshot.canDownload === true });
   }
   restore() {
     if (!this.restoring)
@@ -40,6 +45,7 @@ export class ManagedUpdates extends UpdateService {
     return this.restoring;
   }
   private async restoreCache() {
+    await this.initialized;
     if (!this.engine) return;
     try {
       const pending = await this.engine.cache.load();
@@ -48,6 +54,7 @@ export class ManagedUpdates extends UpdateService {
         this.publish({
           phase: pending.installing ? 'installError' : 'ready',
           release: pending.release,
+          canDownload: true,
         });
       }
     } catch {
@@ -55,49 +62,44 @@ export class ManagedUpdates extends UpdateService {
       this.publish({ phase: 'downloadError', release: null });
     }
   }
-  override check(): Promise<UpdateSnapshot> {
+  override check(origin: 'manual' | 'background' = 'manual'): Promise<UpdateSnapshot> {
     if (this.operation) return this.operation;
     if (this.checking) return this.checking;
-    const check = this.restoring ? this.restoring.then(() => super.check()) : super.check();
-    this.checking = check
-      .then((result) => {
-        if (
-          this.pending &&
-          ((result.phase === 'available' &&
-            result.release?.version === this.pending.release.version) ||
-            ['networkError', 'rateLimited', 'invalidResponse'].includes(result.phase))
-        )
-          // A failed discovery request does not invalidate the verified local package.
-          this.publish({
-            phase: this.pending.failed ? 'installError' : 'ready',
-            release: this.pending.release,
-          });
-        return this.snapshot;
-      })
-      .finally(() => {
-        this.checking = undefined;
-      });
+    if (this.restoring) return this.restoring.then(() => this.check(origin));
+    // A verified package remains the selected update until installed or replaced explicitly.
+    if (this.pending) return Promise.resolve(this.snapshot);
+    this.checking = super.check(origin).finally(() => {
+      this.checking = undefined;
+    });
     return this.checking;
   }
   download(): Promise<UpdateSnapshot> {
     if (this.restoring) return this.restoring.then(() => this.download());
     if (this.operation) return this.operation;
+    if (this.checking) return this.checking.then(() => this.download());
     const release = this.snapshot.release;
-    if (!this.engine || !release || !['available', 'downloadError'].includes(this.snapshot.phase))
+    if (
+      !this.engine ||
+      !this.snapshot.canDownload ||
+      !release ||
+      !['available', 'downloadError'].includes(this.snapshot.phase)
+    )
       return Promise.resolve(this.snapshot);
     this.cancelled = false;
     this.publish({ ...this.snapshot, phase: 'downloading', progress: undefined });
     this.operation = (async () => {
       try {
         await this.engine!.download(release, (progress: UpdateProgress) => {
-          if (!this.cancelled) this.publish({ phase: 'downloading', release, progress });
+          if (!this.cancelled)
+            this.publish({ phase: 'downloading', release, progress, canDownload: true });
         });
         if (!this.cancelled) this.pending = { release, failed: false };
-        this.publish({ phase: this.cancelled ? 'available' : 'ready', release });
+        this.publish({ phase: this.cancelled ? 'available' : 'ready', release, canDownload: true });
       } catch (error) {
         this.publish({
           phase: this.cancelled ? 'available' : 'downloadError',
           release,
+          canDownload: true,
           issue:
             error instanceof Error && error.message === 'insufficient_space'
               ? 'insufficientSpace'
@@ -147,7 +149,11 @@ export class ManagedUpdates extends UpdateService {
           await this.engine!.cache.clear().catch((error) =>
             console.error('Update cache cleanup:', error.message),
           );
-          this.publish({ phase: 'downloadError', release: this.snapshot.release });
+          this.publish({
+            phase: 'downloadError',
+            release: this.snapshot.release,
+            canDownload: true,
+          });
           return this.snapshot;
         }
         const issue =

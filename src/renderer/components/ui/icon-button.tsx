@@ -48,10 +48,15 @@ export function IconButton({
   );
 }
 
-export function CloseButton(props: Omit<IconButtonProps, 'children' | 'size' | 'variant'>) {
+export function CloseButton({
+  size = 'icon-sm',
+  ...props
+}: Omit<IconButtonProps, 'children' | 'variant' | 'size'> & {
+  size?: 'icon-xs' | 'icon-sm' | 'icon';
+}) {
   return (
-    <IconButton {...props} variant="ghost" size="icon-close">
-      <XIcon aria-hidden="true" strokeWidth={2.5} />
+    <IconButton {...props} variant="ghost" size={size}>
+      <XIcon aria-hidden="true" />
     </IconButton>
   );
 }

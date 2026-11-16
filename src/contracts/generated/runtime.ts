@@ -1419,6 +1419,19 @@ export type ApplicationRequest =
     }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UpdateCheckPhase".
+ */
+export type UpdateCheckPhase =
+  | "idle"
+  | "checking"
+  | "current"
+  | "available"
+  | "empty"
+  | "networkError"
+  | "rateLimited"
+  | "invalidResponse"
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "UpdateIssue".
  */
 export type UpdateIssue =
@@ -1544,6 +1557,31 @@ export type FileEditorRequest =
       discard: boolean
       id: string
     }
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "NativeMenuCommand".
+ */
+export type NativeMenuCommand =
+  | "new"
+  | "newGroup"
+  | "connect"
+  | "connectNew"
+  | "editConnection"
+  | "find"
+  | "close"
+  | "workbench"
+  | "agentPolicy"
+  | "agentActivity"
+  | "toggleSidebar"
+  | "toggleTools"
+  | "showFiles"
+  | "showMonitor"
+  | "showTransfers"
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "NativeMenuCloseTarget".
+ */
+export type NativeMenuCloseTarget = "dialog" | "page" | "tab" | "window"
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "RpcCommand".
@@ -3328,6 +3366,7 @@ export interface DesktopContract {
   desktop: DesktopSnapshot
   error_code: ErrorCode
   file_editors: FileEditorContract
+  native_menu: NativeMenuState
   runtime: RuntimeContract
   system_notifications: SystemNotificationContract
   workspace: WorkspaceContract
@@ -3898,6 +3937,7 @@ export interface PolicyLimitPatch {
  */
 export interface ApplicationContract {
   info: ApplicationInfo
+  release_notes: ReleaseNotesDocument
   request: ApplicationRequest
   state: UpdateSnapshot
 }
@@ -3911,10 +3951,32 @@ export interface ApplicationInfo {
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ReleaseNotesDocument".
+ */
+export interface ReleaseNotesDocument {
+  languages: {
+    [k: string]: ReleaseNoteSections
+  }
+  schema: number
+  tag: string
+  version: string
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "ReleaseNoteSections".
+ */
+export interface ReleaseNoteSections {
+  features?: string[]
+  fixes?: string[]
+  upgradeNotes?: string[]
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
  * via the `definition` "UpdateSnapshot".
  */
 export interface UpdateSnapshot {
   canDownload?: boolean | null
+  checkPhase?: UpdateCheckPhase | null
   issue?: UpdateIssue | null
   phase: UpdatePhase
   progress?: UpdateProgress | null
@@ -3934,6 +3996,9 @@ export interface UpdateProgress {
  * via the `definition` "AvailableRelease".
  */
 export interface AvailableRelease {
+  localizedNotes?: {
+    [k: string]: ReleaseNoteSections
+  } | null
   notes: string
   tag: string
   version: string
@@ -4050,6 +4115,23 @@ export interface FileEditorView {
   id: string
   path: string
   phase: string
+}
+/**
+ * Presentation capabilities only; connection identities and business state stay in Renderer.
+ *
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "NativeMenuState".
+ */
+export interface NativeMenuState {
+  /**
+   * @maxItems 15
+   */
+  checked: NativeMenuCommand[]
+  closeTarget: NativeMenuCloseTarget
+  /**
+   * @maxItems 15
+   */
+  enabled: NativeMenuCommand[]
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema

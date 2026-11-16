@@ -1,4 +1,5 @@
-import { ApplicationSettings, UpdateBadge } from './ApplicationSettings';
+import { ApplicationSettings } from './ApplicationSettings';
+import { UpdateBadge } from './UpdateIndicators';
 import { UiStateFeedback } from './UiStateFeedback';
 import { MonitorSettings } from './components/MonitorSettings';
 import { FileEditorSettings } from '../server-tools/FileEditorSettings';
@@ -66,18 +67,15 @@ export function SettingsView({
   onBack,
   initialCategory = 'general',
   navigationVersion = 0,
-  checkUpdates = false,
   registerExitGuard,
 }: {
   onBack(): void;
   initialCategory?: SettingsCategory;
   navigationVersion?: number;
-  checkUpdates?: boolean;
   registerExitGuard?: (guard: LeaveGuard | null) => void;
 }) {
   const model = useSettingsController(initialCategory);
   const leave = useRef<LeaveGuard | null>(null);
-  const [handledUpdateCheck, setHandledUpdateCheck] = useState(0);
   const [footerSlot, setFooterSlot] = useState<HTMLDivElement | null>(null);
   const register = useCallback((guard: LeaveGuard | null) => {
     leave.current = guard;
@@ -158,12 +156,7 @@ export function SettingsView({
               </h1>
             </header>
             {category === 'about' ? (
-              <ApplicationSettings
-                checkRequest={
-                  checkUpdates && handledUpdateCheck !== navigationVersion ? navigationVersion : 0
-                }
-                onCheckRequestHandled={() => setHandledUpdateCheck(navigationVersion)}
-              />
+              <ApplicationSettings />
             ) : category === 'mcp' ? (
               <McpSettings footer={footerSlot} />
             ) : category === 'agentActivity' ? (

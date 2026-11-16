@@ -18,6 +18,9 @@
     "file_editors": {
       "$ref": "#/definitions/FileEditorContract"
     },
+    "native_menu": {
+      "$ref": "#/definitions/NativeMenuState"
+    },
     "runtime": {
       "$ref": "#/definitions/RuntimeContract"
     },
@@ -29,6 +32,7 @@
     }
   },
   "required": [
+    "native_menu",
     "application",
     "file_editors",
     "agent",
@@ -5949,6 +5953,9 @@
         "info": {
           "$ref": "#/definitions/ApplicationInfo"
         },
+        "release_notes": {
+          "$ref": "#/definitions/ReleaseNotesDocument"
+        },
         "request": {
           "$ref": "#/definitions/ApplicationRequest"
         },
@@ -5959,7 +5966,8 @@
       "required": [
         "info",
         "state",
-        "request"
+        "request",
+        "release_notes"
       ]
     },
     "ApplicationInfo": {
@@ -6108,6 +6116,15 @@
     "AvailableRelease": {
       "type": "object",
       "properties": {
+        "localizedNotes": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/definitions/ReleaseNoteSections"
+          }
+        },
         "notes": {
           "type": "string"
         },
@@ -8450,6 +8467,64 @@
         "en"
       ]
     },
+    "NativeMenuCloseTarget": {
+      "type": "string",
+      "enum": [
+        "dialog",
+        "page",
+        "tab",
+        "window"
+      ]
+    },
+    "NativeMenuCommand": {
+      "type": "string",
+      "enum": [
+        "new",
+        "newGroup",
+        "connect",
+        "connectNew",
+        "editConnection",
+        "find",
+        "close",
+        "workbench",
+        "agentPolicy",
+        "agentActivity",
+        "toggleSidebar",
+        "toggleTools",
+        "showFiles",
+        "showMonitor",
+        "showTransfers"
+      ]
+    },
+    "NativeMenuState": {
+      "description": "Presentation capabilities only; connection identities and business state stay in Renderer.",
+      "type": "object",
+      "properties": {
+        "checked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NativeMenuCommand"
+          },
+          "maxItems": 15
+        },
+        "closeTarget": {
+          "$ref": "#/definitions/NativeMenuCloseTarget"
+        },
+        "enabled": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NativeMenuCommand"
+          },
+          "maxItems": 15
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "checked",
+        "closeTarget"
+      ]
+    },
     "NativeServiceDefinition": {
       "type": "object",
       "properties": {
@@ -10017,6 +10092,60 @@
       "additionalProperties": false,
       "required": [
         "offset"
+      ]
+    },
+    "ReleaseNoteSections": {
+      "type": "object",
+      "properties": {
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fixes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "upgradeNotes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReleaseNotesDocument": {
+      "type": "object",
+      "properties": {
+        "languages": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ReleaseNoteSections"
+          }
+        },
+        "schema": {
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "tag": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "version",
+        "tag",
+        "languages"
       ]
     },
     "RemoteEntry": {
@@ -13565,6 +13694,19 @@
       ],
       "x-vigil-rule": "uiScope"
     },
+    "UpdateCheckPhase": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "checking",
+        "current",
+        "available",
+        "empty",
+        "networkError",
+        "rateLimited",
+        "invalidResponse"
+      ]
+    },
     "UpdateIssue": {
       "type": "string",
       "enum": [
@@ -13645,6 +13787,16 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "checkPhase": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UpdateCheckPhase"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "issue": {

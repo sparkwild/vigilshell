@@ -1,5 +1,9 @@
 # 系统架构
 
+> 操作，交给 Agent。掌控，留给你。
+
+VigilShell 是一款 Agent 优先的 SSH 终端。连接服务器、执行任务，你来设定权限，Agent 负责行动。
+
 ## 进程与通信
 
 应用由 Electron Main、Preload、React Renderer 和 Rust Backend 组成。
@@ -27,6 +31,12 @@
 | `scripts/`、`tests/` | 构建检查工具及测试 |
 
 入口只负责组合；业务功能内按组件、模型和服务职责拆分。公共组件不依赖具体连接、任务或会话对象。
+
+## 原生菜单
+
+`src/main/menus/layout.ts` 独立定义应用菜单和状态栏菜单，`NativeMenus` 负责受信任来源校验、语言与可用状态更新以及 Renderer 重载后的能力清空。Main 只组合既有窗口、设置、更新、正在编辑与项目链接动作；主窗口未就绪或安装期间不派发业务命令。
+
+Renderer 的 NativeMenuProvider 统一派发原生命令；页面、工作区、连接导航和文件面板向注册表提供各自拥有的动作与展示能力，优先级保证一个命令只交给当前有效的所有者。连接、保存、导航和关闭规则继续由原组件及模型维护。顶层弹窗存在时停用背后的页面与连接命令，关闭命令交给弹窗自身的取消路径。菜单能力仅包含可用、选中和关闭对象，不传递连接身份或业务数据；NativeMenuCommand 与 NativeMenuState 由 Rust DTO 生成共享合同，Main 使用 Ajv 校验后采用。
 
 ## Rust 分层
 
@@ -66,12 +76,16 @@ xterm 实例与 React 挂载解耦，切换标签或隐藏工作区不重建 SSH
 
 Backend 使用 Tokio 管理异步任务，SQLite 与系统密钥访问由独立线程处理。密码库协调器归 Backend 进程所有，连接配置和凭据共享解锁能力；密钥及凭据正文不进入 Renderer。
 
+macOS 钥匙串新条目使用固定英文名称：正式版为 `VigilShell Data Encryption Key`，Dev 为 `VigilShell Dev Data Encryption Key`，不随应用或系统语言变化。密钥按固定 service 与 namespace／版本组成的 account 查找，名称不参与查找；已有条目的名称、密钥内容和访问控制保持不变。
+
 普通窗口关闭隐藏应用；显式退出统一收尾。Renderer 重载不重启 Backend，Backend 重启不恢复 SSH 会话。外部编辑工作副本由 Main 独立管理，终端关闭不直接销毁编辑任务。
 
 ## 应用信息与更新
 
-Main UpdateService 统一拥有版本查询、运行期检查快照和调度；Renderer 应用级订阅提供关于页、更新弹窗及角标状态。菜单的检查命令导航到关于页后，由页面打开弹窗并请求检查。当前仅启用手动检查：共享开关 `automaticUpdateChecksEnabled` 固定关闭，同时约束服务调度与设置入口，已保存的自动检查偏好不能触发请求。启动、周期和睡眠恢复调度代码及 Rust／SQLite 偏好链路保留。应用信息只提供产品名称与实际运行包版本，与更新 DTO 使用同一合同生成链路；外部链接由 Main 按具名动作解析。
+Main 拥有发行说明的获取、版本绑定校验和按语言标识保存的缓存；共享纯函数负责三个章节的正文提取、格式规范化及完整翻译回退；默认语言和发布时支持的语言列表统一读取 `project.inlang/settings.json`，说明合同使用语言标识到章节的映射。发布脚本复用同一规范化逻辑，从版本目录生成说明附件。AvailableRelease 保留旧 `notes` 字段并提供可选的 `localizedNotes`，发现缓存和下载回执独立容错，不因说明错误丢弃有效更新包。Renderer 依据 DesktopProvider 的实际语言即时选择正文，缺失或章节不完整时整份回退默认语言，不按特定语言分支；语言切换不请求版本、不触发下载，也不改变更新任务状态。
 
-ManagedUpdates 统一拥有检查、下载、取消与安装快照，复用 UpdateService 的发行筛选和调度；Renderer 页面与菜单消费同一应用级订阅。MacUpdateEngine 适配 electron-updater 与原生 Squirrel，UpdateCache 在应用数据目录的 `updates/` 中保存不可变 ZIP 和安装回执，不使用 SQLite 偏好表。每个应用仅执行一个更新操作，缓存恢复先于用户检查。显式重新检查可发现更高版本，同时保留旧的已下载包直到替代包提交成功。
+Main UpdateService 统一拥有发行发现快照；UpdateScheduler 管理就绪后延迟、每日检查、唤醒合并和失败退避。自动检查默认开启，使用已有 Rust／SQLite 偏好保存链路，以成功保存的值调度。DiscoveryStore 在应用数据目录中原子保存发现版本与调度记录，按更新源、平台和架构隔离；发现记录与已验证的 ZIP 安装回执独立。检查状态与任务状态分开，后台失败保留已知新版，下载或待安装期间暂停发现。Renderer ApplicationProvider 订阅唯一快照，UpdateController 统一管理工作区、关于页和菜单的更新弹窗，不切换页面。应用信息只提供产品名称与实际包版本，外部链接由 Main 按具名动作解析。
+
+ManagedUpdates 统一拥有检查、下载、取消与安装快照，复用 UpdateService 的发行筛选和调度；Renderer 页面与菜单消费同一应用级订阅。MacUpdateEngine 适配 electron-updater 与原生 Squirrel，UpdateCache 在应用数据目录的 `updates/` 中保存不可变 ZIP 和安装回执，不使用 SQLite 偏好表。每个应用仅执行一个更新操作，缓存恢复先于用户检查。有已验证待安装包时优先展示当前任务，不切换到另一发行版本。
 
 UpdateInstallation 协调一次任务确认、冻结新请求、等待偏好和 UI 状态保存、持久化外部编辑记录、原生准备及退出安装。保存失败时解除冻结，保留服务；原生准备完成后先收尾 MCP 与外部编辑，再停止 Backend，最后交给原生更新器退出。普通退出与安装退出具有不同的提交路径。新进程依据实际包版本消费成功回执，或在旧版本重新启动时报告安装未完成。

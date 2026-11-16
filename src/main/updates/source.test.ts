@@ -6,6 +6,9 @@ it('never accepts development feed overrides in a release build', () => {
   expect(source.feed('v1.2.3')).toBe(
     'https://github.com/sparkwild/vigilshell/releases/download/v1.2.3/',
   );
+  expect(source.notes('v1.2.3')).toBe(
+    'https://github.com/sparkwild/vigilshell/releases/download/v1.2.3/release-notes.json',
+  );
   expect(updateSource(true, {}).downloadable).toBe(false);
 });
 it('isolates Dev fixtures to loopback HTTP feeds', () => {
@@ -14,4 +17,9 @@ it('isolates Dev fixtures to loopback HTTP feeds', () => {
   expect(
     updateSource(true, { VIGILSHELL_DEV_UPDATE_FEED: 'http://127.0.0.1:1234/test' }).releases,
   ).toBe('http://127.0.0.1:1234/test/releases');
+  expect(
+    updateSource(true, { VIGILSHELL_DEV_UPDATE_FEED: 'http://127.0.0.1:1234/test' }).notes(
+      'v1.2.3',
+    ),
+  ).toBe('http://127.0.0.1:1234/test/v1.2.3/release-notes.json');
 });

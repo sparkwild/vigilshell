@@ -1,4 +1,4 @@
-import { UpdateBadge } from '../features/settings/ApplicationSettings';
+import { UpdateButton } from '../features/settings/UpdateIndicators';
 import { AlertCircleIcon } from 'lucide-react';
 import { useUiStateErrors } from '../shared/platform/ui-state-store';
 import { useMcp } from '../features/mcp/model';
@@ -20,9 +20,11 @@ import { useDesktop } from './DesktopProvider';
 export function WorkbenchNavigation({
   onSettings,
   onConnected,
+  active = true,
   activityActive = false,
   policyActive = false,
 }: {
+  active?: boolean;
   onSettings(): void;
   onConnected(): void;
   activityActive?: boolean;
@@ -40,6 +42,7 @@ export function WorkbenchNavigation({
     <>
       <SidebarContent className="px-3 py-3">
         <ConnectionNavigation
+          active={active}
           onConnected={onConnected}
           showSelection={!activityActive && !policyActive}
         />
@@ -69,15 +72,21 @@ export function WorkbenchNavigation({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={onSettings} data-testid="open-settings">
-              {serviceIssue ? (
-                <AlertCircleIcon aria-label={t('feedback_attention')} />
-              ) : (
-                <SettingsIcon />
-              )}
-              <span>{t('settings')}</span>
-              <UpdateBadge />
-            </SidebarMenuButton>
+            <div className="flex min-w-0 items-center gap-1">
+              <SidebarMenuButton
+                className="min-w-0 flex-1"
+                onClick={onSettings}
+                data-testid="open-settings"
+              >
+                {serviceIssue ? (
+                  <AlertCircleIcon aria-label={t('feedback_attention')} />
+                ) : (
+                  <SettingsIcon />
+                )}
+                <span>{t('settings')}</span>
+              </SidebarMenuButton>
+              <UpdateButton />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

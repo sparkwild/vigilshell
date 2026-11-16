@@ -68,7 +68,7 @@ Dev 启动器统一管理 Main／Backend 重启：按 Main、Preload 产物内�
 
 Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`。项目通过本地命令执行检查、签名和打包：`npm run check` 运行静态检查，`npm run backend:check` 运行后端检查，`npm run test:signing` 验证签名与构建逻辑。`npm run release:check` 校验应用、npm 锁文件、Rust workspace 和 Cargo 锁文件中的本项目版本，`npm run release:check -- --notes` 同时检查发布说明与累计变更日志。源码与发行版本统一使用 `X.Y.Z`；发行版本准备使用 `npm run version:prepare -- X.Y.Z` 同步四份版本文件，不创建标签。
 
-`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。产物包括 `VigilShell-<version>-macos-arm64.dmg`、同名更新 ZIP、两者的 SHA-256、ZIP blockmap、`latest-mac.yml` 和签名报告。更新元数据仅引用最终 ZIP，并核对版本、架构、大小和 SHA-512；DMG 的摘要在签名后生成。签名前规范化暂存包的资源写权限，保留执行权限和符号链接，避免 Squirrel 无法处理只读资源。打包入口始终使用 `--publish never`。
+`npm run package:release -- --arch arm64` 使用本地 release 签名配置构建 Apple Silicon 安装包；打包脚本同时保留 x64 能力。产物包括 `VigilShell-<version>-macos-arm64.dmg`、同名更新 ZIP、两者的 SHA-256、ZIP blockmap、`latest-mac.yml` 和签名报告。更新元数据仅引用最终 ZIP，并核对版本、架构、大小和 SHA-512；DMG 外层不签名，包内 App 及原生组件仍使用固定身份签名；DMG 的 SHA-256 在产物完成后生成，挂载验证前核对。签名前规范化暂存包的资源写权限，保留执行权限和符号链接，避免 Squirrel 无法处理只读资源。打包入口始终使用 `--publish never`。
 
 GitHub CI 对面向 `main` 的 PR 按路径分类。纯文档改动只运行分类和 `CI verified` 汇总，其他改动运行前后端检查。合并前要求分支跟上 `main`，并通过 `CI verified`。手动运行 CI 会对所选 ref 执行完整前后端检查。常规 CI 使用只读权限，完整安装包由手动预览和正式版本标签工作流构建。
 
@@ -76,19 +76,23 @@ GitHub CI 对面向 `main` 的 PR 按路径分类。纯文档改动只运行分�
 
 ## 正式版本草稿
 
-`Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z.md`、生成的 `CHANGELOG.md`、远端标签对象及提交是否属于 `main` 历史。工作流使用资格检查确认的 SHA 执行完整前后端检查，两项都通过后才进入同一提交的 macOS 打包。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
+`Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z/<locale>.md`（默认语言必需，其他已配置语言可选）、生成的 `CHANGELOG.md`、远端标签对象及提交是否属于 `main` 历史。工作流使用资格检查确认的 SHA 执行完整前后端检查，两项都通过后才进入同一提交的 macOS 打包。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
 
-macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。DMG、ZIP、校验文件、blockmap、更新元数据、签名报告与 `build.json` 直接上传至 Release 草稿。创建草稿前重新核对最终 ZIP 与元数据摘要。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
+macOS ARM64 runner 校验 DMG 的 SHA-256 与内容，并验证包内 App 和原生组件的签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。DMG、ZIP、校验文件、blockmap、更新元数据、签名报告与 `build.json` 直接上传至 Release 草稿。创建草稿前重新核对最终 ZIP 与元数据摘要。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
 
 ## 更新与许可
 
-Main 在用户手动检查时通过公开 GitHub Releases 列表匿名查询标签为 `vX.Y.Z` 且含兼容安装包的正式发行版本，过滤草稿和 GitHub 标记为预发布的 Release；自动检查由共享功能开关停用，启动、周期与睡眠恢复调度实现保留。Main 使用 electron-updater 手动下载 ZIP，用户明确选择安装后才进行原生准备与重启替换；自动下载和普通退出安装均关闭。已下载包按摘要保存为不可变文件，回执原子替换，重启后校验版本、架构、大小和 SHA-512，支持离线恢复与安装。原生准备超时属于结果未知，保存安装回执后受控重启；重启仍为旧版本时展示安装失败，不自动重试。安装前验证目录写权限、解压空间及保存结果。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
+发行说明按 `docs/releases/<tag>/<locale>.md` 维护，默认语言和支持的语言列表读取 `project.inlang/settings.json`；默认语言文档必需，其他已配置语言可选，默认语言文件生成累计变更日志。发布流程自动生成并上传 `release-notes.json`，记录格式版本、应用版本、tag 和按语言标识保存的三个章节；原文件与构建清单记录的摘要一并参与远端附件校验。应用只展示新增功能、问题修复和升级注意事项，下载表格、安装说明与构建信息留在 GitHub 发布页。
+
+Main 仅为选中的新版、且声明了说明附件的 Release 获取 JSON；使用固定官方附件地址，Dev 测试沿用 loopback 更新源。说明获取与更新包元数据检查并行，独立超时 5 秒，响应最多 64 KiB；说明失败不改变版本发现结果或下载资格。附件缺失或无效时，只从已有 Release 正文提取三个允许的章节。结构化内容采用语言标识到章节的映射，随发现缓存和下载回执保存；界面按实际生效语言取说明，缺失或章节不完整时整份回退配置的默认语言。旧 `notes` 字符串作为默认语言正文继续兼容；说明损坏只舍弃说明，不清除已验证 ZIP。
+
+Main 通过手动与后台检查访问公开 GitHub Releases 列表匿名查询标签为 `vX.Y.Z` 且含兼容安装包的正式发行版本，过滤草稿和 GitHub 标记为预发布的 Release。自动检查默认开启，可在关于页关闭；应用、偏好及缓存就绪后最早 30 秒执行到期检查，成功后间隔 24 小时，失败依次退避 15 分钟、1 小时、4 小时，之后每 4 小时重试。调度记录跨重启保留，唤醒合并到期请求，手动检查也遵守服务器限流期限。下载和待安装期间暂停后台发现。选中发行需具备匹配 ZIP 与有效元数据才能在应用内下载，只有 DMG 或元数据不可用时引导发布页。Main 使用 electron-updater 手动下载 ZIP，用户明确选择安装后才进行原生准备与重启替换；自动下载和普通退出安装均关闭。已下载包按摘要保存为不可变文件，回执原子替换，重启后校验版本、架构、大小和 SHA-512，支持离线恢复与安装。原生准备超时属于结果未知，保存安装回执后受控重启；重启仍为旧版本时展示安装失败，不自动重试。安装前验证目录写权限、解压空间及保存结果。关于页提供实际包版本、项目链接与版权信息；许可文件随安装包分发。
 
 自有代码采用 Apache-2.0。`npm run licenses:generate` 根据锁定依赖和上游补充生成第三方声明；已声明许可但未附正文的依赖保留包声明与来源，仅提示，不阻止打包，也不补写未知版权人。`npm run licenses:check` 核对清单与许可资源；未声明许可、清单过期、资源缺失或内容不一致仍会失败。正式打包要求许可检查通过，并逐字节核对包内资源。
 
 npm 许可证收集以运行时 `dependencies` 和 [Renderer 打包依赖清单](../scripts/bundled-dependencies.json) 的 `packages` 为入口，按锁文件追踪普通、可选和 peer 依赖，包含嵌套安装版本。`stylesheets` 记录只导入 CSS 的包，收集其许可证，不引入未分发的 CLI 依赖树。新增 Renderer 依赖时同步该清单；移入 `devDependencies` 不会免除已分发代码、CSS 和字体的许可证收集。
 
-打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，与应用并列放在 DMG 和 ZIP 根目录。打包校验挂载 DMG、解压 ZIP 并逐字节比对原文，同时检查 `.app` 内的许可布局、权限和签名。目录形式的 Dev 包也在 `.app` 旁提供同一份文件。
+打包从锁定版本的 Electron 发行目录取完整 `LICENSES.chromium.html`，放在 DMG 的隐藏目录 `.licenses/` 中，安装窗口采用 540×280 的紧凑布局，App、拖拽箭头和 Applications 水平排列并整体居中，默认不显示许可图标；在 Finder 中按 `⌘⇧.` 可显示隐藏目录并打开许可文件。ZIP 和目录形式的 Dev 包仍在 `.app` 旁提供同一份文件，不将它复制进 App。打包校验挂载 DMG、检查可见根目录内容、解压 ZIP 并逐字节比对许可原文，同时检查 `.app` 内的许可布局、权限和签名。
 
 本地原生升级验收使用 `npm run test:update:native`，复用现有 Dev 身份和 Dev 数据；运行前完全退出 Dev。测试通过应用 IPC 验证下载、普通退出、离线恢复和递增签名包的真实替换与重启。结束后退出升级后的 Dev，运行 `node tests/e2e/restore-dev-after-update.mjs <evidence-directory>` 恢复原 Dev 外壳；该操作不回滚数据。`--application` 验收使用 Main 的完整安装协调，未指定该参数时仅探测原生更新器。
 

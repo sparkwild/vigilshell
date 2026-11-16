@@ -1,7 +1,8 @@
 <div align="center">
   <img src="../resources/icons/128x128@2x.png" width="104" height="104" alt="VigilShell 应用图标" />
   <h1>VigilShell</h1>
-  <p><strong>你和 Agent 的 SSH 工作区。</strong></p>
+  <h3>操作，交给 Agent。掌控，留给你。</h3>
+  <p><strong>VigilShell 是一款 Agent 优先的 SSH 终端。连接服务器、执行任务，你来设定权限，Agent 负责行动。</strong></p>
   <p>连上服务器，开终端、传文件、看监控。需要协助时，通过 MCP 让 Agent 在你授权的连接上查日志、跑命令。它做了什么、返回了什么，都能在 VigilShell 里查看。</p>
   <p>
     <a href="#安装与运行"><img src="https://img.shields.io/badge/platform-macOS-24292f?logo=apple&amp;logoColor=white" alt="平台：macOS" /></a>
@@ -67,7 +68,7 @@ MCP 操作受连接授权和远端账号权限约束；具体可用能力还取�
 1. 打开“设置 → MCP 服务”，启用本地服务并添加连接。可以选择已检测到的客户端，也可以使用“通用智能体”。
 2. 选择“让智能体配置”复制接入指令，或复制配置并按客户端要求添加到其 MCP 设置中。客户端需要支持 Streamable HTTP 和 `Authorization` 请求头。
 3. 在侧栏的 SSH 连接上右键选择“设置智能体权限”，进入“智能体权限管理”，配置“只读”或“运维”权限，以及所需的路径保护、传输目录和任务限制，再开启访问。
-4. 从客户端发起任务，按配置完成会话身份验证。在工作区查看智能体会话，在“设置 → 智能体活动”查看任务和输出。
+4. 从客户端发起任务，按配置完成会话身份验证。在工作区查看智能体会话。查看任务和输出时，从工作区侧栏打开“智能体活动”，或使用 macOS 顶部菜单“视图 → 智能体活动”。
 
 服务仅监听本机回环地址，默认端口为 `51602`；实际接入地址以设置页显示和复制出的配置为准。复制的配置包含接入令牌，应保存在客户端配置中，不要提交到仓库。
 
@@ -168,15 +169,15 @@ npm run package:release
 npm run package:release -- --arch arm64
 ```
 
-脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成构建、签名以及 DMG、更新 ZIP、校验文件和 `latest-mac.yml` 检查后，才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
+脚本要求目标架构与 macOS 主机进程、Rust 工具链匹配，完成应用构建与签名，生成不带外层签名的 DMG，并完成 DMG 内容、更新 ZIP、校验文件和 `latest-mac.yml` 检查后，才将产物放入 `release/`。该命令仅生成本地文件，不上传安装包或创建 GitHub Release。
 
 `npm run build` 默认使用 release 签名配置。打包构建的前端、原生桥、后端资源与 Cargo 输出位于 `.cache/build/<dev|release>/<架构>/`，与本地热更新产物隔离。release 构建只要求 release 签名配置，不回退到 Dev 凭据。
 
 ### ARM64 分发与预览
 
-首期打包面向 Apple Silicon Mac。手动运行 **Preview package** 可以构建临时自签名预览包，并可指定完整提交 SHA。为通过验证的 `main` 提交推送正式版本标签 `vX.Y.Z` 后，工作流使用固定自签名证书构建安装包和更新元数据，并创建 Release 草稿。分发包不经过 Apple 公证。维护者核对草稿后手动发布，GitHub 在发布时锁定标签和附件。
+首期打包面向 Apple Silicon Mac。手动运行 **Preview package** 可以构建预览包，包内 App 和原生组件使用临时自签名证书，DMG 外层不签名；可指定完整提交 SHA。为通过验证的 `main` 提交推送正式版本标签 `vX.Y.Z` 后，工作流创建包含未签名 DMG、已签名 App 和更新元数据的 Release 草稿。包内 App 和原生组件使用 VigilShell 的固定自签名证书，未经 Apple 公证。维护者核对草稿后手动发布，GitHub 在发布时锁定标签和附件。
 
-在“设置 → 关于”中手动检查正式版本、下载更新，再选择“重启并安装”。自动检查和自动下载保持关闭；下载完成的更新会跨重启保留，普通退出不会安装。发布页入口继续支持手动下载安装。尚不具备更新引擎的版本，需要先手动升级到包含引擎的版本。
+在“设置 → 关于”中手动检查正式版本、下载更新，再选择“重启并安装”。自动检查默认开启，可在关于页关闭；发现新版后，工作区设置右侧显示更新图标，下载和安装由用户选择。下载完成的更新会跨重启保留，普通退出不会安装。发布页入口继续支持手动下载安装。尚不具备更新引擎的版本，需要先手动升级到包含引擎的版本。
 
 在没有既有 VigilShell 数据的独立测试 Mac／账号中，从同一 Release 下载 DMG 与校验文件，执行 `shasum -a 256 -c <文件>.dmg.sha256`，再拖入“应用程序”。如系统因开发者无法验证而阻止打开，应先核对来源，再使用“隐私与安全性 → 仍要打开”的单应用允许方式，不全局关闭 Gatekeeper。
 
@@ -212,6 +213,6 @@ npm run package:release -- --arch arm64
 
 ## 许可说明
 
-VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 和更新 ZIP 在应用旁提供 Electron 自带的完整 `LICENSES.chromium.html`。
+VigilShell 自有代码采用 [Apache-2.0](../LICENSE) 许可。第三方资源许可与声明见 [resources/licenses/](../resources/licenses/)。DMG 在 `.licenses/LICENSES.chromium.html` 中提供 Electron 自带的完整 Chromium 许可声明，在 Finder 中按 `⌘⇧.` 可显示隐藏目录；更新 ZIP 仍将同一文件放在应用旁。
 
 [贡献与预览构建](../CONTRIBUTING.md) · [安全政策](SECURITY.md)

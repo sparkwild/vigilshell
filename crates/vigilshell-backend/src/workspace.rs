@@ -174,7 +174,6 @@ struct Receipts {
 pub(crate) struct WorkspaceRouter {
     pub service: Arc<WorkspaceService>,
     agent: Arc<vigilshell_application::agent::AgentService>,
-    vault_keys: Arc<vigilshell_credentials::PlatformVaultKeyStore>,
     owners: Mutex<HashSet<String>>,
     secrets: Arc<vigilshell_credentials::EncryptedSecretStore>,
     access_task: Mutex<Option<tokio::task::JoinHandle<()>>>,
@@ -210,7 +209,7 @@ impl WorkspaceRouter {
         ));
         let secrets = Arc::new(vigilshell_credentials::EncryptedSecretStore::new(
             database.clone(),
-            vault_keys.clone(),
+            vault_keys,
         ));
         let database: Arc<dyn WorkspaceDatabase> = Arc::new(UnlockedDatabase {
             database,
@@ -233,7 +232,6 @@ impl WorkspaceRouter {
         let router = Arc::new(Self {
             agent,
             service: service.clone(),
-            vault_keys,
             owners: Mutex::new(HashSet::new()),
             secrets: secrets.clone(),
             access_task: Mutex::new(None),
@@ -352,7 +350,6 @@ impl WorkspaceRouter {
             {
                 return Err(WorkspaceError::InvalidInput);
             }
-            self.vault_keys.update_locale(&locale);
             self.service
                 .update_context(DisplayContext { locale, theme });
             return Ok(WorkspaceReply::Done {});

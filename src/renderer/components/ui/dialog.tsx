@@ -5,7 +5,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from 'cn';
 
 import { Button } from '@/components/ui/button';
-import { CloseButton } from './icon-button';
+import { ViewCloseButton } from './view-close-button';
 import { overlayClassName, useModalFocus, type DialogPurpose } from './overlay';
 
 const DialogPurposeContext = React.createContext<DialogPurpose>('notice');
@@ -114,7 +114,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            render={<CloseButton className="absolute top-2 right-2" label={closeLabel!} />}
+            render={<ViewCloseButton className="absolute top-2 right-2" label={closeLabel!} />}
           />
         )}
       </DialogPrimitive.Popup>

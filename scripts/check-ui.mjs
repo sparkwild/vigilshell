@@ -12,6 +12,8 @@ const ariaEntries = new Set([
 const controls = new Set([
   'Button',
   'IconButton',
+  'CloseButton',
+  'ViewCloseButton',
   'Input',
   'Textarea',
   'SelectTrigger',

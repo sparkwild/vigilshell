@@ -23,7 +23,7 @@ function fixture(t) {
     git(cwd, 'config', 'user.name', 'Release test');
     git(cwd, 'config', 'user.email', 'test@example.invalid');
   }
-  mkdirSync(join(source, 'docs/releases'), { recursive: true });
+  mkdirSync(join(source, 'docs/releases/v0.1.2'), { recursive: true });
   writeFileSync(join(source, 'package.json'), JSON.stringify({ version: '0.1.2' }));
   writeFileSync(
     join(source, 'package-lock.json'),
@@ -35,7 +35,7 @@ function fixture(t) {
     '[[package]]\nname = "vigilshell-core"\nversion = "0.1.2"\n',
   );
   writeFileSync(
-    join(source, 'docs/releases/v0.1.2.md'),
+    join(source, 'docs/releases/v0.1.2/en.md'),
     '## Bug Fixes\n\n- Preserve cached updates.\n',
   );
   writeFileSync(join(source, 'CHANGELOG.md'), renderChangelog(source));
@@ -46,15 +46,17 @@ function fixture(t) {
   git(source, 'remote', 'add', 'origin', source);
   git(source, 'fetch', 'origin', 'main');
   for (const file of [
-    'release-draft.mjs',
-    'release-policy.mjs',
-    'release-notes.mjs',
-    'preview-artifacts.mjs',
-    'signing/config.mjs',
+    'scripts/release-draft.mjs',
+    'scripts/release-policy.mjs',
+    'scripts/release-notes.mjs',
+    'scripts/preview-artifacts.mjs',
+    'scripts/signing/config.mjs',
+    'src/shared/release-notes.ts',
+    'project.inlang/settings.json',
   ]) {
-    const path = join(control, 'scripts', file);
+    const path = join(control, file);
     mkdirSync(join(path, '..'), { recursive: true });
-    copyFileSync(join('scripts', file), path);
+    copyFileSync(file, path);
   }
   git(control, 'add', '.');
   git(control, 'commit', '-m', 'Control');

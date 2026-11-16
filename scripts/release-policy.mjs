@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readReleaseNotes, renderNoteSections } from './release-notes.mjs';
+import {
+  createReleaseNotesDocument,
+  readReleaseNotes,
+  renderNoteSections,
+} from './release-notes.mjs';
 
 const stableVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
@@ -32,9 +36,9 @@ export function checkReleaseTag(tag, root = '.') {
 }
 
 export function renderChangelog(root = '.') {
-  const tags = readdirSync(resolve(root, 'docs/releases'))
-    .filter((file) => file.endsWith('.md'))
-    .map((file) => file.slice(0, -3))
+  const tags = readdirSync(resolve(root, 'docs/releases'), { withFileTypes: true })
+    .filter((file) => file.isDirectory())
+    .map((file) => file.name)
     .filter(isStableReleaseTag)
     .sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
   const entries = tags.flatMap((tag) => [
@@ -51,7 +55,7 @@ export function renderChangelog(root = '.') {
 }
 
 export function checkReleaseNotes(tag, root = '.') {
-  readReleaseNotes(tag, root);
+  createReleaseNotesDocument(tag, root);
   const changelog = resolve(root, 'CHANGELOG.md');
   assert(
     existsSync(changelog) &&

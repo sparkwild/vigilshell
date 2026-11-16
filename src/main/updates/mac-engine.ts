@@ -50,6 +50,24 @@ export class MacUpdateEngine {
     }
     return this.updater;
   }
+  async inspect(release: AvailableRelease): Promise<boolean> {
+    const updater = await this.getUpdater();
+    updater.setFeedURL({ provider: 'generic', url: this.feed(release.tag) });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const result = await Promise.race([
+        updater.checkForUpdates(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(Error('metadata_timeout')), 15000);
+        }),
+      ]);
+      if (!result?.isUpdateAvailable) return false;
+      verifiedInfo(result.updateInfo, release, this.arch);
+      return true;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   async download(release: AvailableRelease, progress: (value: UpdateProgress) => void) {
     const token = new electronUpdater.CancellationToken();
     this.token = token;

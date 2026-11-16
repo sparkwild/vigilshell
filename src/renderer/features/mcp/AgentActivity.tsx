@@ -9,9 +9,9 @@ import { useDesktop } from '../../app/DesktopProvider';
 import { ActivityReadError } from './ActivityReadError';
 import { useActivityFeed } from './use-activity-feed';
 import { taskSummary } from './activity-feed';
-import { activityDuration, compactDuration } from './activity-duration';
 import { taskPhaseKeys, toolKey } from './session-model';
-import { CloseButton, IconButton } from '../../components/ui/icon-button';
+import { IconButton } from '../../components/ui/icon-button';
+import { ViewCloseButton } from '../../components/ui/view-close-button';
 import { Button } from '../../components/ui/button';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../../components/ui/input-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
@@ -211,22 +211,13 @@ export function AgentActivity({
     () => new Map(items.map((item, index) => [item.id, index % 2 ? 'even' : 'odd'])),
     [items],
   );
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  function duration(item: ActivitySummary) {
-    const value = activityDuration(item, now);
-    return value === 'unknown' || value == null ? '—' : compactDuration(value);
-  }
   return (
     <section
       className="relative flex h-full min-h-0 flex-col gap-3 p-4"
       aria-label={t('mcp_activity')}
     >
       {onBack ? (
-        <CloseButton
+        <ViewCloseButton
           className="absolute top-4 right-4"
           label={t('activity_close')}
           onClick={onBack}
@@ -294,7 +285,6 @@ export function AgentActivity({
                       'mcp_connection_filter',
                       'mcp_state_filter',
                       'activity_initiated',
-                      'activity_duration',
                     ] as const
                   ).map((key, index) => (
                     <Column
@@ -346,9 +336,6 @@ export function AgentActivity({
                       </Cell>
                       <Cell data-align="center">
                         <FullField value={new Date(item.createdAt).toLocaleString()} />
-                      </Cell>
-                      <Cell data-align="center">
-                        <FullField value={duration(item)} />
                       </Cell>
                     </Row>
                   )}

@@ -20,6 +20,8 @@ const buttonVariants = cva(
           'not-aria-disabled:hover:bg-foreground/10 not-aria-disabled:hover:text-foreground aria-expanded:bg-foreground/10 aria-expanded:text-foreground',
         sidebar:
           'text-[length:var(--font-size-body)] font-normal text-sidebar-foreground not-aria-disabled:hover:bg-sidebar-hover active:not-aria-disabled:bg-sidebar-pressed aria-expanded:bg-sidebar-hover',
+        update:
+          'text-update-accent not-aria-disabled:hover:bg-sidebar-hover active:not-aria-disabled:bg-sidebar-pressed',
         'sidebar-placeholder':
           'border-dashed border-sidebar-border bg-transparent font-normal text-muted-foreground not-aria-disabled:hover:bg-sidebar-hover active:not-aria-disabled:bg-sidebar-pressed',
         titlebar:
@@ -48,7 +50,6 @@ const buttonVariants = cva(
         breadcrumb: 'h-[26px] shrink min-w-0 px-[3px] py-0 text-xs overflow-hidden text-ellipsis',
         'icon-hint': 'size-5 [&_svg]:size-3.5',
         'icon-tab': 'size-6 [&_svg]:size-3.5',
-        'icon-close': "size-8 [&_svg:not([class*='size-'])]:size-5",
         icon: 'size-8',
         'icon-xs':
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

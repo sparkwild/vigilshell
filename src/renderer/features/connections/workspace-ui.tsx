@@ -1,3 +1,4 @@
+import { useNativeMenuActions } from '../../app/native-menu/NativeMenuProvider';
 import type { TerminalSessionView, ConnectionDetails, TrustView } from '@contracts';
 import {
   HostIdentityDialog,
@@ -217,80 +218,79 @@ export function WorkspaceUi({
     transferClose,
     toolDialogCloser,
   ]);
-  useEffect(
-    () =>
-      window.vigilshell.onWorkspaceCommand((command) => {
-        if (!commandsActive) return;
-        if (command === 'close') {
-          if (transferClose) {
-            finishTransferClose('cancel');
-          } else if (toolDialogCloser) {
-            toolDialogCloser();
-          } else if (document.activeElement?.closest('[data-transfer-window]')) {
-            const id = document.activeElement
-              .closest('[data-transfer-window]')
-              ?.getAttribute('data-transfer-window');
-            if (id) store.closeTransfers(id);
-          } else if (identity) {
-            setIdentity(null);
-          } else if (connectionChoice) {
-            connectionOpener.cancel();
-          } else if (paste) {
-            paste.resolve(false);
-            setPaste(null);
-          } else if (confirmation) {
-            cancelConfirmation();
-          } else if (
-            state.editor &&
-            (state.activeTab === 'overview' ||
-              document.activeElement?.closest('.connection-editor'))
-          ) {
-            void closeEditor.current?.();
-          } else if (state.activeTab !== 'overview')
-            void store.closeView(state.activeTab).catch((e) => store.report(errorCode(e)));
-          else window.vigilshell.hideWindow();
-        } else if (command === 'new') {
-          if (state.editor) {
-            document.querySelector<HTMLInputElement>('[role="dialog"] input')?.focus();
-            return;
-          }
-          if (confirmation || paste || connectionChoice || identity || transferClose) return;
-          store.newConnection(state.details?.groupId ?? null);
-        } else if (command === 'find') {
-          if (
-            state.editor ||
-            confirmation ||
-            paste ||
-            connectionChoice ||
-            identity ||
-            transferClose
-          )
-            return;
-          window.dispatchEvent(
-            new CustomEvent('vigilshell:find', {
-              detail: document.activeElement?.closest('.connection-navigation')
-                ? 'overview'
-                : state.activeTab,
-            }),
-          );
+  function executeMenuCommand(command: 'new' | 'close' | 'find') {
+    if (!commandsActive) return;
+    if (command === 'close') {
+      if (transferClose) {
+        finishTransferClose('cancel');
+      } else if (toolDialogCloser) {
+        toolDialogCloser();
+      } else if (document.activeElement?.closest('[data-transfer-window]')) {
+        const id = document.activeElement
+          .closest('[data-transfer-window]')
+          ?.getAttribute('data-transfer-window');
+        if (id) store.closeTransfers(id);
+      } else if (identity) {
+        setIdentity(null);
+      } else if (connectionChoice) {
+        connectionOpener.cancel();
+      } else if (paste) {
+        paste.resolve(false);
+        setPaste(null);
+      } else if (confirmation) {
+        cancelConfirmation();
+      } else if (
+        state.editor &&
+        (state.activeTab === 'overview' || document.activeElement?.closest('.connection-editor'))
+      ) {
+        void closeEditor.current?.();
+      } else if (state.activeTab !== 'overview')
+        void store.closeView(state.activeTab).catch((e) => store.report(errorCode(e)));
+      else window.vigilshell.hideWindow();
+    } else if (command === 'new') {
+      if (state.editor) {
+        document.querySelector<HTMLInputElement>('[role="dialog"] input')?.focus();
+        return;
+      }
+      if (confirmation || paste || connectionChoice || identity || transferClose) return;
+      store.newConnection(state.details?.groupId ?? null);
+    } else if (command === 'find') {
+      if (state.editor || confirmation || paste || connectionChoice || identity || transferClose)
+        return;
+      window.dispatchEvent(
+        new CustomEvent('vigilshell:find', {
+          detail: document.activeElement?.closest('.connection-navigation')
+            ? 'overview'
+            : state.activeTab,
+        }),
+      );
+    }
+  }
+  const menuModal = !!(
+    state.editor ||
+    confirmation ||
+    paste ||
+    connectionChoice ||
+    identity ||
+    transferClose ||
+    toolDialogCloser
+  );
+  useNativeMenuActions(
+    commandsActive
+      ? {
+          new: {
+            enabled: !menuModal && state.ready && state.transportReady,
+            run: () => executeMenuCommand('new'),
+          },
+          find: { enabled: !menuModal, run: () => executeMenuCommand('find') },
+          close: {
+            enabled: true,
+            closeTarget: menuModal ? 'dialog' : state.activeTab === 'overview' ? 'window' : 'tab',
+            run: () => executeMenuCommand('close'),
+          },
         }
-      }),
-    [
-      commandsActive,
-      confirmation,
-      cancelConfirmation,
-      identity,
-      transferClose,
-      toolDialogCloser,
-      connectionChoice,
-      connectionOpener,
-      paste,
-      state.editor,
-      state.activeTab,
-      state.selected,
-      state.details,
-      store,
-    ],
+      : {},
+    3,
   );
   useEffect(() => {
     if (!state.editor) setDirty(false);

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { FileWorkspace } from './FileWorkspace';
+import { NativeMenuProvider } from '../../app/native-menu/NativeMenuProvider';
 import type { AgentTask } from '@contracts';
 const fixture = vi.hoisted(() => ({
   autoOpen: true,
@@ -73,6 +74,39 @@ it('opens a collapsed file area for a new file task and preserves the manual col
   expect(await screen.findByTestId('files')).toBeVisible();
 });
 afterEach(cleanup);
+it('keeps the native file command and manual collapse synchronized without replacing the workspace', async () => {
+  fixture.autoOpen = false;
+  let receive!: (command: import('@contracts').NativeMenuCommand) => void;
+  const publish = vi.fn();
+  Object.defineProperty(window, 'vigilshell', {
+    configurable: true,
+    value: {
+      onWorkspaceCommand: (listener: typeof receive) => {
+        receive = listener;
+        return () => {};
+      },
+      setNativeMenuState: publish,
+    },
+  });
+  const view = render(
+    <NativeMenuProvider>
+      <FileWorkspace active />
+    </NativeMenuProvider>,
+  );
+  await waitFor(() => expect(publish.mock.lastCall?.[0].enabled).toEqual(['showFiles']));
+  expect(screen.queryByTestId('files')).not.toBeInTheDocument();
+  await act(async () => receive('showFiles'));
+  expect(await screen.findByTestId('files')).toBeVisible();
+  await waitFor(() => expect(publish.mock.lastCall?.[0].checked).toEqual(['showFiles']));
+  await userEvent.click(screen.getByRole('button', { name: 'files_collapse' }));
+  await waitFor(() => expect(publish.mock.lastCall?.[0].checked).toEqual([]));
+  view.rerender(
+    <NativeMenuProvider>
+      <FileWorkspace active={false} />
+    </NativeMenuProvider>,
+  );
+  await waitFor(() => expect(publish.mock.lastCall?.[0].enabled).toEqual([]));
+});
 it('opens on the first successful connection when enabled', async () => {
   render(<FileWorkspace active />);
   expect(await screen.findByTestId('files')).toBeVisible();

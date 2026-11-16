@@ -2,12 +2,9 @@ use crate::key_store::VaultKeyStore;
 use vigilshell_domain::workspace::*;
 use zeroize::Zeroizing;
 
-use std::sync::atomic::{AtomicBool, Ordering};
-
 pub struct PlatformVaultKeyStore {
     #[cfg(any(target_os = "macos", test))]
     development: bool,
-    chinese: AtomicBool,
 }
 impl PlatformVaultKeyStore {
     pub fn new(development: bool) -> Self {
@@ -16,27 +13,16 @@ impl PlatformVaultKeyStore {
         Self {
             #[cfg(any(target_os = "macos", test))]
             development,
-            chinese: AtomicBool::new(false),
         }
-    }
-    /// Display changes only touch memory. Existing Keychain item names remain stable.
-    pub fn update_locale(&self, locale: &str) {
-        self.chinese.store(locale == "zh-CN", Ordering::Relaxed);
     }
     #[cfg(any(target_os = "macos", test))]
     fn label(&self) -> &'static str {
-        crate::messages::message(
-            if self.development {
-                "native_vault_key_dev"
-            } else {
-                "native_vault_key"
-            },
-            if self.chinese.load(Ordering::Relaxed) {
-                "zh-CN"
-            } else {
-                "en"
-            },
-        )
+        // Only used at creation; existing item labels and access controls stay unchanged.
+        if self.development {
+            "VigilShell Dev Data Encryption Key"
+        } else {
+            "VigilShell Data Encryption Key"
+        }
     }
 }
 
@@ -149,16 +135,10 @@ impl VaultKeyStore for PlatformVaultKeyStore {
 mod presentation_tests {
     use super::*;
     #[test]
-    fn names_follow_creation_locale_and_keep_channels_distinct() {
+    fn fixed_names_keep_channels_distinct() {
         let dev = PlatformVaultKeyStore::new(true);
         let release = PlatformVaultKeyStore::new(false);
         assert_eq!(dev.label(), "VigilShell Dev Data Encryption Key");
         assert_eq!(release.label(), "VigilShell Data Encryption Key");
-        dev.update_locale("zh-CN");
-        release.update_locale("zh-CN");
-        assert_eq!(dev.label(), "VigilShell Dev 数据加密密钥");
-        assert_eq!(release.label(), "VigilShell 数据加密密钥");
-        dev.update_locale("en");
-        assert_eq!(dev.label(), "VigilShell Dev Data Encryption Key");
     }
 }

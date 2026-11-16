@@ -1,7 +1,8 @@
 import { constants } from 'node:fs';
-import { chmod, copyFile, lstat, readdir, rename, rm } from 'node:fs/promises';
+import { chmod, copyFile, lstat, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
+import { packageBuildContext } from './build-context.mjs';
 
 /** Squirrel removes quarantine attributes after extraction, which requires owner-write permission.
  * Normalize only the unsigned staging bundle, retaining executable bits and symlink targets.
@@ -31,4 +32,18 @@ export default async function preparePackage(context) {
   await normalizeBundlePermissions(
     join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`),
   );
+  const build = packageBuildContext(
+    process.env.VIGILSHELL_PACKAGE_PROFILE ?? 'release',
+    process.arch,
+    context.packager.projectDir,
+  );
+  // Keep DMG-only resources outside appOutDir so the ZIP and App layouts stay unchanged.
+  const notices = join(build.directory, 'dmg-licenses');
+  await mkdir(notices, { recursive: true });
+  await copyFile(
+    join(context.packager.projectDir, 'node_modules/electron/dist/LICENSES.chromium.html'),
+    join(notices, 'LICENSES.chromium.html'),
+  );
+  // DMG content paths do not expand the build-root macros used by extraResources.
+  context.packager.config.dmg.contents.find((entry) => entry.name === '.licenses').path = notices;
 }
