@@ -78,7 +78,7 @@ GitHub CI 对面向 `main` 的 PR 按路径分类。纯文档改动只运行分�
 
 `Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z/<locale>.md`（默认语言必需，其他已配置语言可选）、生成的 `CHANGELOG.md`、远端标签对象及提交是否属于 `main` 历史。工作流使用资格检查确认的 SHA 执行完整前后端检查，两项都通过后才进入同一提交的 macOS 打包。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
 
-macOS ARM64 runner 验证 DMG 和包内签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。DMG、ZIP、校验文件、blockmap、更新元数据、签名报告与 `build.json` 直接上传至 Release 草稿。创建草稿前重新核对最终 ZIP 与元数据摘要。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
+macOS ARM64 runner 校验 DMG 的 SHA-256 与内容，并验证包内 App 和原生组件的签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。DMG、ZIP、校验文件、blockmap、更新元数据、签名报告与 `build.json` 直接上传至 Release 草稿。创建草稿前重新核对最终 ZIP 与元数据摘要。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
 
 ## 更新与许可
 

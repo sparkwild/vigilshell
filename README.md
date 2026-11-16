@@ -68,7 +68,7 @@ The **Overview** tab in the tools panel on the right shows server information an
 1. Open **Settings → MCP Service**, enable the local service, and add a connection. Choose a detected client or **Generic Agent**.
 2. Select **Let Agent configure** to copy setup instructions, or copy the configuration and adapt it to the client's MCP settings. The client must support Streamable HTTP and the `Authorization` header.
 3. Right-click an SSH connection in the sidebar and choose **Set Agent permissions**. In **Agent permission management**, select **Read only** or **Operate**, configure any path protections, transfer directories, and task limits, then enable access.
-4. Start a task from the client and complete session identity verification when required by the configuration. View agent sessions in the workspace and tasks and output under **Settings → Agent activity**.
+4. Start a task from the client and complete session identity verification when required by the configuration. View agent sessions in the workspace. To view tasks and output, open **Agent activity** from the workspace sidebar or choose **View → Agent activity** from the macOS menu.
 
 The service listens only on the local loopback interface, using port `51602` by default. Use the actual endpoint shown in settings and included in the copied configuration. That configuration contains an access token; keep it in your client's configuration and out of source control.
 
@@ -175,7 +175,7 @@ The target architecture must match the macOS host process and Rust toolchain. Th
 
 ### ARM64 distribution and previews
 
-The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a temporary self-signed installer. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft with fixed self-signed installers and update metadata without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication.
+The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a preview whose app and native components use a temporary self-signed certificate; the DMG itself is unsigned. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft containing an unsigned DMG, a signed app, and update metadata. The app and its native components use VigilShell's fixed self-signed certificate without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication.
 
 Under **Settings → About**, check for a stable release, download it, and choose **Restart and install**. Automatic checking is enabled by default and can be disabled in About. A workspace update button appears when a newer release is available; downloading and installation require your choice. Downloaded updates remain available after restarting; an ordinary quit does not install them. The release page remains available for manual installation. Versions without the update engine must first be upgraded manually to a version that includes it.
 

@@ -126,7 +126,7 @@ export function renderReleaseNotes(
     downloads.push(`**List of all changes** · [Changelog](${repoUrl}/blob/main/CHANGELOG.md)`);
   const installation = [
     'Open the DMG and drag `VigilShell.app` to Applications. To upgrade, quit VigilShell before replacing the app.',
-    "The macOS installer uses VigilShell's fixed self-signed certificate without Apple notarization. If macOS blocks the first launch, verify the source and use **Privacy & Security → Open Anyway** for VigilShell.",
+    "The app and its native components use VigilShell's fixed self-signed certificate without Apple notarization. The DMG itself is unsigned. If macOS blocks the first launch, verify the source and use **Privacy & Security → Open Anyway** for VigilShell.",
   ].join('\n\n');
   const build = [
     `- Source commit [\`${sha.slice(0, 7)}\`](${repoUrl}/commit/${sha})`,
