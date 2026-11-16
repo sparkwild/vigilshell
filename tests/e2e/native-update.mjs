@@ -21,6 +21,7 @@ import { _electron as electron } from 'playwright';
 import { loadSigningConfig, preflight, verifyBundle } from '../../scripts/macos-signing.mjs';
 import { packageBuildEnvironment } from '../../scripts/build-context.mjs';
 import { closeApplication, waitUntil } from './ci-macos-lifecycle.mjs';
+import { stopHostedBundle } from './ci-update-cleanup.mjs';
 
 // Native mode probes Squirrel directly; --application exercises product IPC and shutdown.
 assert.equal(process.platform, 'darwin');
@@ -259,20 +260,6 @@ const processes = () =>
     .split('\n')
     .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(.+)$/))
     .filter(Boolean);
-async function stopHostedProcesses() {
-  const owned = processes().filter((match) => match[3].startsWith(live + '/'));
-  for (const match of owned) {
-    try {
-      process.kill(Number(match[1]), 'SIGTERM');
-    } catch (error) {
-      if (error.code !== 'ESRCH') throw error;
-    }
-  }
-  await waitUntil(
-    () => !processes().some((match) => match[3].startsWith(live + '/')),
-    'hosted update process cleanup',
-  );
-}
 try {
   if (applicationFlow) {
     const invalidBytes = readFileSync(invalidArchive);
@@ -521,7 +508,14 @@ try {
       result.cleanupError = error.stack;
     });
   server.close();
-  if (hosted) await stopHostedProcesses();
+  if (hosted)
+    await stopHostedBundle(live, () =>
+      processes().map((match) => ({ pid: Number(match[1]), executable: match[3] })),
+    ).catch((error) => {
+      result.passed = false;
+      result.cleanupError = error.stack;
+      process.exitCode = 1;
+    });
   if (!upgraded && !processes().some((match) => match[3] === executable)) {
     const { rm } = await import('node:fs/promises');
     await rm(live, { recursive: true });

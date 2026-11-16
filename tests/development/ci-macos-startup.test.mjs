@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { closeApplication, waitUntil, withCleanup } from '../e2e/ci-macos-lifecycle.mjs';
 import { releaseStartupContext } from '../e2e/ci-macos-context.mjs';
+import { stopHostedBundle } from '../e2e/ci-update-cleanup.mjs';
 
 function hostedContext(arch = 'arm64', exists = () => false) {
   return {
@@ -93,6 +94,62 @@ test('abnormal application exit still fails verification', async () => {
   await assert.rejects(
     closeApplication({ close: async () => {} }, { exitCode: 1, signalCode: null }),
     /Application must quit normally/,
+  );
+});
+
+test('hosted update cleanup catches late children and force-stops only the test bundle', async () => {
+  const bundle = '/fixture/VigilShell Dev.app';
+  let entries = [
+    { pid: 1, executable: `${bundle}/Contents/MacOS/VigilShell Dev` },
+    { pid: 9, executable: '/other/Application' },
+  ];
+  const signals = [];
+  await stopHostedBundle(bundle, () => entries, {
+    environment: {
+      GITHUB_ACTIONS: 'true',
+      RUNNER_ENVIRONMENT: 'github-hosted',
+      RUNNER_OS: 'macOS',
+    },
+    graceMs: 5,
+    intervalMs: 1,
+    signal: (pid, name) => {
+      signals.push([pid, name]);
+      if (pid === 1)
+        entries = [
+          ...entries.filter((entry) => entry.pid !== 1),
+          { pid: 2, executable: `${bundle}/Contents/Helpers/backend` },
+        ];
+      if (pid === 2 && name === 'SIGKILL') entries = entries.filter((entry) => entry.pid !== 2);
+    },
+  });
+  assert(signals.some(([pid, name]) => pid === 2 && name === 'SIGKILL'));
+  assert(!signals.some(([pid]) => pid === 9));
+  assert.equal(entries[0].pid, 9);
+});
+
+test('hosted update cleanup refuses local machines and reports unkillable owned processes', async () => {
+  await assert.rejects(
+    stopHostedBundle(
+      '/fixture/App',
+      () => {
+        throw Error('must not inspect processes');
+      },
+      { environment: {} },
+    ),
+  );
+  await assert.rejects(
+    stopHostedBundle('/fixture/App', () => [{ pid: 1, executable: '/fixture/App/Contents/main' }], {
+      environment: {
+        GITHUB_ACTIONS: 'true',
+        RUNNER_ENVIRONMENT: 'github-hosted',
+        RUNNER_OS: 'macOS',
+      },
+      signal: () => {},
+      graceMs: 0,
+      timeoutMs: 5,
+      intervalMs: 1,
+    }),
+    /Timed out waiting for hosted update process cleanup/,
   );
 });
 
