@@ -5,7 +5,7 @@
 
 ## Bug Fixes
 
-- **Security updates** — Include upstream security fixes for SSH connections and local file operations.
+- **Security updates** — Fix security issues affecting SSH connections and local file operations.
 - **Connection tests** — Show results for the tested configuration reliably, including after an earlier result was dismissed.
 - **Connection notices** — Keep close buttons aligned when notices include actions or details.
 

@@ -43,9 +43,10 @@ Store configured locale documents in `docs/releases/vX.Y.Z/<locale>.md`. The def
 Apply these rules when writing or generating notes, including AI-assisted drafts:
 
 - Lead with what users can now do or what problem is fixed. Use one short sentence per bullet and combine related details into one entry.
-- Include only meaningful user-visible changes. Omit internal refactors, implementation details, test inventories, CI/release troubleshooting and development history unless users must act on them.
+- Include only actual changes to application features, behavior or the user experience. Apply this rule to in-app release notes, CHANGELOG entries, GitHub release change summaries and other user-facing change announcements.
+- Exclude internal architecture, low-level implementation, refactoring, dependency maintenance, code organization, test inventories, CI/release troubleshooting and internal copy or documentation maintenance. When an internal change fixes a user-visible problem, describe only the observable result; keep implementation details in developer documentation and pull requests.
 - Keep operation walkthroughs and menu-by-menu instructions out of change bullets; link to documentation when needed. Avoid introductory summaries, marketing language and repeated explanations.
-- Reserve Upgrade Notes for required user actions, breaking changes, compatibility limits or data/security risks. State the affected users and required action briefly; never remove a necessary warning just to shorten the text.
+- Reserve Upgrade Notes for required user actions, breaking changes, compatibility limits or data/security risks. State only the user impact and required action, without explaining the underlying architecture; never remove a necessary warning just to shorten the text.
 - Keep translations equivalent in meaning and equally concise compared with the default-language notes. Do not add claims, guarantees or fixes that the tagged source does not support.
 - Review the draft before publication: remove duplication and details that do not help users understand a change or upgrade safely. Keep the existing required sections and generated download, installation and verification information intact.
 
