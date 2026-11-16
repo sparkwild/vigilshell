@@ -72,11 +72,11 @@ Node、npm、Rust 分别读取 `.nvmrc`、`package.json`、`rust-toolchain.toml`
 
 GitHub CI 对面向 `main` 的 PR 按路径分类。纯文档改动只运行分类和 `CI verified` 汇总，其他改动运行前后端检查。合并前要求分支跟上 `main`，并通过 `CI verified`。手动运行 CI 会对所选 ref 执行完整前后端检查。常规 CI 使用只读权限，完整安装包由手动预览和正式版本标签工作流构建。
 
-`Preview package` 通过手动运行，在 `macos-15`（ARM64）和 `macos-15-intel`（x64）上分别构建独立安装包，可指定完整提交 SHA。两种架构均验证原生启动与退出，并使用临时 Dev 包验证双架构更新元数据下的下载、签名拒绝、普通退出、离线恢复、实际替换和重启。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、更新 ZIP、校验文件、blockmap、更新元数据、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。每个架构单独上传产物；汇总任务复核源码、架构、构建批次、原生验证结果和摘要，验证合并后的 `latest-mac.yml`，另行上传双架构元数据。预览只用于隔离测试，源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+`Preview Build & Tests` 通过手动运行，在 `macos-15`（ARM64）和 `macos-15-intel`（x64）上分别构建独立安装包，可指定完整提交 SHA。两种架构均验证原生启动与退出，并使用临时 Dev 包验证双架构更新元数据下的下载、签名拒绝、普通退出、离线恢复、实际替换和重启。预览使用一次性自签名证书及临时钥匙串。上传前删除包含证书和私钥的临时钥匙串及签名临时文件，并验证钥匙串搜索列表已恢复。管理员信任记录随一次性 GitHub-hosted macOS 虚拟机销毁。清理成功后才收集安装包。产物包含 DMG、更新 ZIP、校验文件、blockmap、更新元数据、签名报告和 `build.json`，记录源码提交、Git tree、版本、架构、工具链及运行信息，保存 14 天。每个架构单独上传产物；汇总任务复核源码、架构、构建批次、原生验证结果和摘要，验证合并后的 `latest-mac.yml`，另行上传双架构元数据。预览只用于隔离测试，源码提交须包含对应构建工具。贡献与版本操作见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 ## 正式版本草稿
 
-`Release draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z/<locale>.md`（默认语言必需，其他已配置语言可选）、生成的 `CHANGELOG.md`、远端标签对象及提交是否属于 `main` 历史。工作流使用资格检查确认的 SHA 执行完整前后端检查，两项都通过后才进入同一提交的 macOS 打包。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
+`Release Build & Draft` 由新建的 `vX.Y.Z` 标签触发。资格检查核对版本文件、标签对应的 `docs/releases/vX.Y.Z/<locale>.md`（默认语言必需，其他已配置语言可选）、生成的 `CHANGELOG.md`、远端标签对象及提交是否属于 `main` 历史。工作流使用资格检查确认的 SHA 执行完整前后端检查，两项都通过后才进入同一提交的 macOS 打包。固定签名仅在受限的 `macos-release` 环境中导入。该环境使用 `MACOS_SIGNING_P12_BASE64`、`MACOS_SIGNING_P12_PASSWORD` 两个 secret，以及记录证书指纹的 `MACOS_SIGNING_IDENTITY` 变量。
 
 macOS ARM64 与 Intel runner 分别校验 DMG 的 SHA-256 与内容，并验证包内 App 和原生组件的签名，执行启动与退出检查，并在上传前清理私钥和临时钥匙串。两个架构均成功后，由单一汇总任务复核源码、签名身份、运行批次与文件摘要，生成包含双架构的更新元数据、签名报告和 `build.json`，再把两套 DMG、ZIP、校验文件与 blockmap 上传至同一 Release 草稿。创建草稿前重新核对最终 ZIP 与元数据摘要。工作流核对远端附件的摘要后按系统生成彩色下载表格，表格下方链接到累计变更日志。发布说明的编写和审阅规则见 [CONTRIBUTING.md](../CONTRIBUTING.md#release-notes)。正式发布由维护者在 GitHub 上执行，更新检查读取已发布的正式版本。
 

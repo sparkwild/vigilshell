@@ -1,4 +1,4 @@
-name: Release draft
+name: Release Build & Draft
 'on':
   push:
     tags: ['v*']
