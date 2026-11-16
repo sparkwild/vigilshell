@@ -130,7 +130,7 @@
     "fsevents": false
   },
   "main": "out/main/index.js",
-  "description": "VigilShell desktop foundation",
+  "description": "VigilShell is an agent-first SSH terminal. You set the permissions; agents connect to servers and carry out tasks.",
   "author": "sparkwild",
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",

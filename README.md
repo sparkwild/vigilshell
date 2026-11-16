@@ -1,7 +1,8 @@
 <div align="center">
   <img src="resources/icons/128x128@2x.png" width="104" height="104" alt="VigilShell app icon" />
   <h1>VigilShell</h1>
-  <p><strong>One SSH workspace for you and your agents.</strong></p>
+  <h3>Agents at work. You in control.</h3>
+  <p><strong>VigilShell is an agent-first SSH terminal. You set the permissions; agents connect to servers and carry out tasks.</strong></p>
   <p>Open terminals, transfer files, and monitor your servers. Give agents access to specific connections through MCP so they can inspect logs and run commands. See what they did and what came back, right in VigilShell.</p>
   <p>
     <a href="#installation-and-running"><img src="https://img.shields.io/badge/platform-macOS-24292f?logo=apple&amp;logoColor=white" alt="Platform: macOS" /></a>

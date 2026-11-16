@@ -1,5 +1,9 @@
 # 系统架构
 
+> 操作，交给 Agent。掌控，留给你。
+
+VigilShell 是一款 Agent 优先的 SSH 终端。连接服务器、执行任务，你来设定权限，Agent 负责行动。
+
 ## 进程与通信
 
 应用由 Electron Main、Preload、React Renderer 和 Rust Backend 组成。

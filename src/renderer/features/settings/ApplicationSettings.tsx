@@ -58,9 +58,12 @@ export function ApplicationSettings() {
             {info ? <Badge>v{info.version}</Badge> : <Skeleton className="h-5 w-28" />}
             <Badge variant="secondary">Apache-2.0</Badge>
           </div>
-          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-            {t('about_description')}
-          </p>
+          <div className="flex max-w-md flex-col gap-2">
+            <p className="text-sm font-medium leading-relaxed">{t('about_tagline')}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {t('about_description')}
+            </p>
+          </div>
         </div>
         <Button size="lg" variant="secondary" onClick={openUpdate}>
           {checking || ['downloading', 'preparing', 'installing'].includes(state.phase) ? (

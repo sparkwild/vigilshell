@@ -1,7 +1,8 @@
 <div align="center">
   <img src="../resources/icons/128x128@2x.png" width="104" height="104" alt="VigilShell 应用图标" />
   <h1>VigilShell</h1>
-  <p><strong>你和 Agent 的 SSH 工作区。</strong></p>
+  <h3>操作，交给 Agent。掌控，留给你。</h3>
+  <p><strong>VigilShell 是一款 Agent 优先的 SSH 终端。连接服务器、执行任务，你来设定权限，Agent 负责行动。</strong></p>
   <p>连上服务器，开终端、传文件、看监控。需要协助时，通过 MCP 让 Agent 在你授权的连接上查日志、跑命令。它做了什么、返回了什么，都能在 VigilShell 里查看。</p>
   <p>
     <a href="#安装与运行"><img src="https://img.shields.io/badge/platform-macOS-24292f?logo=apple&amp;logoColor=white" alt="平台：macOS" /></a>
