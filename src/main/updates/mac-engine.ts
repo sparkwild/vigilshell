@@ -11,6 +11,7 @@ import type { AvailableRelease, UpdateProgress } from '@contracts';
 import { UpdateCache, verifiedInfo } from './cache';
 import { NativeUpdateUncertain } from './installation';
 import { requiredInstallSpace } from './install-space';
+import { ArchitectureMacUpdater } from './architecture-updater';
 
 export class MacUpdateEngine {
   readonly cache: UpdateCache;
@@ -39,7 +40,7 @@ export class MacUpdateEngine {
         }),
         { mode: 0o600 },
       );
-      this.updater = new electronUpdater.MacUpdater();
+      this.updater = new ArchitectureMacUpdater(this.arch);
       this.updater.updateConfigPath = configuration;
       this.updater.autoDownload = false;
       this.updater.autoInstallOnAppQuit = false;

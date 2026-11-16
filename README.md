@@ -39,7 +39,7 @@ Published installers are available from [GitHub Releases](https://github.com/spa
 
 - **Run from source:** follow [Development](#development) to set up dependencies and signing, then start `VigilShell Dev`.
 - **Install a local build:** after [building a package](#building-a-package), open the DMG in `release/` and drag `VigilShell.app` into Applications.
-- **Architectures:** the packaging scripts support Apple Silicon (`arm64`) and Intel (`x64`). Each installer must be built with macOS, Node.js, and Rust running on the corresponding architecture.
+- **Architectures:** Apple Silicon (`arm64`) and Intel (`x64`) use separate DMG installers and update ZIPs. Choose the installer matching your Mac. Automatic updates retain the installed application architecture, including x64 under Rosetta. Each installer must be built with macOS, Node.js, and Rust running on the corresponding architecture.
 
 Current builds use a fixed self-signed certificate and are not notarized by Apple. Launching a build on another Mac depends on that machine's certificate trust and security checks. A successful local build does not establish readiness for public distribution.
 

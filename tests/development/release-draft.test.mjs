@@ -119,7 +119,15 @@ test('workflow retains tag-only automation, release environment and native verif
   const workflow = load(readFileSync('.github/workflows/release-draft.yml', 'utf8'));
   assert.deepEqual(workflow.on, { push: { tags: ['v*'] } });
   assert.equal(workflow.jobs.draft.environment, 'macos-release');
-  const commands = workflow.jobs.draft.steps.map((step) => step.run ?? '').join('\n');
+  assert.equal(workflow.jobs.package.environment, 'macos-release');
+  assert.deepEqual(workflow.jobs.draft.needs, ['qualify', 'package']);
+  assert.deepEqual(
+    workflow.jobs.package.strategy.matrix.include.map(({ arch }) => arch),
+    ['arm64', 'x64'],
+  );
+  const commands = [...workflow.jobs.package.steps, ...workflow.jobs.draft.steps]
+    .map((step) => step.run ?? '')
+    .join('\n');
   assert.match(commands, /npm ci/);
   assert.match(commands, /ci-macos-signing.sh setup-release/);
   assert.match(commands, /npm run test:ci-macos/);

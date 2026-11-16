@@ -37,15 +37,25 @@ jobs:
     uses: ./.github/workflows/backend.yml
     with:
       source-sha: ${{ fromJSON(needs.qualify.outputs.source).sha }}
-  draft:
+  package:
     needs: [qualify, frontend, backend]
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            rust: aarch64-apple-darwin
+          - arch: x64
+            runner: macos-15-intel
+            rust: x86_64-apple-darwin
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     environment: macos-release
     permissions:
-      contents: write
+      contents: read
     env:
-      EXPECTED_ARCH: arm64
+      EXPECTED_ARCH: ${{ matrix.arch }}
       CARGO_INCREMENTAL: '0'
       RELEASE_SOURCE: ${{ needs.qualify.outputs.source }}
     steps:
@@ -59,8 +69,8 @@ jobs:
           package-manager-cache: false
       - name: Toolchain and dependencies
         run: |
-          test "$(node -p process.arch)" = arm64
-          test "$(rustc -vV | sed -n 's/^host: //p')" = aarch64-apple-darwin
+          test "$(node -p process.arch)" = "${{ matrix.arch }}"
+          test "$(rustc -vV | sed -n 's/^host: //p')" = "${{ matrix.rust }}"
           npm install --global "$(node -p "require('./package.json').packageManager")"
           npm ci
           node scripts/check-rust-toolchain.mjs
@@ -70,23 +80,62 @@ jobs:
           MACOS_SIGNING_P12_BASE64: ${{ secrets.MACOS_SIGNING_P12_BASE64 }}
           MACOS_SIGNING_P12_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
         run: node scripts/ci-command.mjs 180 bash scripts/ci-macos-signing.sh setup-release
-      - name: Build and verify ARM64 disk image
-        run: npm run package:release -- --arch arm64
+      - name: Build and verify native disk image
+        run: npm run package:release -- --arch "${{ matrix.arch }}"
       - name: Verify native startup and shutdown
         run: npm run test:ci-macos
       - name: Remove temporary signing material
         if: always()
         run: node scripts/ci-command.mjs 120 bash scripts/ci-macos-signing.sh cleanup
+      - name: Collect verified native build
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
+        run: node scripts/release-draft.mjs collect
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-macos-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-build/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-diagnostics-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/vigilshell-ci-evidence/
+          if-no-files-found: ignore
+          retention-days: 7
+  draft:
+    needs: [qualify, package]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: macos-release
+    permissions:
+      contents: write
+      actions: read
+    env:
+      RELEASE_SOURCE: ${{ needs.qualify.outputs.source }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ fromJSON(needs.qualify.outputs.source).sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install release verification dependencies
+        run: |
+          npm install --global "$(node -p "require('./package.json').packageManager")"
+          npm ci
+      - name: Download both verified builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "release-macos-arm64-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir .cache/release-builds/arm64
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "release-macos-x64-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir .cache/release-builds/x64
       - name: Create and verify the Release draft
         env:
           GH_TOKEN: ${{ github.token }}
           MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
         run: node scripts/release-draft.mjs draft
-      - name: Upload diagnostics
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: release-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/vigilshell-ci-evidence/
-          if-no-files-found: ignore
-          retention-days: 7

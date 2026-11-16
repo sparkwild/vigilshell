@@ -86,6 +86,6 @@ Main 拥有发行说明的获取、版本绑定校验和按语言标识保存的
 
 Main UpdateService 统一拥有发行发现快照；UpdateScheduler 管理就绪后延迟、每日检查、唤醒合并和失败退避。自动检查默认开启，使用已有 Rust／SQLite 偏好保存链路，以成功保存的值调度。DiscoveryStore 在应用数据目录中原子保存发现版本与调度记录，按更新源、平台和架构隔离；发现记录与已验证的 ZIP 安装回执独立。检查状态与任务状态分开，后台失败保留已知新版，下载或待安装期间暂停发现。Renderer ApplicationProvider 订阅唯一快照，UpdateController 统一管理工作区、关于页和菜单的更新弹窗，不切换页面。应用信息只提供产品名称与实际包版本，外部链接由 Main 按具名动作解析。
 
-ManagedUpdates 统一拥有检查、下载、取消与安装快照，复用 UpdateService 的发行筛选和调度；Renderer 页面与菜单消费同一应用级订阅。MacUpdateEngine 适配 electron-updater 与原生 Squirrel，UpdateCache 在应用数据目录的 `updates/` 中保存不可变 ZIP 和安装回执，不使用 SQLite 偏好表。每个应用仅执行一个更新操作，缓存恢复先于用户检查。有已验证待安装包时优先展示当前任务，不切换到另一发行版本。
+ManagedUpdates 统一拥有检查、下载、取消与安装快照，复用 UpdateService 的发行筛选和调度；Renderer 页面与菜单消费同一应用级订阅。MacUpdateEngine 适配 electron-updater 与原生 Squirrel，ArchitectureMacUpdater 在下载边界将共享元数据限制为当前应用架构，保持 Intel、ARM64 与 Rosetta 场景下的下载和缓存校验一致；UpdateCache 在应用数据目录的 `updates/` 中保存不可变 ZIP 和安装回执，不使用 SQLite 偏好表。每个应用仅执行一个更新操作，缓存恢复先于用户检查。有已验证待安装包时优先展示当前任务，不切换到另一发行版本。
 
 UpdateInstallation 协调一次任务确认、冻结新请求、等待偏好和 UI 状态保存、持久化外部编辑记录、原生准备及退出安装。保存失败时解除冻结，保留服务；原生准备完成后先收尾 MCP 与外部编辑，再停止 Backend，最后交给原生更新器退出。普通退出与安装退出具有不同的提交路径。新进程依据实际包版本消费成功回执，或在旧版本重新启动时报告安装未完成。

@@ -49,6 +49,22 @@ def npm_license_paths(packages, bundled, stylesheets=()):
     # Stylesheet-only imports ship the package's CSS, not its CLI dependency tree.
     return seen | {resolve('', name) for name in stylesheets}
 
+def rust_license_packages():
+    """Include the runtime dependency union for both independently shipped macOS architectures."""
+    packages = {}
+    for target in ['aarch64-apple-darwin', 'x86_64-apple-darwin']:
+        metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--offline', '--format-version', '1', '--filter-platform', target], cwd=ROOT))
+        edges = {n['id']: [d['pkg'] for d in n['deps'] if any(k['kind'] != 'dev' for k in d['dep_kinds'])] for n in metadata['resolve']['nodes']}
+        seen = set(); todo = list(metadata['workspace_members'])
+        while todo:
+            node = todo.pop()
+            if node in seen: continue
+            seen.add(node); todo.extend(edges.get(node, []))
+        for pkg in metadata['packages']:
+            if pkg['id'] in seen and pkg['source']:
+                packages[pkg['id']] = pkg
+    return sorted(packages.values(), key=lambda pkg: pkg['id'])
+
 def collect():
     rows = []
     supplements = json.loads((OUT / 'upstream.json').read_text()) if (OUT / 'upstream.json').exists() else {}
@@ -75,16 +91,8 @@ def collect():
         manifest = json.loads((base / 'package.json').read_text())
         if manifest['version'] != pkg['version']: raise RuntimeError('Installed version differs: ' + path)
         add(manifest['name'], pkg['version'], manifest.get('repository', pkg.get('resolved')), manifest.get('license'), base)
-    metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--offline', '--format-version', '1', '--filter-platform', 'aarch64-apple-darwin'], cwd=ROOT))
-    edges = {n['id']: [d['pkg'] for d in n['deps'] if any(k['kind'] != 'dev' for k in d['dep_kinds'])] for n in metadata['resolve']['nodes']}
-    seen = set(); todo = list(metadata['workspace_members'])
-    while todo:
-        node = todo.pop()
-        if node in seen: continue
-        seen.add(node); todo.extend(edges.get(node, []))
-    for pkg in metadata['packages']:
-        if pkg['id'] in seen and pkg['source']:
-            add(pkg['name'], pkg['version'], pkg['repository'], pkg['license'], pathlib.Path(pkg['manifest_path']).parent)
+    for pkg in rust_license_packages():
+        add(pkg['name'], pkg['version'], pkg['repository'], pkg['license'], pathlib.Path(pkg['manifest_path']).parent)
     for name in ['electron']:
         base = ROOT / 'node_modules' / name
         pkg = json.loads((base / 'package.json').read_text())

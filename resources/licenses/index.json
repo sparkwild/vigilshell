@@ -1309,6 +1309,22 @@
     ]
   },
   {
+    "name": "core_detect",
+    "version": "1.0.0",
+    "source": "https://github.com/thomcc/core_detect",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "769f80b5bcb42ed0af4e4d2fd74e1ac9bf843cb80c5a29219d1ef3544428a6bb"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "8569ebf6bf52937b961d9c9c934d8400a2bb6b09651a9afacbb3fc18fe5c09b1"
+      }
+    ]
+  },
+  {
     "name": "cpubits",
     "version": "0.1.1",
     "source": "https://github.com/RustCrypto/utils",
@@ -1489,6 +1505,22 @@
       {
         "file": "LICENSE",
         "sha256": "403c53069750101aeb9df7e15f127056ceaf7e4e92d0b919a1f4c084afd5f1d4"
+      }
+    ]
+  },
+  {
+    "name": "curve25519-dalek-derive",
+    "version": "0.1.1",
+    "source": "https://github.com/dalek-cryptography/curve25519-dalek",
+    "license": "MIT/Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
       }
     ]
   },
@@ -3066,6 +3098,38 @@
       {
         "file": "license.md",
         "sha256": "1662fae9b5314d11cf51284e2dcd1f006a354f7343f08712a730fcff9a359801"
+      }
+    ]
+  },
+  {
+    "name": "multiversion",
+    "version": "0.9.0",
+    "source": "https://github.com/calebzulawski/multiversion",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "3c92a19e541755a97e51b4c963aa4335bbf93b64574dfbc36a5636c2899f3ab9"
+      }
+    ]
+  },
+  {
+    "name": "multiversion-macros",
+    "version": "0.9.0",
+    "source": "https://github.com/calebzulawski/multiversion",
+    "license": "MIT OR Apache-2.0",
+    "documents": [
+      {
+        "file": "LICENSE-APACHE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "file": "LICENSE-MIT",
+        "sha256": "3c92a19e541755a97e51b4c963aa4335bbf93b64574dfbc36a5636c2899f3ab9"
       }
     ]
   },
