@@ -37,9 +37,11 @@ MCP operations are subject to connection authorization and remote account permis
 
 Published installers are available from [GitHub Releases](https://github.com/sparkwild/vigilshell/releases). You can also run from source or build a package locally. Current native development and packaging target macOS.
 
+The latest published release is 0.1.4 (Apple Silicon only). Version 0.1.5 and its Intel installer have not been published yet.
+
 - **Run from source:** follow [Development](#development) to set up dependencies and signing, then start `VigilShell Dev`.
 - **Install a local build:** after [building a package](#building-a-package), open the DMG in `release/` and drag `VigilShell.app` into Applications.
-- **Architectures:** Apple Silicon (`arm64`) and Intel (`x64`) use separate DMG installers and update ZIPs. Choose the installer matching your Mac. Automatic updates retain the installed application architecture, including x64 under Rosetta. Each installer must be built with macOS, Node.js, and Rust running on the corresponding architecture.
+- **Architectures:** The packaging workflows produce separate DMG installers and update ZIPs for Apple Silicon (`arm64`) and Intel (`x64`). Choose a published installer matching your Mac. In-app updates retain the installed application architecture, including x64 under Rosetta. Each installer must be built with macOS, Node.js, and Rust running on the corresponding architecture.
 
 Current builds use a fixed self-signed certificate and are not notarized by Apple. Launching a build on another Mac depends on that machine's certificate trust and security checks. A successful local build does not establish readiness for public distribution.
 
@@ -173,9 +175,11 @@ The target architecture must match the macOS host process and Rust toolchain. Th
 
 `npm run build` defaults to the release signing profile. Packaged builds keep their frontend, native bridges, backend resources, and Cargo output under `.cache/build/<dev|release>/<architecture>/`, separate from the live Dev application. Release builds require only the release signing configuration; they do not fall back to Dev credentials.
 
-### ARM64 distribution and previews
+### macOS distribution and previews
 
-The initial packaging target is macOS on Apple Silicon. Run **Preview package** manually to build a preview whose app and native components use a temporary self-signed certificate; the DMG itself is unsigned. You can supply a full commit SHA. Pushing a stable `vX.Y.Z` tag for a verified `main` commit creates a Release draft containing an unsigned DMG, a signed app, and update metadata. The app and its native components use VigilShell's fixed self-signed certificate without Apple notarization. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication.
+Run **Preview Build & Tests** manually to build independent ARM64 and x64 DMG installers and update ZIPs on matching native macOS runners and verify native startup and application updates. You can supply a full commit SHA. Preview apps and native components use a temporary self-signed certificate; the DMGs remain unsigned.
+
+Pushing a stable `vX.Y.Z` tag for a verified `main` commit starts **Release Build & Draft**. After both architecture builds pass verification, one job creates a Release draft containing both sets of DMG/ZIP artifacts, checksums and shared update metadata. The app and its native components use VigilShell's fixed self-signed certificate without Apple notarization; the DMGs remain unsigned. Review draft attachments under **Assets**; download links in the notes become available after publication. Maintainers review and publish drafts manually. GitHub locks the tag and release assets on publication.
 
 Under **Settings → About**, check for a stable release, download it, and choose **Restart and install**. Automatic checking is enabled by default and can be disabled in About. A workspace update button appears when a newer release is available; downloading and installation require your choice. Downloaded updates remain available after restarting; an ordinary quit does not install them. The release page remains available for manual installation. Versions without the update engine must first be upgraded manually to a version that includes it.
 
