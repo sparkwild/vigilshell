@@ -91,9 +91,9 @@ const escapeAttribute = (value) =>
     .replaceAll('|', '&#124;');
 
 function renderDownloadTable(installers, assetUrl) {
-  const rows = ['| OS | Download |', '| :--- | :--- |'];
+  const rows = ['<table>', '<thead><tr><th>OS</th><th>Download</th></tr></thead>', '<tbody>'];
   for (const [os, packages] of Map.groupBy(installers, (installer) => installer.os)) {
-    const badges = packages.map(({ format, architecture, color, logo, name }) => {
+    packages.forEach(({ format, architecture, color, logo, name }, index) => {
       const query = new URLSearchParams({
         label: format,
         message: architecture,
@@ -104,10 +104,13 @@ function renderDownloadTable(installers, assetUrl) {
       });
       const badgeUrl = escapeAttribute(`https://img.shields.io/static/v1?${query}`);
       const alt = escapeAttribute(`${format} for ${architecture}`);
-      return `<a href="${assetUrl(name)}"><img src="${badgeUrl}" alt="${alt}" align="absmiddle"></a>`;
+      const badge = `<a href="${assetUrl(name)}"><img src="${badgeUrl}" alt="${alt}" align="absmiddle"></a>`;
+      const osCell =
+        index === 0 ? `<td rowspan="${packages.length}">${escapeAttribute(os)}</td>` : '';
+      rows.push(`<tr>${osCell}<td>${badge}</td></tr>`);
     });
-    rows.push(`| ${os} | ${badges.join('<br>')} |`);
   }
+  rows.push('</tbody>', '</table>');
   return rows.join('\n');
 }
 

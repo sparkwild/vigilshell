@@ -131,9 +131,10 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
   ]);
   for (const name of [installer.name, assets.manifest, assets.signingReport])
     assert(notes.includes(`${repoUrl}/releases/download/${source.tag}/${name}`));
-  assert.match(notes, /\| OS \| Download \|\n\| :--- \| :--- \|\n\| macOS \| <a href="/);
+  assert.match(notes, /<thead><tr><th>OS<\/th><th>Download<\/th><\/tr><\/thead>/);
+  assert.match(notes, /<tr><td rowspan="1">macOS<\/td><td><a href="/);
   assert.match(notes, /color=0969DA&amp;logo=apple/);
-  assert.match(notes, /alt="DMG for Apple Silicon" align="absmiddle"><\/a> \|$/m);
+  assert.match(notes, /alt="DMG for Apple Silicon" align="absmiddle"><\/a><\/td><\/tr>/);
   assert.doesNotMatch(notes, /SHA-256|\.dmg\.sha256/);
   assert(notes.includes(`[Changelog](${repoUrl}/blob/main/CHANGELOG.md)`));
   assert(notes.includes(`[Compare source changes](${repoUrl}/compare/v0.1.0...v0.2.0)`));
@@ -144,7 +145,7 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
   );
   assert.doesNotMatch(
     first,
-    /## Bug Fixes|## Upgrade Notes|Changelog|Compare source changes|\| (Windows|Linux) \|/,
+    /## Bug Fixes|## Upgrade Notes|Changelog|Compare source changes|>(Windows|Linux)<\/td>/,
   );
 
   const multi = renderReleaseNotes(
@@ -173,10 +174,12 @@ test('rendered notes put upgrade actions before versioned downloads', () => {
       },
     },
   );
-  assert.equal(multi.match(/^\| macOS \|/gm)?.length, 1);
-  assert.match(multi, /^\| macOS \| .+<br><a .+alt="DMG for Intel x64"/m);
-  assert.match(multi, /^\| Linux \| <a .+alt="AppImage for x64"/m);
-  assert.doesNotMatch(multi, /^\| Windows \|/m);
+  assert.equal(multi.match(/<td rowspan="2">macOS<\/td>/g)?.length, 1);
+  assert.match(multi, /<tr><td rowspan="2">macOS<\/td><td><a .+alt="DMG for Apple Silicon"/);
+  assert.match(multi, /<tr><td><a .+alt="DMG for Intel x64".+<\/td><\/tr>/);
+  assert.match(multi, /<tr><td rowspan="1">Linux<\/td><td><a .+alt="AppImage for x64"/);
+  assert.equal(multi.match(/<tr>/g)?.length, 4);
+  assert.doesNotMatch(multi, /<br>|>Windows<\/td>/);
   assert.match(
     renderReleaseNotes({ Features: '- Feature' }, { ...options, translatedLocales: ['zh-CN'] }),
     /blob\/v0.2.0\/docs\/releases\/v0.2.0\/zh-CN.md/,
