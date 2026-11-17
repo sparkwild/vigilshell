@@ -37,8 +37,6 @@ MCP operations are subject to connection authorization and remote account permis
 
 Published installers are available from [GitHub Releases](https://github.com/sparkwild/vigilshell/releases). You can also run from source or build a package locally. Current native development and packaging target macOS.
 
-The latest published release is 0.1.4 (Apple Silicon only). Version 0.1.5 and its Intel installer have not been published yet.
-
 - **Run from source:** follow [Development](#development) to set up dependencies and signing, then start `VigilShell Dev`.
 - **Install a local build:** after [building a package](#building-a-package), open the DMG in `release/` and drag `VigilShell.app` into Applications.
 - **Architectures:** The packaging workflows produce separate DMG installers and update ZIPs for Apple Silicon (`arm64`) and Intel (`x64`). Choose a published installer matching your Mac. In-app updates retain the installed application architecture, including x64 under Rosetta. Each installer must be built with macOS, Node.js, and Rust running on the corresponding architecture.

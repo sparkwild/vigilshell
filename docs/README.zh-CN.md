@@ -37,8 +37,6 @@ MCP 操作受连接授权和远端账号权限约束；具体可用能力还取�
 
 已发布的安装包可从 [GitHub Releases](https://github.com/sparkwild/vigilshell/releases) 下载，也可以从源码运行或在本地打包。当前原生开发入口与打包脚本针对 macOS。
 
-当前最新已发布版本为 0.1.4，仅提供 Apple Silicon 安装包。0.1.5 尚未发布，Intel 正式安装包暂不可下载。
-
 - **从源码使用**：按照下方[开发](#开发)说明准备环境、配置签名并启动 `VigilShell Dev`。
 - **安装本地构建的版本**：完成[本地打包](#本地打包)后，打开 `release/` 中的 DMG，将 `VigilShell.app` 拖入“应用程序”。
 - **架构**：打包工作流为 Apple Silicon（`arm64`）和 Intel（`x64`）分别生成独立的 DMG 安装包和更新 ZIP。请选择与 Mac 匹配的已发布安装包。应用内更新保持已安装应用的架构，包括 Rosetta 下的 x64 应用。每个安装包必须在对应架构的 macOS、Node.js 和 Rust 环境中构建。
