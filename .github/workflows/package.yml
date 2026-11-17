@@ -1,4 +1,4 @@
-name: Preview package
+name: Preview Build & Tests
 'on':
   workflow_dispatch:
     inputs:
@@ -10,10 +10,20 @@ permissions:
   contents: read
 jobs:
   package:
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            rust: aarch64-apple-darwin
+          - arch: x64
+            runner: macos-15-intel
+            rust: x86_64-apple-darwin
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     env:
-      EXPECTED_ARCH: arm64
+      EXPECTED_ARCH: ${{ matrix.arch }}
       CARGO_INCREMENTAL: '0'
     steps:
       - name: Validate requested commit
@@ -32,8 +42,8 @@ jobs:
           package-manager-cache: false
       - name: Toolchain and dependencies
         run: |
-          test "$(node -p process.arch)" = arm64
-          test "$(rustc -vV | sed -n 's/^host: //p')" = aarch64-apple-darwin
+          test "$(node -p process.arch)" = "${{ matrix.arch }}"
+          test "$(rustc -vV | sed -n 's/^host: //p')" = "${{ matrix.rust }}"
           npm install --global "$(node -p "require('./package.json').packageManager")"
           npm ci
           node scripts/check-rust-toolchain.mjs
@@ -52,9 +62,17 @@ jobs:
       - name: Build package
         env:
           CSC_FOR_PULL_REQUEST: 'true'
-        run: npm run package:release -- --arch arm64
+        run: npm run package:release -- --arch "${{ matrix.arch }}"
       - name: Verify native startup and shutdown
         run: npm run test:ci-macos
+      - name: Verify native application update
+        env:
+          CSC_FOR_PULL_REQUEST: 'true'
+        run: |
+          export VIGILSHELL_DEV_SIGNING_IDENTITY="$VIGILSHELL_RELEASE_SIGNING_IDENTITY"
+          export VIGILSHELL_DEV_SIGNING_KEYCHAIN="$VIGILSHELL_RELEASE_SIGNING_KEYCHAIN"
+          npm run package:dev
+          node tests/e2e/native-update.mjs --application --ci
       - name: Remove disposable signing identity
         if: always()
         run: node scripts/ci-command.mjs 120 bash scripts/ci-macos-signing.sh cleanup
@@ -62,7 +80,7 @@ jobs:
         run: node scripts/preview-artifacts.mjs collect
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: preview-macos-arm64-${{ steps.source.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: preview-macos-${{ matrix.arch }}-${{ steps.source.outputs.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: preview/
           if-no-files-found: error
           retention-days: 14
@@ -70,7 +88,39 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          name: diagnostics-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/vigilshell-ci-evidence/
           if-no-files-found: ignore
           retention-days: 7
+  verify-release:
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install verification dependencies
+        run: |
+          npm install --global "$(node -p "require('./package.json').packageManager")"
+          npm ci
+      - name: Download both preview builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/preview-reuse.mjs
+      - name: Verify combined release metadata
+        run: node scripts/preview-artifacts.mjs merge
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: preview-macos-metadata-${{ github.run_id }}-${{ github.run_attempt }}
+          path: preview/
+          if-no-files-found: error
+          retention-days: 14

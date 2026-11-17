@@ -1,4 +1,6 @@
 import importlib.util
+import json
+from unittest.mock import patch
 import pathlib
 import unittest
 
@@ -46,6 +48,21 @@ class NpmLicenseTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Undeclared bundled dependency'):
             licenses.npm_license_paths({'': {}, 'node_modules/phantom': {}}, ['phantom'])
 
+
+class RustLicenseTests(unittest.TestCase):
+    def test_unions_architecture_specific_runtime_dependencies(self):
+        def metadata(command, cwd):
+            arch = command[-1]
+            return json.dumps({
+                'workspace_members': ['app'],
+                'resolve': {'nodes': [
+                    {'id': 'app', 'deps': [{'pkg': name, 'dep_kinds': [{'kind': kind}]} for name, kind in [('common', None), (arch, None), ('test-only', 'dev')]]},
+                    *[{'id': name, 'deps': []} for name in ['common', arch, 'test-only']],
+                ]},
+                'packages': [{'id': name, 'source': 'registry'} for name in ['common', arch, 'test-only']],
+            }).encode()
+        with patch.object(licenses.subprocess, 'check_output', side_effect=metadata):
+            self.assertEqual([p['id'] for p in licenses.rust_license_packages()], ['aarch64-apple-darwin', 'common', 'x86_64-apple-darwin'])
 
 if __name__ == '__main__':
     unittest.main()

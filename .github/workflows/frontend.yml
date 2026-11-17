@@ -1,4 +1,4 @@
-name: Frontend
+name: App Checks & Tests
 'on':
   workflow_call:
     inputs:

@@ -21,12 +21,28 @@ import { _electron as electron } from 'playwright';
 import { loadSigningConfig, preflight, verifyBundle } from '../../scripts/macos-signing.mjs';
 import { packageBuildEnvironment } from '../../scripts/build-context.mjs';
 import { closeApplication, waitUntil } from './ci-macos-lifecycle.mjs';
+import { hostedVaultProbe } from './ci-vault.mjs';
+import { stopHostedBundle } from './ci-update-cleanup.mjs';
 
 // Native mode probes Squirrel directly; --application exercises product IPC and shutdown.
 assert.equal(process.platform, 'darwin');
-assert.equal(process.arch, 'arm64');
+assert(['arm64', 'x64'].includes(process.arch));
+const packageDirectory = process.arch === 'arm64' ? 'mac-arm64' : 'mac';
 const applicationFlow = process.argv.includes('--application');
-const config = loadSigningConfig('dev', {});
+const hosted = process.argv.includes('--ci');
+if (hosted) {
+  assert.equal(process.env.GITHUB_ACTIONS, 'true');
+  assert.equal(process.env.RUNNER_ENVIRONMENT, 'github-hosted');
+  assert.equal(process.env.EXPECTED_ARCH, process.arch);
+  assert(
+    !existsSync(join(homedir(), 'Library/Application Support/VigilShell-dev')),
+    'Hosted update verification requires fresh Dev data',
+  );
+}
+const vault = hosted
+  ? hostedVaultProbe(join(homedir(), 'Library/Application Support/VigilShell-dev'))
+  : null;
+const config = loadSigningConfig('dev');
 preflight(config);
 execFileSync(process.execPath, ['scripts/dev-preflight.mjs', '--process-only']);
 async function clearTestPending() {
@@ -71,7 +87,7 @@ await writeFile(
 );
 execFileSync(
   resolve('node_modules/.bin/electron-builder'),
-  ['--config', buildConfig, '--mac', 'zip', '--arm64', '--publish', 'never'],
+  ['--config', buildConfig, '--mac', 'zip', `--${process.arch}`, '--publish', 'never'],
   {
     stdio: 'inherit',
     env: {
@@ -81,15 +97,16 @@ execFileSync(
     },
   },
 );
-const base = resolve('release/dev/mac-arm64', appName);
+const base = resolve('release/dev', packageDirectory, appName);
 verifyBundle(base, config, process.arch);
-verifyBundle(join(output, 'mac-arm64', appName), config, process.arch);
+verifyBundle(join(output, packageDirectory, appName), config, process.arch);
 const zip = join(
   output,
   (await readdir(output)).find((name) => name.endsWith('.zip')),
 );
 const bytes = readFileSync(zip);
 const archiveName = applicationFlow ? basename(zip) : 'update.zip';
+const otherArchitecture = process.arch === 'arm64' ? 'x64' : 'arm64';
 const info = {
   version: targetVersion,
   files: [
@@ -101,13 +118,18 @@ const info = {
   ],
   releaseDate: new Date().toISOString(),
 };
+if (applicationFlow)
+  info.files.push({
+    ...info.files[0],
+    url: `VigilShell-${targetVersion}-macos-${otherArchitecture}.zip`,
+  });
 let servedArchive = zip;
 let servedInfo = info;
 let invalidArchive;
 if (applicationFlow) {
   const invalidApp = join(evidence, 'invalid', appName);
   await mkdir(join(evidence, 'invalid'));
-  await cp(join(output, 'mac-arm64', appName), invalidApp, {
+  await cp(join(output, packageDirectory, appName), invalidApp, {
     recursive: true,
     verbatimSymlinks: true,
     preserveTimestamps: true,
@@ -141,7 +163,7 @@ const server = createServer((request, response) => {
           prerelease: false,
           body: 'VigilShell native update acceptance.',
           assets: [
-            { name: `VigilShell-${targetVersion}-macos-arm64.dmg`, state: 'uploaded' },
+            { name: `VigilShell-${targetVersion}-macos-${process.arch}.dmg`, state: 'uploaded' },
             { name: 'latest-mac.yml', state: 'uploaded' },
             { name: archiveName, state: 'uploaded' },
           ],
@@ -160,7 +182,7 @@ const server = createServer((request, response) => {
   ) {
     response.writeHead(200, {
       'Content-Type': 'application/zip',
-      'Content-Length': servedInfo.files[0].size,
+      'Content-Length': servedInfo.files.find((file) => file.url === archiveName).size,
     });
     const stream = createReadStream(servedArchive);
     stream.on('error', () => response.destroy());
@@ -185,6 +207,11 @@ await writeFile(
 const live = resolve('node_modules/.cache/vigilshell-dev', appName);
 const original = join(evidence, 'original', appName);
 await mkdir(join(evidence, 'original'));
+if (hosted) {
+  assert(!existsSync(live), 'Hosted update verification must not replace an existing Dev shell');
+  await mkdir(dirname(live), { recursive: true });
+  await cp(base, live, { recursive: true, verbatimSymlinks: true, preserveTimestamps: true });
+}
 assert(existsSync(live), 'Existing VigilShell Dev shell is required');
 await rename(live, original);
 await cp(base, live, { recursive: true, verbatimSymlinks: true, preserveTimestamps: true });
@@ -215,6 +242,7 @@ const events = [];
 const result = {
   passed: false,
   applicationFlow,
+  arch: process.arch,
   archiveSha256: createHash('sha256').update(bytes).digest('hex'),
   sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   sourceDirty: execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim() !== '',
@@ -248,6 +276,7 @@ try {
           size: invalidBytes.length,
           sha512: createHash('sha512').update(invalidBytes).digest('base64'),
         },
+        ...info.files.slice(1),
       ],
     };
     application = await electron.launch({
@@ -325,6 +354,11 @@ try {
       installing ? 'native install' : 'ordinary quit',
       'probe',
     );
+    if (vault) {
+      if (!installing) await vault.seed(page);
+      else await vault.verify(page);
+      result.vault = { initialized: true, restartDecryption: installing };
+    }
     if (applicationFlow) {
       if (!installing) {
         const found = await page.evaluate(() => window.vigilshell.application.check());
@@ -461,6 +495,30 @@ try {
     verifyBundle(live, config, process.arch);
     if (applicationFlow) assert.equal(requests.length, offlineRequestCount);
     upgraded = true;
+    if (vault) {
+      // The auto-relaunched process is not a Playwright child. Stop only this owned bundle,
+      // then inspect the installed application through an ordinary launch, with the SAME data.
+      await stopHostedBundle(live, () =>
+        processes().map((match) => ({ pid: Number(match[1]), executable: match[3] })),
+      );
+      application = await electron.launch({
+        executablePath: executable,
+        env: environment,
+        timeout: 60000,
+      });
+      child = application.process();
+      const updatedPage = await application.firstWindow();
+      await updatedPage.getByTestId('workbench').waitFor({ timeout: 60000 });
+      assert.equal(await application.evaluate(({ app }) => app.getVersion()), targetVersion);
+      await vault.verify(updatedPage);
+      result.vault.updatedConfigurationDecryption = true;
+      await closeApplication(application, child);
+      application = undefined;
+    }
+    assert(
+      !requests.some((path) => path.endsWith(`macos-${otherArchitecture}.zip`)),
+      'Downloaded the wrong architecture',
+    );
     result.passed = true;
     result.nativeSignaturePreparation = true;
     result.automaticRelaunch = true;
@@ -479,6 +537,28 @@ try {
       result.cleanupError = error.stack;
     });
   server.close();
+  let hostedStopped = false;
+  if (hosted)
+    await stopHostedBundle(live, () =>
+      processes().map((match) => ({ pid: Number(match[1]), executable: match[3] })),
+    )
+      .then(() => {
+        hostedStopped = true;
+      })
+      .catch((error) => {
+        result.passed = false;
+        result.cleanupError = error.stack;
+        process.exitCode = 1;
+      });
+  if (vault && hostedStopped) {
+    try {
+      vault.cleanup();
+    } catch {
+      result.passed = false;
+      result.vaultCleanupFailed = true;
+      process.exitCode = 1;
+    }
+  }
   if (!upgraded && !processes().some((match) => match[3] === executable)) {
     const { rm } = await import('node:fs/promises');
     await rm(live, { recursive: true });
@@ -492,5 +572,13 @@ try {
     join(evidence, 'result.json'),
     JSON.stringify({ ...result, events, requests }, null, 2),
   );
+  if (hosted) {
+    const destination = join(
+      process.env.RUNNER_TEMP,
+      'vigilshell-ci-evidence',
+      'update-result.json',
+    );
+    await writeFile(destination, JSON.stringify({ ...result, events, requests }, null, 2));
+  }
   console.log('Native update evidence:', join(evidence, 'result.json'));
 }

@@ -5,7 +5,18 @@ unsound = "all"
 # rsa 0.10.0-rc.18 pkcs1v15::sign pads a public digest and calls rsa_decrypt_and_check;
 # the remaining advisory concerns PKCS#1/OAEP decryption padding (upstream RSA#626).
 # Reassess this exception on any RSA version or authentication-adapter change.
-ignore = [{ id = "RUSTSEC-2023-0071", reason = "No RSA decryption or depadding endpoint; SSH signatures only, reviewed against RSA issue 626." }]
+ignore = [
+    { id = "RUSTSEC-2023-0071", reason = "No RSA decryption or depadding endpoint; SSH signatures only, reviewed against RSA issue 626." },
+    # Accepted maintenance risk from an unmaintained advisory, not a confirmed vulnerability.
+    # macOS: vigilshell-transport-russh -> russh-sftp 2.3.0 -> chrono 0.4.45.
+    # The all-target graph also includes russh 0.65.0 -> russh-util 0.52.0 ->
+    # chrono 0.4.45 on wasm32; native russh-util uses std::time::Instant.
+    # Latest release russh-sftp 3.0.1 and current master still depend on chrono;
+    # no upstream upgrade has been verified to remove it.
+    # Manually review on 2026-12-01: cargo-deny 0.20.2 does NOT expire this automatically.
+    # Remove once upstream changes allow chrono to be removed from the dependency graph.
+    { id = "RUSTSEC-2026-0543", reason = "Approved transitional acceptance of an unmaintained transitive dependency. Manual review due 2026-12-01; cargo-deny 0.20.2 does not enforce expiry. Remove when upstream permits removing chrono." },
+]
 
 [licenses]
 allow = ["MIT", "Apache-2.0", "Unicode-3.0", "Zlib", "BSD-3-Clause", "ISC"]

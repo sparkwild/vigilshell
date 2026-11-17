@@ -6,6 +6,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { _electron as electron } from 'playwright';
 import { closeApplication, waitUntil, withCleanup } from './ci-macos-lifecycle.mjs';
+import { hostedVaultProbe } from './ci-vault.mjs';
 import { releaseStartupContext } from './ci-macos-context.mjs';
 
 const { data, developmentData, bundle, signingReport, evidence } = releaseStartupContext({
@@ -16,6 +17,8 @@ const { data, developmentData, bundle, signingReport, evidence } = releaseStartu
   workspace: process.cwd(),
   exists: existsSync,
 });
+const vault = hostedVaultProbe(data);
+const vaultEvidence = {};
 const report = JSON.parse(readFileSync(signingReport, 'utf8'));
 assert.equal(report.profile, 'release');
 assert.equal(report.arch, process.arch);
@@ -41,6 +44,15 @@ function alive(pid) {
     if (error.code === 'ESRCH') return false;
     throw error;
   }
+}
+async function waitForBundleExit() {
+  await waitUntil(
+    () =>
+      !execFileSync('ps', ['-axo', 'comm='], { encoding: 'utf8' })
+        .split('\n')
+        .some((entry) => entry.trim().startsWith(bundle + '/')),
+    'fixture bundle process exit',
+  );
 }
 const environment = { ...process.env };
 for (const name of [
@@ -90,6 +102,8 @@ try {
       }));
       assert.deepEqual(identity, { name: 'VigilShell', packaged: true, data, visible: true });
       const snapshot = await page.evaluate(() => window.vigilshell.getSnapshot());
+      await vault.seed(page);
+      vaultEvidence.initialized = true;
       assert(snapshot.preferences, 'Preferences IPC must respond');
       assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
       const children = execFileSync('ps', ['-axo', 'pid=,ppid=,command='], { encoding: 'utf8' })
@@ -112,12 +126,30 @@ try {
       assert.deepEqual(errors, []);
       await closeApplication(application, applicationProcess);
       await waitUntil(() => !alive(backendPid), 'backend process exit');
+      for (const missing of [false, true]) {
+        if (missing) vault.removeKey();
+        application = await electron.launch({
+          executablePath: join(bundle, 'Contents/MacOS', executable),
+          timeout: 60000,
+          env: environment,
+        });
+        applicationProcess = application.process();
+        const reopened = await application.firstWindow();
+        await reopened.getByTestId('workbench').waitFor({ timeout: 60000 });
+        if (missing) await vault.verifyMissing(reopened);
+        else await vault.verify(reopened);
+        vaultEvidence[missing ? 'missingKeyFailClosed' : 'restartDecryption'] = true;
+        await closeApplication(application, applicationProcess);
+        await waitForBundleExit();
+      }
       assert(!existsSync(developmentData), 'Release application must not create Dev data');
     },
     async () => {
       if (applicationProcess?.exitCode === null && applicationProcess.signalCode === null)
         await closeApplication(application, applicationProcess);
       if (backendPid) await waitUntil(() => !alive(backendPid), 'backend cleanup');
+      await waitForBundleExit();
+      vault.cleanup();
       await rm(data, { recursive: true, force: true });
     },
   );
@@ -133,7 +165,7 @@ try {
   await writeFile(join(evidence, 'application.log'), logs.join(''));
   await writeFile(
     join(evidence, 'result.json'),
-    JSON.stringify({ passed, errors, failures }, null, 2),
+    JSON.stringify({ passed, errors, failures, vault: vaultEvidence }, null, 2),
   );
 }
 console.log('Native release startup, Renderer IPC, backend identity and normal shutdown verified');

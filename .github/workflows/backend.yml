@@ -1,4 +1,4 @@
-name: Backend
+name: Rust Checks & Tests
 'on':
   workflow_call:
     inputs:

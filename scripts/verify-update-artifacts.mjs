@@ -7,21 +7,27 @@ import { createRequire } from 'node:module';
 import { basename, join } from 'node:path';
 
 const { load } = createRequire(import.meta.url)('js-yaml');
-export function inspectUpdateArtifacts(directory, version, arch) {
+export function inspectUpdateArtifacts(directory, version, arch, architectures = [arch]) {
   const metadata = load(readFileSync(join(directory, 'latest-mac.yml'), 'utf8'));
   assert.equal(metadata.version, version);
-  assert.equal(
-    metadata.files.length,
-    1,
-    'macOS updater metadata must reference only the final ZIP',
+  assert(architectures.includes(arch));
+  assert(architectures.every((value) => ['arm64', 'x64'].includes(value)));
+  assert.equal(new Set(architectures).size, architectures.length);
+  assert.deepEqual(
+    metadata.files.map((file) => file.url).sort(),
+    architectures.map((value) => `VigilShell-${version}-macos-${value}.zip`).sort(),
+    'macOS updater metadata must reference exactly the expected architecture ZIPs',
   );
-  const file = metadata.files[0];
-  assert.equal(file.url, `VigilShell-${version}-macos-${arch}.zip`);
+  const file = metadata.files.find(
+    (entry) => entry.url === `VigilShell-${version}-macos-${arch}.zip`,
+  );
   const archive = join(directory, file.url);
   const bytes = readFileSync(archive);
   assert.equal(file.size, bytes.length);
   assert.equal(file.sha512, createHash('sha512').update(bytes).digest('base64'));
   return {
+    file,
+    metadata,
     archive,
     sha256: createHash('sha256').update(bytes).digest('hex'),
     metadataSha256: createHash('sha256')

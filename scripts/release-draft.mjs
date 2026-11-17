@@ -16,13 +16,10 @@ import {
   renderReleaseNotes,
 } from './release-notes.mjs';
 import { checkReleaseNotes, checkReleaseTag, isStableReleaseTag } from './release-policy.mjs';
-import { validatePreview } from './preview-artifacts.mjs';
-import { normalizeFingerprint } from './signing/config.mjs';
 import { defaultReleaseNotesLocale } from '../src/shared/release-notes.ts';
 
 const env = process.env;
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
-const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const gh = (args, input) => execFileSync('gh', args, { encoding: 'utf8', input }).trim();
 const api = (args, body) => JSON.parse(gh(['api', ...args], body && JSON.stringify(body)));
 const releases = `repos/${env.GITHUB_REPOSITORY}/releases`;
@@ -83,7 +80,7 @@ function verifyDraft(release, source) {
 }
 
 async function draft() {
-  const { inspectUpdateArtifacts } = await import('./verify-update-artifacts.mjs');
+  const { aggregateReleaseBuilds, releaseArchitectures } = await import('./release-artifacts.mjs');
   const { previousTag, ...source } = JSON.parse(env.RELEASE_SOURCE);
   assert.equal(checkReleaseTag(source.tag), source.version);
   const notes = readReleaseNotes(source.tag);
@@ -93,27 +90,20 @@ async function draft() {
   verifyTag(source);
   requireUnusedRelease(source.tag);
 
-  const evidence = join(env.RUNNER_TEMP, 'vigilshell-ci-evidence');
-  assert.equal(readJson(join(evidence, 'result.json')).passed, true);
-  assert.equal(readJson(join(evidence, 'signing-cleanup.json')).passed, true);
-  const name = `VigilShell-${source.version}-macos-arm64.dmg`;
-  const dmg = join('release', name);
-  const checksum = `${dmg}.sha256`;
-  const reportPath = join('release', 'mac-arm64', 'signing-report.json');
-  const report = readJson(reportPath);
-  assert.equal(report.identity, normalizeFingerprint(env.MACOS_SIGNING_IDENTITY));
-  const sha256 = validatePreview(readFileSync(dmg), readFileSync(checksum, 'utf8'), report, source);
-  const update = inspectUpdateArtifacts('release', source.version, 'arm64');
-  assert.equal(
-    readFileSync(`${update.archive}.sha256`, 'utf8').trim(),
-    `${update.sha256}  ${basename(update.archive)}`,
-  );
   const runUrl = `https://github.com/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`;
   const temp = mkdtempSync(join(env.RUNNER_TEMP, 'vigilshell-release-'));
   try {
     const localizedNotes = join(temp, 'release-notes.json');
     const localizedDocument = createReleaseNotesDocument(source.tag);
     writeFileSync(localizedNotes, JSON.stringify(localizedDocument, null, 2) + '\n');
+    const assembled = aggregateReleaseBuilds(
+      '.cache/release-builds',
+      temp,
+      source,
+      env.MACOS_SIGNING_IDENTITY,
+      env.GITHUB_RUN_ID,
+      env.GITHUB_RUN_ATTEMPT,
+    );
     const manifest = join(temp, 'build.json');
     writeFileSync(
       manifest,
@@ -121,38 +111,21 @@ async function draft() {
         {
           ...source,
           platform: 'darwin',
-          arch: 'arm64',
+          architectures: assembled.builds,
           preview: false,
           signing: 'fixed-self-signed',
-          sha256,
-          update: { sha256: update.sha256, metadataSha256: update.metadataSha256 },
+          metadataSha256: assembled.metadataSha256,
           releaseNotesSha256: createHash('sha256')
             .update(readFileSync(localizedNotes))
             .digest('hex'),
-          node: process.version,
-          rust: execFileSync('rustc', ['--version'], { encoding: 'utf8' }).trim(),
           runId: env.GITHUB_RUN_ID,
           runAttempt: env.GITHUB_RUN_ATTEMPT,
-          nativeStartup: true,
-          signingCleanup: true,
         },
         null,
         2,
       ) + '\n',
     );
-    const zip = join('release', `VigilShell-${source.version}-macos-arm64.zip`);
-    const metadata = join('release', 'latest-mac.yml');
-    const files = [
-      dmg,
-      checksum,
-      zip,
-      `${zip}.sha256`,
-      `${zip}.blockmap`,
-      metadata,
-      reportPath,
-      manifest,
-      localizedNotes,
-    ];
+    const files = [...assembled.files, manifest, localizedNotes];
     // GitHub can clear the tag association when a draft update omits the tag.
     const binding = {
       tag_name: source.tag,
@@ -205,18 +178,16 @@ async function draft() {
       repository: env.GITHUB_REPOSITORY,
       source,
       assets: {
-        installers: [
-          {
-            os: 'macOS',
-            format: 'DMG',
-            architecture: 'Apple Silicon',
-            color: '0969DA',
-            logo: 'apple',
-            name,
-          },
-        ],
+        installers: releaseArchitectures.map((arch) => ({
+          os: 'macOS',
+          format: 'DMG',
+          architecture: arch === 'arm64' ? 'Apple Silicon' : 'Intel',
+          color: '0969DA',
+          logo: 'apple',
+          name: `VigilShell-${source.version}-macos-${arch}.dmg`,
+        })),
         manifest: basename(manifest),
-        signingReport: basename(reportPath),
+        signingReport: basename(assembled.reportPath),
       },
       runUrl,
       previousTag,
@@ -242,9 +213,20 @@ switch (process.argv[2]) {
   case 'qualify':
     qualify();
     break;
+  case 'collect': {
+    const source = JSON.parse(env.RELEASE_SOURCE);
+    assert.equal(checkReleaseTag(source.tag), source.version);
+    assert.equal(git('rev-parse', 'HEAD'), source.sha);
+    assert.equal(git('rev-parse', 'HEAD^{tree}'), source.tree);
+    assert.equal(git('status', '--porcelain'), '', 'Release build changed the checkout');
+    verifyTag(source);
+    const { collectReleaseBuild } = await import('./release-artifacts.mjs');
+    collectReleaseBuild(source);
+    break;
+  }
   case 'draft':
     await draft();
     break;
   default:
-    throw Error('Use qualify or draft');
+    throw Error('Use qualify, collect or draft');
 }
