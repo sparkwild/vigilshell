@@ -7,6 +7,7 @@ const job = (
   phase: WorkspaceOperation['phase'] = 'working',
   kind = 'connect',
 ): WorkspaceOperation => ({
+  cancellable: !['save', 'delete'].includes(kind),
   id,
   phase,
   kind,
@@ -123,21 +124,24 @@ it('keeps failures belonging to other owners or actions until dismissed or resol
   await store.run(request('a', async () => done));
   expect(store.getSnapshot().operations).toEqual([]);
 });
-it('waits for confirmed cancellation and addresses only the actual operation id', async () => {
-  vi.useFakeTimers();
-  const { store, get, cancel } = setup();
-  get.mockResolvedValue(reply(job()));
-  const work = store.run(request('a', async () => reply()));
-  const caught = work.catch((e) => e.code);
-  await vi.advanceTimersByTimeAsync(300);
-  await store.cancel(store.forOwner('a')!.id);
-  expect(cancel).toHaveBeenCalledWith('backend-a');
-  expect(store.forOwner('a')?.phase).toBe('cancelling');
-  get.mockResolvedValue(reply({ ...job('backend-a', 'cancelled'), error: 'cancelled' }));
-  await vi.advanceTimersByTimeAsync(120);
-  expect(await caught).toBe('cancelled');
-  expect(store.getSnapshot().operations).toEqual([]);
-});
+it.each(['connect', 'test', 'credential', 'files'])(
+  'waits for confirmed %s cancellation and addresses the actual operation id',
+  async (kind) => {
+    vi.useFakeTimers();
+    const { store, get, cancel } = setup();
+    get.mockResolvedValue(reply(job('backend-a', 'working', kind)));
+    const work = store.run(request('a', async () => reply(job('backend-a', 'working', kind))));
+    const caught = work.catch((e) => e.code);
+    await vi.advanceTimersByTimeAsync(300);
+    await store.cancel(store.forOwner('a')!.id);
+    expect(cancel).toHaveBeenCalledWith('backend-a');
+    expect(store.forOwner('a')?.phase).toBe('cancelling');
+    get.mockResolvedValue(reply({ ...job('backend-a', 'cancelled'), error: 'cancelled' }));
+    await vi.advanceTimersByTimeAsync(120);
+    expect(await caught).toBe('cancelled');
+    expect(store.getSnapshot().operations).toEqual([]);
+  },
+);
 it('a too-late cancellation keeps the operation running with its own warning', async () => {
   vi.useFakeTimers();
   const { store, get, cancel } = setup();
@@ -154,15 +158,15 @@ it('a too-late cancellation keeps the operation running with its own warning', a
   await vi.advanceTimersByTimeAsync(120);
   await work;
 });
-it('does not offer or send cancellation for non-cancellable saves', async () => {
+it.each(['save', 'delete'])('does not send cancellation for non-cancellable %s', async (kind) => {
   vi.useFakeTimers();
   const { store, get, cancel } = setup();
-  get.mockResolvedValue(reply(job('save', 'working', 'save')));
-  const work = store.run(request('a', async () => reply(job('save', 'working', 'save'))));
+  get.mockResolvedValue(reply(job('job', 'working', kind)));
+  const work = store.run(request('a', async () => reply(job('job', 'working', kind))));
   await vi.advanceTimersByTimeAsync(300);
   await store.cancel(store.forOwner('a')!.id);
   expect(cancel).not.toHaveBeenCalled();
-  get.mockResolvedValue(reply(job('save', 'success', 'save')));
+  get.mockResolvedValue(reply(job('job', 'success', kind)));
   await vi.advanceTimersByTimeAsync(120);
   await work;
 });
@@ -185,7 +189,7 @@ it('reconciles an initial unknown write without replaying it, retaining the lock
   expect(onResult).toHaveBeenCalledTimes(1);
   expect(store.isBusy('a')).toBe(false);
 });
-it('preserves a known backend job on a polling failure and never queries it in a new runtime', async () => {
+it('preserves an unknown backend job but releases its resource in the new runtime', async () => {
   vi.useFakeTimers();
   const { store, get, restart } = setup();
   get.mockRejectedValue(new WorkspaceFailure('runtime_unavailable'));
@@ -200,7 +204,21 @@ it('preserves a known backend job on a polling failure and never queries it in a
     code: 'result_unknown',
   });
   expect(get).not.toHaveBeenCalled();
+  expect(store.isBusy('a')).toBe(false);
+  await store.run(request('a', async () => done));
+  expect(store.forOwner('a')).toMatchObject({ phase: 'unknown', job: { id: 'backend-a' } });
+});
+
+it('retains an unknown receipt when no evidence remains in the current runtime', async () => {
+  const { store, reconcile } = setup();
+  const execute = vi.fn(async () => {
+    throw new WorkspaceFailure('result_unknown', 'evicted-request', 'runtime');
+  });
+  await expect(store.run(request('a', execute))).rejects.toThrow('result_unknown');
+  reconcile.mockResolvedValue({ kind: 'reconciled', result: null, error: null });
+  await expect(store.reconcile(store.forOwner('a')!.id)).rejects.toThrow('result_unknown');
   expect(store.isBusy('a')).toBe(true);
+  expect(execute).toHaveBeenCalledTimes(1);
 });
 it('rejects a mismatched operation returned by reconciliation', async () => {
   vi.useFakeTimers();

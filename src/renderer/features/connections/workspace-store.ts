@@ -14,6 +14,7 @@ import type {
   TunnelStatus,
   ConnectionDetails,
   ConnectionSummary,
+  UnavailableConnectionView,
   ConnectionGroupView,
   GroupLayout,
   TerminalSessionView,
@@ -105,6 +106,7 @@ export interface WorkspaceSnapshot {
   interactionSurface: string | null;
   loading: boolean;
   connections: ConnectionSummary[];
+  unavailableConnections: UnavailableConnectionView[];
   sessions: TerminalSessionView[];
   agentViews: AgentSessionView[];
   hiddenTerminalInfo: ReadonlySet<string>;
@@ -153,6 +155,7 @@ export class WorkspaceStore {
     interactionSurface: null,
     loading: true,
     connections: [],
+    unavailableConnections: [],
     sessions: [],
     agentViews: [],
     hiddenTerminalInfo: new Set(),
@@ -327,6 +330,11 @@ export class WorkspaceStore {
   }
   private credentialNotices = new Set<string>();
   private requestEpoch = 0;
+  private detailEpoch = 0;
+  private detailReads = new Map<
+    string,
+    { runtimeId: string | null; epoch: number; work: Promise<void> }
+  >();
   private editorGeneration = 0;
   private dismissed = new Set<string>();
   private opening = new Map<string, Promise<string | null>>();
@@ -369,6 +377,8 @@ export class WorkspaceStore {
       run: this.run.bind(this),
       mutation: this.mutation.bind(this),
       refresh: this.refresh.bind(this),
+      refreshGroups: this.refreshGroups.bind(this),
+      acceptGroupRename: this.acceptGroupRename.bind(this),
       setNavigation: this.setNavigation.bind(this),
       setGroupExpanded: this.setGroupExpanded.bind(this),
       setGroupEditing: this.setGroupEditing.bind(this),
@@ -382,6 +392,8 @@ export class WorkspaceStore {
       if (e.kind === 'detached') this.report('renderer_restarted');
       if (e.kind === 'catalogue') {
         void this.refresh().catch(() => undefined);
+      } else if (e.kind === 'groupRenamed') {
+        this.acceptGroupRename(e.group);
       } else if (e.kind === 'operation') {
         const operations = new Map(this.value.operations);
         operations.set(e.operation.id, e.operation);
@@ -552,6 +564,7 @@ export class WorkspaceStore {
     name: K,
     params: Parameters<WorkspaceApi[K]>[0],
   ): Promise<WorkspaceReply> {
+    const runtime = this.value.runtimeId;
     try {
       return await this.call(name, params);
     } catch (error) {
@@ -562,6 +575,8 @@ export class WorkspaceStore {
         !error.runtimeId
       )
         throw error;
+      if (runtime !== this.value.runtimeId || (runtime !== null && error.runtimeId !== runtime))
+        throw new WorkspaceFailure('result_unknown', error.requestId, error.runtimeId);
       let reply: WorkspaceReply;
       try {
         reply = await this.call('reconcile', {
@@ -571,6 +586,8 @@ export class WorkspaceStore {
       } catch {
         throw new WorkspaceFailure('result_unknown', error.requestId, error.runtimeId);
       }
+      if (runtime !== this.value.runtimeId)
+        throw new WorkspaceFailure('result_unknown', error.requestId, error.runtimeId);
       if (reply.kind !== 'reconciled' || !reply.result)
         throw new WorkspaceFailure(
           reply.kind === 'reconciled' ? (reply.error ?? 'result_unknown') : 'result_unknown',
@@ -630,6 +647,7 @@ export class WorkspaceStore {
       loading: state.phase === 'locked' || state.phase === 'unlocking',
       error: state.phase === 'blocked' ? (state.code ?? 'credential_unavailable') : null,
       connections: [],
+      unavailableConnections: [],
       details: null,
       trust: null,
     });
@@ -637,7 +655,29 @@ export class WorkspaceStore {
   }
   private groupsPending: Promise<void> | null = null;
   private groupsEpoch = 0;
-  private refreshGroups(): Promise<void> {
+  acceptGroupRename(group: ConnectionGroupView) {
+    const current = this.value.groups.find((g) => g.id === group.id);
+    if (!current) {
+      void this.refresh().catch(() => undefined);
+      return;
+    }
+    if (group.version <= current.version) return;
+    this.set({
+      groups: this.value.groups.map((g) =>
+        g.id === group.id ? { ...g, name: group.name, version: group.version } : g,
+      ),
+    });
+  }
+  private keepNewerGroupNames(groups: ConnectionGroupView[]) {
+    const current = new Map(this.value.groups.map((g) => [g.id, g]));
+    return groups.map((g) => {
+      const newer = current.get(g.id);
+      return newer && newer.version > g.version
+        ? { ...g, name: newer.name, version: newer.version }
+        : g;
+    });
+  }
+  refreshGroups(): Promise<void> {
     if (this.groupsPending) return this.groupsPending;
     const runtimeId = this.value.runtimeId;
     const epoch = ++this.groupsEpoch;
@@ -645,6 +685,7 @@ export class WorkspaceStore {
       try {
         let offset: number | null = 0;
         let version: number | null = null;
+        let layoutRevision = 0;
         const groups: ConnectionGroupView[] = [];
         while (offset !== null) {
           const reply: WorkspaceReply = await this.call('listCatalogue', {
@@ -656,12 +697,21 @@ export class WorkspaceStore {
           if (epoch !== this.groupsEpoch || runtimeId !== this.value.runtimeId) return;
           if (reply.kind !== 'catalogue') throw new WorkspaceFailure('protocol_mismatch');
           version = reply.page.version;
+          layoutRevision = reply.page.layoutRevision;
           groups.push(...reply.page.groups);
           if (reply.page.next !== null && reply.page.next <= offset)
             throw new WorkspaceFailure('protocol_mismatch');
           offset = reply.page.next;
         }
-        this.set({ groups, groupsReady: true, groupsError: null });
+        if (this.value.ready && layoutRevision !== this.value.layoutRevision) {
+          void this.refresh().catch(() => undefined);
+          return;
+        }
+        this.set({
+          groups: this.keepNewerGroupNames(groups),
+          groupsReady: true,
+          groupsError: null,
+        });
       } catch (error) {
         if (epoch === this.groupsEpoch && runtimeId === this.value.runtimeId)
           this.set({
@@ -680,8 +730,10 @@ export class WorkspaceStore {
       ready && (runtimeId !== this.value.runtimeId || !this.value.transportReady);
     if (runtimeId !== this.value.runtimeId) {
       this.requestEpoch++;
+      this.detailReads.clear();
       this.groupsEpoch++;
       this.groupsPending = null;
+      this.refreshPending = null;
       this.dismissed.clear();
       this.opening.clear();
       this.toolScrollPositions.clear();
@@ -699,10 +751,15 @@ export class WorkspaceStore {
         ready: false,
         error: null,
         connections: [],
+        unavailableConnections: [],
         groups: [],
         groupsReady: false,
         groupsError: null,
         selected: null,
+        details: null,
+        trust: null,
+        groupBusy: false,
+        interactionSurface: null,
         operations: new Map(),
         tools: new Map(),
         transfers: new Map(
@@ -770,6 +827,7 @@ export class WorkspaceStore {
       this.refreshAgain = true;
       return this.refreshPending;
     }
+    const runtime = this.value.runtimeId;
     const work = this.run({
       owner: 'navigation:connections',
       action: 'ws_loading',
@@ -778,7 +836,7 @@ export class WorkspaceStore {
         do {
           this.refreshAgain = false;
           await this.readCatalogue();
-        } while (this.refreshAgain);
+        } while (runtime === this.value.runtimeId && this.refreshAgain);
         return { kind: 'done' };
       },
     }).then(() => undefined);
@@ -801,7 +859,8 @@ export class WorkspaceStore {
           let version: number | null = null,
             layoutRevision = 0;
           const groups: ConnectionGroupView[] = [],
-            connections: ConnectionSummary[] = [];
+            connections: ConnectionSummary[] = [],
+            unavailableConnections: UnavailableConnectionView[] = [];
           for (const kind of ['groups', 'connections'] as const) {
             let offset: number | null = 0;
             while (offset !== null) {
@@ -817,16 +876,23 @@ export class WorkspaceStore {
               layoutRevision = reply.page.layoutRevision;
               groups.push(...reply.page.groups);
               connections.push(...reply.page.connections);
+              unavailableConnections.push(...(reply.page.unavailableConnections ?? []));
               if (reply.page.next !== null && reply.page.next <= offset)
                 throw new WorkspaceFailure('protocol_mismatch');
               offset = reply.page.next;
             }
           }
+          const selectedUnavailable = unavailableConnections.some(
+            (c) => c.id === this.value.selected?.id,
+          );
+          this.detailEpoch++;
           this.set({
-            groups,
+            groups: this.keepNewerGroupNames(groups),
             groupsReady: true,
             groupsError: null,
             connections,
+            unavailableConnections,
+            ...(selectedUnavailable ? { selected: null, details: null, trust: null } : {}),
             version: version ?? 0,
             ready: true,
             layoutRevision,
@@ -868,6 +934,7 @@ export class WorkspaceStore {
                 error: error instanceof WorkspaceFailure ? error.code : 'runtime_unavailable',
                 ready: false,
                 connections: [],
+                unavailableConnections: [],
                 selected: null,
               }),
         });
@@ -902,6 +969,7 @@ export class WorkspaceStore {
     return this.grouping.removeGroup(group);
   };
   async select(resource: Resource) {
+    this.detailEpoch++;
     this.set({
       selected: resource,
       ...(this.value.selected?.id !== resource.id ? { details: null, trust: null } : {}),
@@ -909,7 +977,26 @@ export class WorkspaceStore {
     await this.details(resource.id);
   }
   private async details(id: string) {
-    if (this.feedback.isBusy('connection-read:' + id)) return;
+    const runtime = this.value.runtimeId;
+    const epoch = this.detailEpoch;
+    const isCurrent = () =>
+      runtime === this.value.runtimeId &&
+      epoch === this.detailEpoch &&
+      this.value.selected?.id === id;
+    if (!isCurrent()) return;
+    const pending = this.detailReads.get(id);
+    if (pending && pending.runtimeId === runtime) {
+      await pending.work;
+      if (pending.epoch !== epoch && isCurrent()) await this.details(id);
+      return;
+    }
+    const work = this.readDetails(id, isCurrent).finally(() => {
+      if (this.detailReads.get(id)?.work === work) this.detailReads.delete(id);
+    });
+    this.detailReads.set(id, { runtimeId: runtime, epoch, work });
+    await work;
+  }
+  private async readDetails(id: string, isCurrent: () => boolean) {
     try {
       const reply = await this.run({
         owner: 'connection-read:' + id,
@@ -917,17 +1004,19 @@ export class WorkspaceStore {
         label: this.connectionLabel(id),
         execute: () => this.call('getConnection', { id }),
       });
-      if (
-        reply.kind === 'connection' &&
-        this.value.selected?.kind === 'connection' &&
-        this.value.selected.id === id
-      )
+      if (reply.kind === 'connection' && isCurrent())
         this.set({ details: reply.connection, trust: reply.trust });
     } catch (error) {
-      if (error instanceof WorkspaceFailure && error.code === 'not_found')
+      if (isCurrent() && error instanceof WorkspaceFailure && error.code === 'not_found')
         this.set({ selected: null, details: null, trust: null });
     }
   }
+  newConnectionForSelection = () => {
+    const { selected, connections } = this.value;
+    return this.newConnection(
+      connections.find((item) => item.id === selected?.id)?.groupId ?? null,
+    );
+  };
   search(query: string) {
     this.setNavigation((p) => ({ ...p, search: query }));
   }

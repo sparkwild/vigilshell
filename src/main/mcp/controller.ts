@@ -62,6 +62,9 @@ export class McpController {
   private epoch = 0;
   private error: string | null = null;
   private recordingError: string | null = null;
+  private recoveryError: string | null = null;
+  private snapshotError: string | null = null;
+  private unrecoveredTasks: string[] = [];
   private refreshing: Promise<void> | null = null;
   private mutationPending = false;
   private readonly server: LocalMcpServer;
@@ -143,14 +146,27 @@ export class McpController {
     this.configuration = result.configuration;
     this.protections = result.protections ?? [];
     this.recordingError = result.recording_error ?? null;
-    const contexts = await this.request({ operation: 'contexts' });
-    if (contexts.kind === 'contexts') {
-      this.contexts = mergeContexts(this.contexts, contexts.contexts);
+    this.unrecoveredTasks = result.unrecovered_tasks ?? [];
+    this.recoveryError = result.execution_recovery_error ?? null;
+    const [contextResult, observationResult] = await Promise.allSettled([
+      this.request({ operation: 'contexts' }),
+      this.request({ operation: 'observations' }),
+    ]);
+    if (this.stopped || epoch !== this.epoch) return;
+    const contexts =
+      contextResult.status === 'fulfilled' && contextResult.value.kind === 'contexts'
+        ? contextResult.value.contexts
+        : null;
+    const observations =
+      observationResult.status === 'fulfilled' && observationResult.value.kind === 'observations'
+        ? observationResult.value.observations
+        : null;
+    if (contexts) {
+      this.contexts = mergeContexts(this.contexts, contexts);
       for (const context of this.contexts) this.observeContext(context);
     }
-    const observations = await this.request({ operation: 'observations' });
-    if (this.stopped || epoch !== this.epoch) return;
-    if (observations.kind === 'observations') this.observations = observations.observations;
+    if (observations) this.observations = observations;
+    this.snapshotError = contexts ? null : 'agent_storage_unavailable';
     this.ports.tray(this.showTray);
     const { enabled, port } = this.configuration.settings;
     if (!enabled) this.error = null;
@@ -194,7 +210,8 @@ export class McpController {
       observations: this.observations,
       endpoint: settings.port ? `http://127.0.0.1:${settings.port}/mcp` : '',
       running: this.server.port !== 0,
-      error: this.recordingError ?? this.error,
+      error: this.recordingError ?? this.recoveryError ?? this.error ?? this.snapshotError,
+      unrecoveredTasks: this.unrecoveredTasks,
     };
   }
   private createSecret(name: string, previous?: AccessSecret, client?: AgentClient): AccessSecret {

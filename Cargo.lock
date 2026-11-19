@@ -2384,6 +2384,7 @@ version = "0.1.5"
 dependencies = [
  "base64",
  "encoding_rs",
+ "rusqlite",
  "russh",
  "serde",
  "serde_json",

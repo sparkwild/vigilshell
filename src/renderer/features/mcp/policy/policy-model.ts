@@ -43,11 +43,6 @@ export function validPolicy(policy: ConnectionPolicy) {
         roots.every(
           (r) => /^[A-Za-z0-9_-]{1,128}$/.test(r.id) && r.path !== '/' && validTarget(r.path),
         ),
-    ) &&
-    Object.entries(p.limits).every(
-      ([key, v]) =>
-        v == null ||
-        (Number.isInteger(v) && v > 0 && v <= (key.startsWith('concurrent') ? 16 : 2147483647)),
     )
   );
 }

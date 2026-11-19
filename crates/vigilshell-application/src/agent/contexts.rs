@@ -279,6 +279,7 @@ impl AgentService {
         let Some(context) = self.state.lock().unwrap().contexts.get(id).cloned() else {
             return Ok(());
         };
+        context.cancel.cancel();
         let _closing = context.closing.lock().await;
         let mut view = context.view.lock().unwrap().clone();
         if matches!(
@@ -311,7 +312,6 @@ impl AgentService {
         view.revision += 1;
         *context.view.lock().unwrap() = view.clone();
         let _ = self.publish_context(view.clone()).await;
-        context.cancel.cancel();
         self.executor.cancel_scope(None, None, Some(id)).await;
         let deadline = Instant::now() + Duration::from_secs(5);
         loop {

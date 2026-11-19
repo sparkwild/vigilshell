@@ -122,32 +122,33 @@ impl SecretStore for Secrets {
 
 struct Prompt;
 
+#[derive(Default)]
+struct Keys {
+    value: Mutex<Option<VaultKeyMaterial>>,
+    reads: std::sync::atomic::AtomicUsize,
+}
+impl VaultKeyStore for Keys {
+    fn read(&self, _: &str, _: u32) -> Result<VaultKeyMaterial, WorkspaceError> {
+        self.reads.fetch_add(1, Ordering::SeqCst);
+        self.value
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|v| v.to_vec().into())
+            .ok_or(WorkspaceError::VaultKeyMissing)
+    }
+    fn create(&self, _: &str, _: u32, key: &[u8]) -> Result<bool, WorkspaceError> {
+        let mut value = self.value.lock().unwrap();
+        if value.is_some() {
+            return Ok(false);
+        }
+        *value = Some(key.to_vec().into());
+        Ok(true)
+    }
+}
+
 #[tokio::test]
 async fn encrypted_store_integrates_saved_login_proxy_and_host_restart() {
-    #[derive(Default)]
-    struct Keys {
-        value: Mutex<Option<VaultKeyMaterial>>,
-        reads: std::sync::atomic::AtomicUsize,
-    }
-    impl VaultKeyStore for Keys {
-        fn read(&self, _: &str, _: u32) -> Result<VaultKeyMaterial, WorkspaceError> {
-            self.reads.fetch_add(1, Ordering::SeqCst);
-            self.value
-                .lock()
-                .unwrap()
-                .as_ref()
-                .map(|v| v.to_vec().into())
-                .ok_or(WorkspaceError::VaultKeyMissing)
-        }
-        fn create(&self, _: &str, _: u32, key: &[u8]) -> Result<bool, WorkspaceError> {
-            let mut value = self.value.lock().unwrap();
-            if value.is_some() {
-                return Ok(false);
-            }
-            *value = Some(key.to_vec().into());
-            Ok(true)
-        }
-    }
     #[derive(Default)]
     struct Diagnostic(Mutex<Vec<(&'static str, Option<bool>)>>);
     impl SecretDiagnostic for Diagnostic {
@@ -2093,6 +2094,28 @@ async fn server_tools_are_session_owned_paginated_and_transfers_survive_terminal
     );
     assert_eq!(tools.peak.load(Ordering::SeqCst), 2);
     assert_eq!(f.secrets.reads.load(Ordering::SeqCst) - before, 1);
+    let raw = rusqlite::Connection::open(f.path.join("app.sqlite3")).unwrap();
+    raw.execute(
+        "UPDATE connection_profiles SET config=zeroblob(48) WHERE id=?1",
+        [&profile.id],
+    )
+    .unwrap();
+    let WorkspaceResult::Database(DbReply::Catalogue(page)) = f
+        .run(WorkspaceAction::Database(DbCommand::List {
+            query: String::new(),
+            offset: 0,
+            limit: 50,
+            kind: "connections".into(),
+            version: None,
+        }))
+        .await
+        .unwrap()
+    else {
+        panic!();
+    };
+    assert_eq!(page.unavailable_connections[0].id, profile.id);
+    assert_eq!(tools.running.load(Ordering::SeqCst), 2);
+    assert!(!tools.closed.load(Ordering::SeqCst));
     f.run(WorkspaceAction::Close(session)).await.unwrap();
     assert!(!tools.closed.load(Ordering::SeqCst));
     f.service.group_secret(&group).await.unwrap();
@@ -2700,3 +2723,98 @@ mod file_management;
 
 #[path = "agent_control_tests.rs"]
 mod agent_control_tests;
+
+#[tokio::test]
+async fn unreadable_connection_preserves_live_lease_and_healthy_ssh_open() {
+    let server = live_fixture::Fixture::start().await;
+    let mut f = Fixture::new();
+    let database = f.database.upgrade().unwrap();
+    f.service.shutdown().await.unwrap();
+    let secrets = Arc::new(vigilshell_credentials::EncryptedSecretStore::new(
+        database.clone(),
+        Arc::new(Keys::default()),
+    ));
+    *database.1.lock().unwrap() = Some(Arc::downgrade(&secrets));
+    let output = Arc::new(Mutex::new(Vec::new()));
+    f.service = WorkspaceService::new(
+        database,
+        secrets,
+        Arc::new(SshFixturePrompt),
+        Arc::new(vigilshell_transport_russh::RusshTransport),
+        Arc::new(EchoSink(output.clone())),
+    );
+    let mut profiles = Vec::new();
+    for name in ["fixture-a", "fixture-b"] {
+        let draft = f.draft(None).await;
+        let mut save = request(None, Some(draft));
+        save.input.name = name.into();
+        save.input.port = server.port;
+        save.input.username = "fixture".into();
+        profiles.push(
+            f.done(f.run(WorkspaceAction::Save(save)).await.unwrap())
+                .await
+                .connection
+                .unwrap(),
+        );
+    }
+    let [a, b] = profiles.as_slice() else {
+        panic!()
+    };
+    let a_session = open_confirmed(&f, &a.id).await.session_id.unwrap();
+    let raw = rusqlite::Connection::open(f.path.join("app.sqlite3")).unwrap();
+    raw.execute(
+        "UPDATE connection_profiles SET config=zeroblob(48) WHERE id=?1",
+        [&a.id],
+    )
+    .unwrap();
+    let WorkspaceResult::Database(DbReply::Catalogue(page)) = f
+        .run(WorkspaceAction::Database(DbCommand::List {
+            query: String::new(),
+            offset: 0,
+            limit: 50,
+            kind: "connections".into(),
+            version: None,
+        }))
+        .await
+        .unwrap()
+    else {
+        panic!()
+    };
+    assert_eq!(page.unavailable_connections[0].id, a.id);
+    assert_eq!(page.connections[0].id, b.id);
+    assert!(matches!(
+        f.run(WorkspaceAction::Get(a.id.clone())).await,
+        Err(WorkspaceError::ConnectionRecordUnavailable)
+    ));
+    let opening = f
+        .run(WorkspaceAction::Open {
+            id: a.id.clone(),
+            columns: 80,
+            rows: 24,
+        })
+        .await;
+    match opening {
+        Err(WorkspaceError::ConnectionRecordUnavailable) => {}
+        Ok(operation) => assert_eq!(
+            f.done(operation).await.error,
+            Some(WorkspaceError::ConnectionRecordUnavailable)
+        ),
+        other => panic!("unexpected open: {other:?}"),
+    }
+    let b_session = open_confirmed(&f, &b.id).await.session_id.unwrap();
+    assert_ne!(a_session, b_session);
+    f.service
+        .input(&f.owner, &a_session, 1, b"LEASE_AFTER_CORRUPTION".to_vec())
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            if String::from_utf8_lossy(&output.lock().unwrap()).contains("LEASE_AFTER_CORRUPTION") {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    f.service.shutdown().await.unwrap();
+}

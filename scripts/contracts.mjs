@@ -38,7 +38,21 @@ const rendererValidator = standaloneCode(ajv, {
 );
 if (/\brequire\(|\bnew Function\(|\beval\(/.test(rendererValidator))
   throw Error('Renderer validator must be standalone ESM without runtime code generation');
+const limits = schema.definitions.ExecutionLimits;
+const bounds = (key) => {
+  const { minimum: min, maximum: max } = limits.properties[key];
+  if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max)) {
+    throw Error(`ExecutionLimits.${key} needs integer bounds`);
+  }
+  return { min, max };
+};
+const executionLimitRules = {
+  duration: bounds('maxTaskSeconds'),
+  concurrency: bounds('concurrentTasks'),
+  defaults: limits['x-vigil-defaults'],
+};
 const files = {
+  'execution-limits.ts': `/* Generated from Rust policy limits. Do not edit. */\nexport const executionLimitRules = ${JSON.stringify(executionLimitRules, null, 2)} as const;\n`,
   'protocol-versions.ts': `/* Generated from Rust protocol constants. */\nexport const desktopProtocolVersion = ${desktopProtocolVersion} as const;\nexport const workspaceProtocolVersion = ${workspaceProtocolVersion} as const;\n`,
   'renderer-validation.js':
     '/* Generated from Rust DTOs. Run npm run contracts:generate; do not edit. */\n' +

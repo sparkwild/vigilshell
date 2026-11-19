@@ -5,7 +5,12 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { translate } from '../../../shared/i18n/messages';
 import { FileOperationsDialog } from './FileOperationsDialog';
-const f = vi.hoisted(() => ({ call: vi.fn(), mutation: vi.fn(), phase: 'failed' }));
+const f = vi.hoisted(() => ({
+  call: vi.fn(),
+  mutation: vi.fn(),
+  phase: 'failed',
+  cancellable: true,
+}));
 vi.mock('../../app/DesktopProvider', () => ({
   useDesktop: () => ({
     t: (key: Parameters<typeof translate>[0], params?: Record<string, string | number>) =>
@@ -35,6 +40,7 @@ beforeEach(() => {
     disconnect() {}
   };
   f.phase = 'failed';
+  f.cancellable = true;
   f.mutation.mockReset().mockResolvedValue({ kind: 'operation', operation: { id: 'job' } });
   f.call.mockReset().mockImplementation(async (method, params) =>
     method === 'getFileOperation'
@@ -42,6 +48,7 @@ beforeEach(() => {
           kind: 'fileOperation',
           page: {
             id: 'job',
+            cancellable: f.cancellable,
             phase: f.phase,
             stage: 'finished',
             completed: 1,
@@ -61,6 +68,16 @@ beforeEach(() => {
         }
       : { kind: 'done' },
   );
+});
+it('only displays cancellation for a cancellable file job', async () => {
+  f.phase = 'working';
+  f.cancellable = false;
+  render(<FileOperationsDialog sessionId="session" initialId="job" close={vi.fn()} />);
+  await screen.findByText('/complete');
+  expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Retry failed and pending items' }),
+  ).not.toBeInTheDocument();
 });
 afterEach(cleanup);
 it('pages operation results and retries the existing job without submitting its successful targets again', async () => {

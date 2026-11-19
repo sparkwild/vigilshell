@@ -310,6 +310,13 @@ async fn cancellation_during_identity_wait_makes_late_approval_invalid() {
         .unwrap();
     assert_eq!(f.finished(&task.id).await.phase, TaskPhase::Cancelled);
     assert!(f.service.commit(&id).await.is_err());
+    assert!(
+        f.service
+            .executor
+            .reject_script(&f.entry.id, &task.id)
+            .await
+            .is_err()
+    );
     assert!(f.connection.requests.lock().unwrap().is_empty());
     f.service.shutdown().await;
 }
@@ -521,5 +528,45 @@ async fn structured_result_markers_preserve_chunked_recordings_and_mcp_output_by
             && chunk.text == text
             && chunk.stream == "stdout"));
     }
+    f.service.shutdown().await;
+}
+
+#[tokio::test]
+async fn closing_a_session_interrupts_script_preparation_before_dispatch() {
+    let f = Fixture::new().await;
+    let entered = Arc::new(tokio::sync::Notify::new());
+    *f.connection.pause_snapshot.lock().unwrap() = Some(entered.clone());
+    let action = f.service.start_operation(
+        f.entry.clone(),
+        RuntimeCall {
+            parent_task_id: None,
+            session_id: "session".into(),
+            request_key: "close-during-preparation".into(),
+            timeout_seconds: None,
+            operation: RuntimeOperation::Script {
+                source: ScriptSource::Inline {
+                    text: "printf fixture".into(),
+                },
+                interpreter: ScriptInterpreter::Sh,
+                arguments: vec![],
+                directory: ScopedPath {
+                    scope_id: ACCOUNT_SCOPE_ID.into(),
+                    path: "srv".into(),
+                },
+            },
+        },
+    );
+    let close = async {
+        entered.notified().await;
+        f.service.end_context("session", true).await
+    };
+    let (execution, closed) = tokio::time::timeout(Duration::from_secs(3), async {
+        tokio::join!(action, close)
+    })
+    .await
+    .unwrap();
+    assert!(matches!(execution, Err("session_not_ready")));
+    assert!(closed.is_ok());
+    assert!(f.connection.requests.lock().unwrap().is_empty());
     f.service.shutdown().await;
 }

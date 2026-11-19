@@ -37,6 +37,9 @@ pub enum ExecutionDbReply {
     InputReserved {
         inserted: bool,
     },
+    Recovered {
+        unavailable: Vec<String>,
+    },
     Done,
 }
 

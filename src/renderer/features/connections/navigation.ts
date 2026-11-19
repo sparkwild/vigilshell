@@ -62,22 +62,22 @@ export function visibleConnections(
       return direction * compare(a.name, b.name) || a.id.localeCompare(b.id);
     });
 }
-export interface ConnectionGroup {
+export interface ConnectionGroup<T> {
   id: string;
   folder?: ConnectionFolder;
-  connections: ConnectionSummary[];
+  connections: T[];
 }
-export function connectionGroups(
+export function connectionGroups<T extends { groupId: string | null }>(
   folders: ConnectionFolder[],
-  connections: ConnectionSummary[],
+  connections: T[],
   filtered: boolean,
   locale: string,
-): ConnectionGroup[] {
+): ConnectionGroup<T>[] {
   const compare = new Intl.Collator(locale, {
     numeric: true,
     sensitivity: 'base',
   }).compare;
-  const groups: ConnectionGroup[] = [...folders]
+  const groups: ConnectionGroup<T>[] = [...folders]
     .sort(
       (a, b) => a.sortOrder - b.sortOrder || compare(a.name, b.name) || a.id.localeCompare(b.id),
     )

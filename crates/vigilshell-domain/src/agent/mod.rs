@@ -377,6 +377,10 @@ pub enum AgentReply {
         protections: Vec<SystemProtection>,
         configuration: AgentConfiguration,
         recording_error: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        execution_recovery_error: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        unrecovered_tasks: Vec<String>,
     },
     Challenge {
         id: String,

@@ -34,11 +34,16 @@ pub(super) fn read_profile(
     let row = db(c.query_row("SELECT group_id,group_sort_order,created_at,version,revision,credential_ref,deleting,proxy_id,config FROM connection_profiles WHERE id=?1", [id], |r| {
         Ok((r.get::<_, Option<String>>(0)?, r.get::<_, i64>(1)? as u64, r.get::<_, Option<String>>(2)?, r.get::<_, i64>(3)? as u64, r.get::<_, i64>(4)? as u64, r.get::<_, Option<String>>(5)?, r.get::<_, bool>(6)?, r.get::<_, Option<String>>(7)?, r.get::<_, Vec<u8>>(8)?))
     }).optional())?.ok_or(WorkspaceError::NotFound)?;
-    let bytes = cipher.open(id, &row.8)?;
+    let bytes = cipher.open(id, &row.8).map_err(|error| match error {
+        WorkspaceError::ConfigurationCorrupt | WorkspaceError::ConfigurationFormatUnsupported => {
+            WorkspaceError::ConnectionRecordUnavailable
+        }
+        other => other,
+    })?;
     let body: Body =
-        serde_json::from_slice(&bytes).map_err(|_| WorkspaceError::ConfigurationCorrupt)?;
+        serde_json::from_slice(&bytes).map_err(|_| WorkspaceError::ConnectionRecordUnavailable)?;
     if body.input.proxy_id != row.7 || body.input.clone().normalized().as_ref() != Ok(&body.input) {
-        return Err(WorkspaceError::ConfigurationCorrupt);
+        return Err(WorkspaceError::ConnectionRecordUnavailable);
     }
     Ok(ConnectionRecord {
         id: id.into(),

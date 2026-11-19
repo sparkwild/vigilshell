@@ -318,15 +318,6 @@ impl AgentService {
             self.stop_tasks(Some(&entry)).await;
         }
         self.event(AgentEvent::Configuration {}).await;
-        Ok(AgentReply::Configuration {
-            protections: system_protections(),
-            recording_error: self
-                .state
-                .lock()
-                .unwrap()
-                .recording_blocked
-                .then(|| "activity_recording_unavailable".into()),
-            configuration: config,
-        })
+        Ok(self.configuration_reply())
     }
 }

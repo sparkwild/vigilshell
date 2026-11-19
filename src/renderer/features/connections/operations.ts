@@ -37,11 +37,8 @@ export const operationRunning = (op: Operation) =>
 export const operationHasVisibleFeedback = (op: Operation, anchors: ReadonlySet<string>) =>
   anchors.has(op.owner) || !!(op.job?.sessionId && anchors.has('session:' + op.job.sessionId));
 
-// 与 Rust begin(..., cancellable) 保持一致；保存、删除和凭据结算不能假报已取消。
 export const operationCanCancel = (op: Operation) =>
-  !!op.job &&
-  ['working', 'trust'].includes(op.job.phase) &&
-  ['connect', 'test', 'credential'].includes(op.job.kind);
+  !!op.job?.cancellable && ['working', 'trust'].includes(op.job.phase);
 export const operationCanReconcile = (op: Operation) =>
   !!op.job || !!(op.error?.requestId && op.error?.runtimeId);
 
@@ -89,10 +86,15 @@ export class OperationStore {
   isBusy = (...resources: string[]) =>
     this.snapshot.operations.some(
       (op) =>
-        operationBusy(op) && [op.owner, ...(op.resources ?? [])].some((r) => resources.includes(r)),
+        this.holdsResources(op) &&
+        [op.owner, ...(op.resources ?? [])].some((r) => resources.includes(r)),
     );
+  private holdsResources(op: Operation) {
+    const runtime = this.transport.runtimeId();
+    return operationBusy(op) && (runtime === null || op.runtimeId === runtime);
+  }
   forOwner = (owner: string) =>
-    this.snapshot.operations.find((o) => o.owner === owner && operationBusy(o)) ??
+    this.snapshot.operations.find((o) => o.owner === owner && this.holdsResources(o)) ??
     [...this.snapshot.operations].reverse().find((o) => o.owner === owner);
   dismiss = (id: string) => {
     const op = this.snapshot.operations.find((o) => o.id === id);
@@ -149,16 +151,18 @@ export class OperationStore {
     if (reply.kind !== 'operation') return reply;
     let job = reply.operation;
     for (;;) {
+      if (this.disposed || this.transport.runtimeId() !== op.runtimeId)
+        throw new WorkspaceFailure('result_unknown');
       this.update(op.id, { job });
       op.onProgress?.(job);
       if (!['working', 'trust'].includes(job.phase)) {
         if (job.phase !== 'success') throw new WorkspaceFailure(job.error ?? 'cancelled');
         return { kind: 'operation', operation: job };
       }
-      if (this.disposed || this.transport.runtimeId() !== op.runtimeId)
-        throw new WorkspaceFailure('result_unknown');
       await new Promise<void>((r) => setTimeout(r, 120));
       try {
+        if (this.transport.runtimeId() !== op.runtimeId)
+          throw new WorkspaceFailure('result_unknown');
         const next = await this.transport.get(job.id);
         if (
           next.kind !== 'operation' ||
@@ -178,12 +182,19 @@ export class OperationStore {
   ): Promise<WorkspaceReply> {
     try {
       const reply = await this.settle(op, await execute());
+      if (op.onResult && (this.disposed || this.transport.runtimeId() !== op.runtimeId))
+        throw new WorkspaceFailure('result_unknown');
       await op.onResult?.(reply);
       this.publish(
         this.snapshot.operations.filter(
           (o) =>
             o.id !== op.id &&
-            !(o.owner === op.owner && o.action === op.action && !operationRunning(o)),
+            !(
+              o.owner === op.owner &&
+              o.action === op.action &&
+              o.runtimeId === op.runtimeId &&
+              o.phase === 'failed'
+            ),
         ),
       );
       return reply;
@@ -197,9 +208,10 @@ export class OperationStore {
           this.snapshot.operations.filter(
             (current) =>
               current.id === op.id ||
+              current.runtimeId !== op.runtimeId ||
               current.owner !== op.owner ||
               current.action !== op.action ||
-              operationRunning(current),
+              current.phase !== 'failed',
           ),
         );
         this.update(op.id, {

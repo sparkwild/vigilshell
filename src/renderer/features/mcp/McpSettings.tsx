@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { FieldDescription } from '../../components/ui/field';
 import { useMcp } from './model';
 import { McpFeedback } from './McpFeedback';
+import { McpDetails } from './McpDetails';
 import { McpServiceSettings } from './McpServiceSettings';
 import { McpAccessSettings } from './McpAccessSettings';
 export function McpSettings({ footer }: { footer: HTMLElement | null }) {
@@ -35,6 +36,18 @@ export function McpSettings({ footer }: { footer: HTMLElement | null }) {
       <McpAccessSettings model={model} />
       <div ref={feedback}>
         <McpFeedback code={error} />
+        {model.snapshot.unrecoveredTasks?.length ? (
+          <>
+            <McpFeedback code="agent_task_record_unavailable" />
+            <McpDetails label={t('agent_task_ids')}>
+              <ul className="break-all font-mono text-sm">
+                {model.snapshot.unrecoveredTasks.map((id) => (
+                  <li key={id}>{id}</li>
+                ))}
+              </ul>
+            </McpDetails>
+          </>
+        ) : null}
       </div>
       <SettingsFooterContent target={footer}>
         <span className="settings-save-status" role="status">

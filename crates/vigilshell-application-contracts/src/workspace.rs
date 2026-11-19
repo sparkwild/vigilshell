@@ -35,6 +35,7 @@ pub struct ChallengeView {
 }
 #[derive(Clone, Debug)]
 pub struct OperationView {
+    pub cancellable: bool,
     pub file_summary: Option<FileOperationSummary>,
     pub proxy: Option<ProxyRecord>,
     pub id: String,
@@ -85,6 +86,7 @@ pub enum WorkspaceNotice {
         states: Vec<TunnelStatus>,
     },
     Catalogue,
+    GroupRenamed(ConnectionGroup),
     Operation(Box<OperationView>),
     Session(Box<SessionView>),
     Detached,

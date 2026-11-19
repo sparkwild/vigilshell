@@ -6,6 +6,8 @@ import { FieldDescription, FieldGroup, FieldSet, FieldLegend } from '../../../co
 import { PolicyInput as Input } from './PolicyInput';
 import { ChoiceSelect } from '../../settings/components/SettingsControls';
 import { PolicyRow as Row } from './PolicyField';
+import { executionLimitRules } from '../../../../contracts/generated/execution-limits';
+import { policyLimitBounds, policyLimitValid } from '../../../../contracts/execution-validation';
 
 type LimitField = {
   key: keyof ExecutionLimits;
@@ -25,7 +27,7 @@ const groups: { title: MessageKey; fields: LimitField[] }[] = [
         hint: 'policy_task_limit_hint',
         optional: 'unlimited',
         unit: 60,
-        fallback: 1800,
+        fallback: executionLimitRules.defaults.maxTaskSeconds,
       },
       {
         key: 'concurrentTasks',
@@ -43,7 +45,7 @@ const groups: { title: MessageKey; fields: LimitField[] }[] = [
         hint: 'policy_terminal_limit_hint',
         optional: 'unlimited',
         unit: 60,
-        fallback: 7200,
+        fallback: executionLimitRules.defaults.terminalSeconds,
       },
       {
         key: 'terminalIdleSeconds',
@@ -77,7 +79,7 @@ const groups: { title: MessageKey; fields: LimitField[] }[] = [
         hint: 'policy_transfer_stall_hint',
         optional: 'off',
         unit: 1,
-        fallback: 300,
+        fallback: executionLimitRules.defaults.transferStallSeconds,
       },
       {
         key: 'concurrentTransfers',
@@ -121,11 +123,8 @@ export function PolicyLimits({
                 {group.fields.map((field) => {
                   const value = limits[field.key],
                     id = `policy-limit-${field.key}`;
-                  const invalid =
-                    value != null &&
-                    (!Number.isInteger(value) ||
-                      value < 1 ||
-                      value > (field.optional ? 2147483647 : 16));
+                  const invalid = !policyLimitValid(field.key, value);
+                  const { min, max } = policyLimitBounds(field.key);
                   return (
                     <Row
                       key={field.key}
@@ -165,8 +164,8 @@ export function PolicyLimits({
                               aria-label={t(field.label)}
                               className="w-20"
                               type="number"
-                              min={field.unit ? 1 / field.unit : 1}
-                              max={field.optional ? 2147483647 / (field.unit ?? 1) : 16}
+                              min={min / (field.unit ?? 1)}
+                              max={max / (field.unit ?? 1)}
                               step={field.unit === 60 ? 'any' : 1}
                               disabled={busy}
                               value={value / (field.unit ?? 1) || ''}

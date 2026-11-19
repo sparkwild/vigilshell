@@ -24,7 +24,7 @@ const pattern0 = new RegExp("^[A-Za-z0-9_-]+$", "u");
 const schema41 = {"type":"object","properties":{"downloadRoots":{"type":"array","items":{"$ref":"#/definitions/LocalDirectoryGrant"}},"fileTransfer":{"type":"boolean"},"level":{"$ref":"#/definitions/OperationLevel"},"limits":{"$ref":"#/definitions/ExecutionLimits"},"protectSystem":{"type":"boolean"},"protectedPaths":{"type":"array","items":{"$ref":"#/definitions/ProtectedPath"}},"scriptReview":{"type":"boolean","default":false},"uploadRoots":{"type":"array","items":{"$ref":"#/definitions/LocalDirectoryGrant"}},"version":{"type":"integer","format":"uint32","const":2,"minimum":0}},"additionalProperties":false,"required":["version","level","fileTransfer","protectSystem","protectedPaths","uploadRoots","downloadRoots","limits"],"x-vigil-rule":"executionPolicy"};
 const schema42 = {"type":"object","properties":{"id":{"type":"string"},"path":{"type":"string"}},"additionalProperties":false,"required":["id","path"]};
 const schema43 = {"type":"string","enum":["disabled","readOnly","operate"]};
-const schema44 = {"type":"object","properties":{"concurrentTasks":{"type":"integer","format":"uint16","maximum":65535,"minimum":0},"concurrentTerminals":{"type":"integer","format":"uint16","maximum":65535,"minimum":0},"concurrentTransfers":{"type":"integer","format":"uint16","maximum":65535,"minimum":0},"maxTaskSeconds":{"type":["integer","null"],"format":"uint32","minimum":0},"terminalIdleSeconds":{"type":["integer","null"],"format":"uint32","minimum":0},"terminalSeconds":{"type":["integer","null"],"format":"uint32","minimum":0},"transferSeconds":{"type":["integer","null"],"format":"uint32","minimum":0},"transferStallSeconds":{"type":["integer","null"],"format":"uint32","minimum":0}},"additionalProperties":false,"required":["concurrentTasks","concurrentTransfers","concurrentTerminals"]};
+const schema44 = {"type":"object","properties":{"concurrentTasks":{"type":"integer","format":"uint16","maximum":16,"minimum":1},"concurrentTerminals":{"type":"integer","format":"uint16","maximum":16,"minimum":1},"concurrentTransfers":{"type":"integer","format":"uint16","maximum":16,"minimum":1},"maxTaskSeconds":{"type":["integer","null"],"format":"uint32","maximum":4294967295,"minimum":1},"terminalIdleSeconds":{"type":["integer","null"],"format":"uint32","maximum":4294967295,"minimum":1},"terminalSeconds":{"type":["integer","null"],"format":"uint32","maximum":4294967295,"minimum":1},"transferSeconds":{"type":["integer","null"],"format":"uint32","maximum":4294967295,"minimum":1},"transferStallSeconds":{"type":["integer","null"],"format":"uint32","maximum":4294967295,"minimum":1}},"additionalProperties":false,"required":["concurrentTasks","concurrentTransfers","concurrentTerminals"],"x-vigil-defaults":{"concurrentTasks":4,"concurrentTerminals":2,"concurrentTransfers":2,"maxTaskSeconds":1800,"terminalIdleSeconds":null,"terminalSeconds":7200,"transferSeconds":null,"transferStallSeconds":300}};
 const func2 = Object.prototype.hasOwnProperty;
 const schema45 = {"type":"object","properties":{"kind":{"$ref":"#/definitions/ScopeKind"},"path":{"type":"string"}},"additionalProperties":false,"required":["path","kind"]};
 const schema46 = {"type":"string","enum":["directory","file"]};
@@ -402,8 +402,8 @@ vErrors.push(err24);
 errors++;
 }
 if(typeof data7 == "number"){
-if(data7 > 65535 || isNaN(data7)){
-const err25 = {instancePath:instancePath+"/limits/concurrentTasks",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTasks/maximum",keyword:"maximum",params:{comparison: "<=", limit: 65535},message:"must be <= 65535"};
+if(data7 > 16 || isNaN(data7)){
+const err25 = {instancePath:instancePath+"/limits/concurrentTasks",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTasks/maximum",keyword:"maximum",params:{comparison: "<=", limit: 16},message:"must be <= 16"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -412,8 +412,8 @@ vErrors.push(err25);
 }
 errors++;
 }
-if(data7 < 0 || isNaN(data7)){
-const err26 = {instancePath:instancePath+"/limits/concurrentTasks",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTasks/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(data7 < 1 || isNaN(data7)){
+const err26 = {instancePath:instancePath+"/limits/concurrentTasks",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTasks/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -437,8 +437,8 @@ vErrors.push(err27);
 errors++;
 }
 if(typeof data8 == "number"){
-if(data8 > 65535 || isNaN(data8)){
-const err28 = {instancePath:instancePath+"/limits/concurrentTerminals",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTerminals/maximum",keyword:"maximum",params:{comparison: "<=", limit: 65535},message:"must be <= 65535"};
+if(data8 > 16 || isNaN(data8)){
+const err28 = {instancePath:instancePath+"/limits/concurrentTerminals",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTerminals/maximum",keyword:"maximum",params:{comparison: "<=", limit: 16},message:"must be <= 16"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -447,8 +447,8 @@ vErrors.push(err28);
 }
 errors++;
 }
-if(data8 < 0 || isNaN(data8)){
-const err29 = {instancePath:instancePath+"/limits/concurrentTerminals",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTerminals/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(data8 < 1 || isNaN(data8)){
+const err29 = {instancePath:instancePath+"/limits/concurrentTerminals",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTerminals/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -472,8 +472,8 @@ vErrors.push(err30);
 errors++;
 }
 if(typeof data9 == "number"){
-if(data9 > 65535 || isNaN(data9)){
-const err31 = {instancePath:instancePath+"/limits/concurrentTransfers",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTransfers/maximum",keyword:"maximum",params:{comparison: "<=", limit: 65535},message:"must be <= 65535"};
+if(data9 > 16 || isNaN(data9)){
+const err31 = {instancePath:instancePath+"/limits/concurrentTransfers",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTransfers/maximum",keyword:"maximum",params:{comparison: "<=", limit: 16},message:"must be <= 16"};
 if(vErrors === null){
 vErrors = [err31];
 }
@@ -482,8 +482,8 @@ vErrors.push(err31);
 }
 errors++;
 }
-if(data9 < 0 || isNaN(data9)){
-const err32 = {instancePath:instancePath+"/limits/concurrentTransfers",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTransfers/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(data9 < 1 || isNaN(data9)){
+const err32 = {instancePath:instancePath+"/limits/concurrentTransfers",schemaPath:"#/definitions/ExecutionLimits/properties/concurrentTransfers/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -507,8 +507,8 @@ vErrors.push(err33);
 errors++;
 }
 if(typeof data10 == "number"){
-if(data10 < 0 || isNaN(data10)){
-const err34 = {instancePath:instancePath+"/limits/maxTaskSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/maxTaskSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(data10 > 4294967295 || isNaN(data10)){
+const err34 = {instancePath:instancePath+"/limits/maxTaskSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/maxTaskSeconds/maximum",keyword:"maximum",params:{comparison: "<=", limit: 4294967295},message:"must be <= 4294967295"};
 if(vErrors === null){
 vErrors = [err34];
 }
@@ -517,12 +517,8 @@ vErrors.push(err34);
 }
 errors++;
 }
-}
-}
-if(data6.terminalIdleSeconds !== undefined){
-let data11 = data6.terminalIdleSeconds;
-if((!((typeof data11 == "number") && (!(data11 % 1) && !isNaN(data11)))) && (data11 !== null)){
-const err35 = {instancePath:instancePath+"/limits/terminalIdleSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalIdleSeconds/type",keyword:"type",params:{type: schema44.properties.terminalIdleSeconds.type},message:"must be integer,null"};
+if(data10 < 1 || isNaN(data10)){
+const err35 = {instancePath:instancePath+"/limits/maxTaskSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/maxTaskSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err35];
 }
@@ -531,9 +527,12 @@ vErrors.push(err35);
 }
 errors++;
 }
-if(typeof data11 == "number"){
-if(data11 < 0 || isNaN(data11)){
-const err36 = {instancePath:instancePath+"/limits/terminalIdleSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalIdleSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+}
+}
+if(data6.terminalIdleSeconds !== undefined){
+let data11 = data6.terminalIdleSeconds;
+if((!((typeof data11 == "number") && (!(data11 % 1) && !isNaN(data11)))) && (data11 !== null)){
+const err36 = {instancePath:instancePath+"/limits/terminalIdleSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalIdleSeconds/type",keyword:"type",params:{type: schema44.properties.terminalIdleSeconds.type},message:"must be integer,null"};
 if(vErrors === null){
 vErrors = [err36];
 }
@@ -542,12 +541,9 @@ vErrors.push(err36);
 }
 errors++;
 }
-}
-}
-if(data6.terminalSeconds !== undefined){
-let data12 = data6.terminalSeconds;
-if((!((typeof data12 == "number") && (!(data12 % 1) && !isNaN(data12)))) && (data12 !== null)){
-const err37 = {instancePath:instancePath+"/limits/terminalSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalSeconds/type",keyword:"type",params:{type: schema44.properties.terminalSeconds.type},message:"must be integer,null"};
+if(typeof data11 == "number"){
+if(data11 > 4294967295 || isNaN(data11)){
+const err37 = {instancePath:instancePath+"/limits/terminalIdleSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalIdleSeconds/maximum",keyword:"maximum",params:{comparison: "<=", limit: 4294967295},message:"must be <= 4294967295"};
 if(vErrors === null){
 vErrors = [err37];
 }
@@ -556,9 +552,8 @@ vErrors.push(err37);
 }
 errors++;
 }
-if(typeof data12 == "number"){
-if(data12 < 0 || isNaN(data12)){
-const err38 = {instancePath:instancePath+"/limits/terminalSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(data11 < 1 || isNaN(data11)){
+const err38 = {instancePath:instancePath+"/limits/terminalIdleSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalIdleSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err38];
 }
@@ -569,10 +564,10 @@ errors++;
 }
 }
 }
-if(data6.transferSeconds !== undefined){
-let data13 = data6.transferSeconds;
-if((!((typeof data13 == "number") && (!(data13 % 1) && !isNaN(data13)))) && (data13 !== null)){
-const err39 = {instancePath:instancePath+"/limits/transferSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferSeconds/type",keyword:"type",params:{type: schema44.properties.transferSeconds.type},message:"must be integer,null"};
+if(data6.terminalSeconds !== undefined){
+let data12 = data6.terminalSeconds;
+if((!((typeof data12 == "number") && (!(data12 % 1) && !isNaN(data12)))) && (data12 !== null)){
+const err39 = {instancePath:instancePath+"/limits/terminalSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalSeconds/type",keyword:"type",params:{type: schema44.properties.terminalSeconds.type},message:"must be integer,null"};
 if(vErrors === null){
 vErrors = [err39];
 }
@@ -581,9 +576,9 @@ vErrors.push(err39);
 }
 errors++;
 }
-if(typeof data13 == "number"){
-if(data13 < 0 || isNaN(data13)){
-const err40 = {instancePath:instancePath+"/limits/transferSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(typeof data12 == "number"){
+if(data12 > 4294967295 || isNaN(data12)){
+const err40 = {instancePath:instancePath+"/limits/terminalSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalSeconds/maximum",keyword:"maximum",params:{comparison: "<=", limit: 4294967295},message:"must be <= 4294967295"};
 if(vErrors === null){
 vErrors = [err40];
 }
@@ -592,12 +587,8 @@ vErrors.push(err40);
 }
 errors++;
 }
-}
-}
-if(data6.transferStallSeconds !== undefined){
-let data14 = data6.transferStallSeconds;
-if((!((typeof data14 == "number") && (!(data14 % 1) && !isNaN(data14)))) && (data14 !== null)){
-const err41 = {instancePath:instancePath+"/limits/transferStallSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferStallSeconds/type",keyword:"type",params:{type: schema44.properties.transferStallSeconds.type},message:"must be integer,null"};
+if(data12 < 1 || isNaN(data12)){
+const err41 = {instancePath:instancePath+"/limits/terminalSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/terminalSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err41];
 }
@@ -606,9 +597,12 @@ vErrors.push(err41);
 }
 errors++;
 }
-if(typeof data14 == "number"){
-if(data14 < 0 || isNaN(data14)){
-const err42 = {instancePath:instancePath+"/limits/transferStallSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferStallSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+}
+}
+if(data6.transferSeconds !== undefined){
+let data13 = data6.transferSeconds;
+if((!((typeof data13 == "number") && (!(data13 % 1) && !isNaN(data13)))) && (data13 !== null)){
+const err42 = {instancePath:instancePath+"/limits/transferSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferSeconds/type",keyword:"type",params:{type: schema44.properties.transferSeconds.type},message:"must be integer,null"};
 if(vErrors === null){
 vErrors = [err42];
 }
@@ -617,11 +611,9 @@ vErrors.push(err42);
 }
 errors++;
 }
-}
-}
-}
-else {
-const err43 = {instancePath:instancePath+"/limits",schemaPath:"#/definitions/ExecutionLimits/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(typeof data13 == "number"){
+if(data13 > 4294967295 || isNaN(data13)){
+const err43 = {instancePath:instancePath+"/limits/transferSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferSeconds/maximum",keyword:"maximum",params:{comparison: "<=", limit: 4294967295},message:"must be <= 4294967295"};
 if(vErrors === null){
 vErrors = [err43];
 }
@@ -630,15 +622,73 @@ vErrors.push(err43);
 }
 errors++;
 }
-}
-if(data.protectSystem !== undefined){
-if(typeof data.protectSystem !== "boolean"){
-const err44 = {instancePath:instancePath+"/protectSystem",schemaPath:"#/properties/protectSystem/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
+if(data13 < 1 || isNaN(data13)){
+const err44 = {instancePath:instancePath+"/limits/transferSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
 if(vErrors === null){
 vErrors = [err44];
 }
 else {
 vErrors.push(err44);
+}
+errors++;
+}
+}
+}
+if(data6.transferStallSeconds !== undefined){
+let data14 = data6.transferStallSeconds;
+if((!((typeof data14 == "number") && (!(data14 % 1) && !isNaN(data14)))) && (data14 !== null)){
+const err45 = {instancePath:instancePath+"/limits/transferStallSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferStallSeconds/type",keyword:"type",params:{type: schema44.properties.transferStallSeconds.type},message:"must be integer,null"};
+if(vErrors === null){
+vErrors = [err45];
+}
+else {
+vErrors.push(err45);
+}
+errors++;
+}
+if(typeof data14 == "number"){
+if(data14 > 4294967295 || isNaN(data14)){
+const err46 = {instancePath:instancePath+"/limits/transferStallSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferStallSeconds/maximum",keyword:"maximum",params:{comparison: "<=", limit: 4294967295},message:"must be <= 4294967295"};
+if(vErrors === null){
+vErrors = [err46];
+}
+else {
+vErrors.push(err46);
+}
+errors++;
+}
+if(data14 < 1 || isNaN(data14)){
+const err47 = {instancePath:instancePath+"/limits/transferStallSeconds",schemaPath:"#/definitions/ExecutionLimits/properties/transferStallSeconds/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
+if(vErrors === null){
+vErrors = [err47];
+}
+else {
+vErrors.push(err47);
+}
+errors++;
+}
+}
+}
+}
+else {
+const err48 = {instancePath:instancePath+"/limits",schemaPath:"#/definitions/ExecutionLimits/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err48];
+}
+else {
+vErrors.push(err48);
+}
+errors++;
+}
+}
+if(data.protectSystem !== undefined){
+if(typeof data.protectSystem !== "boolean"){
+const err49 = {instancePath:instancePath+"/protectSystem",schemaPath:"#/properties/protectSystem/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
+if(vErrors === null){
+vErrors = [err49];
+}
+else {
+vErrors.push(err49);
 }
 errors++;
 }
@@ -655,24 +705,24 @@ errors = vErrors.length;
 }
 }
 else {
-const err45 = {instancePath:instancePath+"/protectedPaths",schemaPath:"#/properties/protectedPaths/type",keyword:"type",params:{type: "array"},message:"must be array"};
+const err50 = {instancePath:instancePath+"/protectedPaths",schemaPath:"#/properties/protectedPaths/type",keyword:"type",params:{type: "array"},message:"must be array"};
 if(vErrors === null){
-vErrors = [err45];
+vErrors = [err50];
 }
 else {
-vErrors.push(err45);
+vErrors.push(err50);
 }
 errors++;
 }
 }
 if(data.scriptReview !== undefined){
 if(typeof data.scriptReview !== "boolean"){
-const err46 = {instancePath:instancePath+"/scriptReview",schemaPath:"#/properties/scriptReview/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
+const err51 = {instancePath:instancePath+"/scriptReview",schemaPath:"#/properties/scriptReview/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
 if(vErrors === null){
-vErrors = [err46];
+vErrors = [err51];
 }
 else {
-vErrors.push(err46);
+vErrors.push(err51);
 }
 errors++;
 }
@@ -685,64 +735,7 @@ for(let i2=0; i2<len2; i2++){
 let data20 = data19[i2];
 if(data20 && typeof data20 == "object" && !Array.isArray(data20)){
 if(data20.id === undefined){
-const err47 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/required",keyword:"required",params:{missingProperty: "id"},message:"must have required property '"+"id"+"'"};
-if(vErrors === null){
-vErrors = [err47];
-}
-else {
-vErrors.push(err47);
-}
-errors++;
-}
-if(data20.path === undefined){
-const err48 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/required",keyword:"required",params:{missingProperty: "path"},message:"must have required property '"+"path"+"'"};
-if(vErrors === null){
-vErrors = [err48];
-}
-else {
-vErrors.push(err48);
-}
-errors++;
-}
-for(const key3 in data20){
-if(!((key3 === "id") || (key3 === "path"))){
-const err49 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
-if(vErrors === null){
-vErrors = [err49];
-}
-else {
-vErrors.push(err49);
-}
-errors++;
-}
-}
-if(data20.id !== undefined){
-if(typeof data20.id !== "string"){
-const err50 = {instancePath:instancePath+"/uploadRoots/" + i2+"/id",schemaPath:"#/definitions/LocalDirectoryGrant/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"};
-if(vErrors === null){
-vErrors = [err50];
-}
-else {
-vErrors.push(err50);
-}
-errors++;
-}
-}
-if(data20.path !== undefined){
-if(typeof data20.path !== "string"){
-const err51 = {instancePath:instancePath+"/uploadRoots/" + i2+"/path",schemaPath:"#/definitions/LocalDirectoryGrant/properties/path/type",keyword:"type",params:{type: "string"},message:"must be string"};
-if(vErrors === null){
-vErrors = [err51];
-}
-else {
-vErrors.push(err51);
-}
-errors++;
-}
-}
-}
-else {
-const err52 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/type",keyword:"type",params:{type: "object"},message:"must be object"};
+const err52 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/required",keyword:"required",params:{missingProperty: "id"},message:"must have required property '"+"id"+"'"};
 if(vErrors === null){
 vErrors = [err52];
 }
@@ -751,10 +744,8 @@ vErrors.push(err52);
 }
 errors++;
 }
-}
-}
-else {
-const err53 = {instancePath:instancePath+"/uploadRoots",schemaPath:"#/properties/uploadRoots/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(data20.path === undefined){
+const err53 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/required",keyword:"required",params:{missingProperty: "path"},message:"must have required property '"+"path"+"'"};
 if(vErrors === null){
 vErrors = [err53];
 }
@@ -763,11 +754,9 @@ vErrors.push(err53);
 }
 errors++;
 }
-}
-if(data.version !== undefined){
-let data23 = data.version;
-if(!((typeof data23 == "number") && (!(data23 % 1) && !isNaN(data23)))){
-const err54 = {instancePath:instancePath+"/version",schemaPath:"#/properties/version/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+for(const key3 in data20){
+if(!((key3 === "id") || (key3 === "path"))){
+const err54 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err54];
 }
@@ -776,8 +765,10 @@ vErrors.push(err54);
 }
 errors++;
 }
-if(2 !== data23){
-const err55 = {instancePath:instancePath+"/version",schemaPath:"#/properties/version/const",keyword:"const",params:{allowedValue: 2},message:"must be equal to constant"};
+}
+if(data20.id !== undefined){
+if(typeof data20.id !== "string"){
+const err55 = {instancePath:instancePath+"/uploadRoots/" + i2+"/id",schemaPath:"#/definitions/LocalDirectoryGrant/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err55];
 }
@@ -786,9 +777,10 @@ vErrors.push(err55);
 }
 errors++;
 }
-if(typeof data23 == "number"){
-if(data23 < 0 || isNaN(data23)){
-const err56 = {instancePath:instancePath+"/version",schemaPath:"#/properties/version/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+}
+if(data20.path !== undefined){
+if(typeof data20.path !== "string"){
+const err56 = {instancePath:instancePath+"/uploadRoots/" + i2+"/path",schemaPath:"#/definitions/LocalDirectoryGrant/properties/path/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err56];
 }
@@ -799,14 +791,72 @@ errors++;
 }
 }
 }
-}
 else {
-const err57 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+const err57 = {instancePath:instancePath+"/uploadRoots/" + i2,schemaPath:"#/definitions/LocalDirectoryGrant/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err57];
 }
 else {
 vErrors.push(err57);
+}
+errors++;
+}
+}
+}
+else {
+const err58 = {instancePath:instancePath+"/uploadRoots",schemaPath:"#/properties/uploadRoots/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err58];
+}
+else {
+vErrors.push(err58);
+}
+errors++;
+}
+}
+if(data.version !== undefined){
+let data23 = data.version;
+if(!((typeof data23 == "number") && (!(data23 % 1) && !isNaN(data23)))){
+const err59 = {instancePath:instancePath+"/version",schemaPath:"#/properties/version/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err59];
+}
+else {
+vErrors.push(err59);
+}
+errors++;
+}
+if(2 !== data23){
+const err60 = {instancePath:instancePath+"/version",schemaPath:"#/properties/version/const",keyword:"const",params:{allowedValue: 2},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err60];
+}
+else {
+vErrors.push(err60);
+}
+errors++;
+}
+if(typeof data23 == "number"){
+if(data23 < 0 || isNaN(data23)){
+const err61 = {instancePath:instancePath+"/version",schemaPath:"#/properties/version/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
+if(vErrors === null){
+vErrors = [err61];
+}
+else {
+vErrors.push(err61);
+}
+errors++;
+}
+}
+}
+}
+else {
+const err62 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err62];
+}
+else {
+vErrors.push(err62);
 }
 errors++;
 }

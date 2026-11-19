@@ -101,6 +101,9 @@ impl WorkspaceSink for Sink {
                     WorkspaceEvent::InputRejected { session_id, code }
                 }
                 WorkspaceNotice::Catalogue => WorkspaceEvent::Catalogue {},
+                WorkspaceNotice::GroupRenamed(group) => WorkspaceEvent::GroupRenamed {
+                    group: group.into(),
+                },
                 WorkspaceNotice::Operation(o) => WorkspaceEvent::Operation {
                     operation: Box::new(operation(*o)),
                 },
@@ -785,6 +788,7 @@ fn draft(d: DraftView) -> CredentialDraftView {
 }
 fn operation(o: OperationView) -> WorkspaceOperation {
     WorkspaceOperation {
+        cancellable: o.cancellable,
         file_summary: o.file_summary.map(|v| {
             vigilshell_desktop_protocol::workspace::FileOperationSummary {
                 connection_id: v.connection_id,
@@ -1024,6 +1028,223 @@ fn pipes(
 #[cfg(test)]
 mod unlock_boundary_tests {
     use super::*;
+    use vigilshell_application::ports::WorkspaceRepository;
+    use vigilshell_application::workspace::CredentialChange;
+    use vigilshell_credentials::{EncryptedSecretStore, VaultKeyMaterial, VaultKeyStore};
+    use vigilshell_domain::workspace::{GroupBucket, GroupLayout};
+    use vigilshell_storage_sqlite::SqlitePreferences;
+
+    struct TestDatabase(Mutex<SqlitePreferences>);
+    impl WorkspaceDatabase for TestDatabase {
+        fn execute(&self, command: DbCommand) -> FutureResult<'_, DbReply> {
+            Box::pin(async move { self.0.lock().unwrap().execute(command) })
+        }
+    }
+
+    #[derive(Default)]
+    struct TestKeys(Mutex<Option<VaultKeyMaterial>>);
+    impl VaultKeyStore for TestKeys {
+        fn read(&self, _: &str, _: u32) -> Result<VaultKeyMaterial, WorkspaceError> {
+            self.0
+                .lock()
+                .unwrap()
+                .clone()
+                .ok_or(WorkspaceError::VaultKeyMissing)
+        }
+        fn create(&self, _: &str, _: u32, key: &[u8]) -> Result<bool, WorkspaceError> {
+            let mut current = self.0.lock().unwrap();
+            if current.is_some() {
+                return Ok(false);
+            }
+            *current = Some(key.to_vec().into());
+            Ok(true)
+        }
+    }
+
+    #[tokio::test]
+    async fn bad_connection_body_does_not_poison_the_verified_vault() {
+        let root = tempfile::tempdir().unwrap();
+        let database = Arc::new(TestDatabase(Mutex::new(
+            SqlitePreferences::open(root.path()).unwrap(),
+        )));
+        let secrets = Arc::new(EncryptedSecretStore::new(
+            database.clone(),
+            Arc::new(TestKeys::default()),
+        ));
+        let mut access = secrets.subscribe_access();
+        secrets.initialize(false);
+        tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            access.wait_for(|s| s.phase != ConnectionAccessPhase::Unlocking),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(secrets.access_state().phase, ConnectionAccessPhase::Ready);
+        let cipher = secrets.configuration_cipher().unwrap();
+        let unlocked = UnlockedDatabase { database, secrets };
+        let raw = rusqlite::Connection::open(root.path().join("app.sqlite3")).unwrap();
+        let a = new_id();
+        let b = new_id();
+        let credential = new_id();
+        let proxy = new_id();
+        let DbReply::Proxy(proxy) = unlocked
+            .execute(DbCommand::SaveProxy {
+                proxy: ProxyRecord {
+                    id: proxy,
+                    name: "proxy".into(),
+                    kind: "http".into(),
+                    host: "localhost".into(),
+                    port: 8080,
+                    username: String::new(),
+                    credential: None,
+                    version: 0,
+                },
+                expected_version: None,
+            })
+            .await
+            .unwrap()
+        else {
+            panic!()
+        };
+        let save = |id: &str, name: &str, expected_version: Option<u64>| DbCommand::Save {
+            id: id.into(),
+            expected_version,
+            group_id: None,
+            input: ConnectionInput {
+                name: name.into(),
+                host: "localhost".into(),
+                port: 22,
+                username: "fixture".into(),
+                proxy_id: (id == a).then(|| proxy.id.clone()),
+                auth: AuthKind::Password,
+                notes: String::new(),
+                terminal: Box::default(),
+                tunnels: vec![],
+                environment: Environment::Test,
+            },
+            credential: if id == a {
+                CredentialChange::Replace {
+                    reference: credential.clone(),
+                    label: "fixture".into(),
+                }
+            } else {
+                CredentialChange::Keep
+            },
+            trust: None,
+        };
+        unlocked.execute(save(&a, "fixture-a", None)).await.unwrap();
+        unlocked.execute(save(&b, "fixture-b", None)).await.unwrap();
+        let list = |kind: &str, query: &str| DbCommand::List {
+            query: query.into(),
+            offset: 0,
+            limit: 50,
+            kind: kind.into(),
+            version: None,
+        };
+        let valid = cipher.seal(&a, b"{}").unwrap();
+        let mut tampered = valid.clone();
+        tampered[40] ^= 1;
+        let mut last = vec![];
+        for broken in [tampered, vec![0; 48], valid] {
+            raw.execute(
+                "UPDATE connection_profiles SET config=?2 WHERE id=?1",
+                rusqlite::params![a, broken],
+            )
+            .unwrap();
+            last = broken;
+            for command in [
+                DbCommand::Get(a.clone()),
+                save(&a, "cannot overwrite", Some(1)),
+            ] {
+                assert!(matches!(
+                    unlocked.execute(command).await,
+                    Err(WorkspaceError::ConnectionRecordUnavailable)
+                ));
+            }
+            let DbReply::Catalogue(page) = unlocked.execute(list("connections", "")).await.unwrap()
+            else {
+                panic!()
+            };
+            assert_eq!(page.connections[0].id, b);
+            assert_eq!(page.unavailable_connections[0].id, a);
+            let DbReply::Catalogue(search) = unlocked
+                .execute(list("connections", "fixture-"))
+                .await
+                .unwrap()
+            else {
+                panic!()
+            };
+            assert_eq!(search.connections.len(), 1);
+            assert!(search.unavailable_connections.is_empty());
+            assert_eq!(
+                unlocked.secrets.access_state().phase,
+                ConnectionAccessPhase::Ready
+            );
+        }
+        unlocked.execute(save(&b, "edited", Some(1))).await.unwrap();
+        let DbReply::Group(group) = unlocked
+            .execute(DbCommand::CreateGroup("active".into()))
+            .await
+            .unwrap()
+        else {
+            panic!()
+        };
+        let DbReply::Catalogue(page) = unlocked.execute(list("groups", "")).await.unwrap() else {
+            panic!()
+        };
+        unlocked
+            .execute(DbCommand::UpdateLayout(GroupLayout {
+                revision: page.layout_revision,
+                group_ids: vec![group.id.clone()],
+                buckets: vec![
+                    GroupBucket {
+                        group_id: Some(group.id),
+                        connection_ids: vec![b.clone()],
+                    },
+                    GroupBucket {
+                        group_id: None,
+                        connection_ids: vec![a.clone()],
+                    },
+                ],
+            }))
+            .await
+            .unwrap();
+        assert!(matches!(
+            unlocked
+                .execute(DbCommand::DeleteProxy {
+                    id: proxy.id,
+                    version: proxy.version
+                })
+                .await,
+            Err(WorkspaceError::ProxyInUse)
+        ));
+        let stored: (String, Vec<u8>) = raw
+            .query_row(
+                "SELECT credential_ref,config FROM connection_profiles WHERE id=?1",
+                [&a],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(stored, (credential, last));
+        raw.execute(
+            "UPDATE connection_configuration SET verifier=zeroblob(48)",
+            [],
+        )
+        .unwrap();
+        for id in [a, b] {
+            assert!(matches!(
+                unlocked.execute(DbCommand::Get(id)).await,
+                Err(WorkspaceError::ConfigurationFormatUnsupported)
+            ));
+        }
+        assert_eq!(
+            unlocked.secrets.access_state().phase,
+            ConnectionAccessPhase::Blocked
+        );
+        assert!(unlocked.execute(list("groups", "")).await.is_ok());
+    }
+
     #[tokio::test]
     async fn negotiation_admits_owner_without_touching_storage_or_keychain() {
         let (jobs, mut pending) = mpsc::channel(8);

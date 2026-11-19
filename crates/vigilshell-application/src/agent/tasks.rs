@@ -7,8 +7,10 @@ impl AgentService {
                 id: id.into(),
             }))
             .await
-            .map_err(|_| "agent_storage_unavailable")?
-        {
+            .map_err(|error| match error {
+                WorkspaceError::TaskRecordUnavailable => error.code(),
+                _ => "agent_storage_unavailable",
+            })? {
             DbReply::AgentHistory(AgentHistoryReply::Task(Some(task))) => Ok(*task),
             _ => Err("not_found"),
         }
@@ -191,23 +193,25 @@ impl AgentService {
             return Err("terminal_already_open");
         }
         self.record_policy(&context, &policy).await?;
-        let task = self
-            .executor
-            .submit(ExecutionRequest {
-                identity: ExecutionIdentity {
-                    task_id: new_id(),
-                    entry_id: entry.id,
-                    entry_generation: entry.generation,
-                    connection_id: view.connection_id,
-                    connection_revision: view.connection_revision,
-                    session_id: call.session_id,
-                    policy_revision: policy.revision,
-                },
-                request_key: call.request_key,
-                timeout_seconds: call.timeout_seconds,
-                operation: call.operation,
-            })
-            .await?;
+        let request = ExecutionRequest {
+            identity: ExecutionIdentity {
+                task_id: new_id(),
+                entry_id: entry.id,
+                entry_generation: entry.generation,
+                connection_id: view.connection_id,
+                connection_revision: view.connection_revision,
+                session_id: call.session_id,
+                policy_revision: policy.revision,
+            },
+            request_key: call.request_key,
+            timeout_seconds: call.timeout_seconds,
+            operation: call.operation,
+        };
+        let task = tokio::select! {
+            biased;
+            _ = context.cancel.cancelled() => return Err("session_not_ready"),
+            result = self.executor.submit(request) => result?,
+        };
         let task = self.get_task(&task.id).await?;
         Ok(AgentReply::Task { task })
     }

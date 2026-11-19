@@ -281,3 +281,61 @@ it('turns off both directional grants with a single settings update', async () =
     expect.any(Function),
   );
 });
+
+it.each([null, 0, 1, 2_147_483_648, 0xffff_ffff, 0x1_0000_0000])(
+  'uses the same form limits when saving any field with a persisted duration of %s seconds',
+  async (value) => {
+    const p = basePolicy();
+    p.execution.limits.maxTaskSeconds = value;
+    const m = model(p);
+    render(<PolicyEditor connection={connection} policy={p} model={m} register={() => {}} />);
+    const accepted = value === null || (value > 0 && value <= 0xffff_ffff);
+    if (value !== null) {
+      const duration = screen.getByRole('spinbutton', { name: translate('policy_max_task', 'en') });
+      expect(duration).toHaveAttribute('aria-invalid', String(!accepted));
+    }
+    await userEvent.click(screen.getByRole('switch', { name: 'Allow file transfers' }));
+    expect(m.issue).toHaveBeenCalledTimes(accepted ? 1 : 0);
+  },
+);
+
+it('round-trips seconds through the minutes field and keeps the bounded preset distinct', async () => {
+  const p = basePolicy();
+  const m = model(p);
+  const user = userEvent.setup();
+  expect(p.execution.limits.transferSeconds).toBeNull();
+  const { unmount } = render(
+    <PolicyEditor connection={connection} policy={p} model={m} register={() => {}} />,
+  );
+  const field = screen.getByRole('spinbutton', { name: translate('policy_max_task', 'en') });
+  await user.clear(field);
+  await user.type(field, '31.5');
+  await user.tab();
+  expect(m.issue).toHaveBeenCalledWith(
+    expect.objectContaining({
+      patch: { field: 'limit', value: { key: 'maxTaskSeconds', value: 1890 } },
+    }),
+    expect.any(Function),
+  );
+  unmount();
+  const saved = basePolicy();
+  saved.execution.limits.maxTaskSeconds = 1890;
+  const reopened = model(saved);
+  render(
+    <PolicyEditor connection={connection} policy={saved} model={reopened} register={() => {}} />,
+  );
+  expect(screen.getByRole('spinbutton', { name: translate('policy_max_task', 'en') })).toHaveValue(
+    31.5,
+  );
+  const mode = document.getElementById('policy-limit-transferSeconds-mode')!;
+  await user.click(mode);
+  await user.click(
+    await screen.findByRole('option', { name: translate('policy_set_limit', 'en') }),
+  );
+  expect(reopened.issue).toHaveBeenCalledWith(
+    expect.objectContaining({
+      patch: { field: 'limit', value: { key: 'transferSeconds', value: 1800 } },
+    }),
+    expect.any(Function),
+  );
+});

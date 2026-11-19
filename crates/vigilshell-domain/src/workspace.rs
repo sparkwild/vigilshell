@@ -14,6 +14,8 @@ pub enum WorkspaceError {
     PolicyUpgradeRequired,
     ConfigurationLocked,
     ConfigurationCorrupt,
+    ConnectionRecordUnavailable,
+    TaskRecordUnavailable,
     ConfigurationFormatUnsupported,
     CredentialMissing,
     CredentialDenied,
@@ -72,6 +74,8 @@ impl WorkspaceError {
             Self::PolicyUpgradeRequired => "policy_upgrade_required",
             Self::ConfigurationLocked => "configuration_locked",
             Self::ConfigurationCorrupt => "configuration_corrupt",
+            Self::ConnectionRecordUnavailable => "connection_record_unavailable",
+            Self::TaskRecordUnavailable => "agent_task_record_unavailable",
             Self::ConfigurationFormatUnsupported => "configuration_format_unsupported",
             Self::CredentialMissing => "credential_missing",
             Self::CredentialDenied => "credential_denied",
@@ -450,12 +454,20 @@ pub struct HostTrust {
     pub key: HostKey,
     pub confirmed_at: String,
 }
+#[derive(Clone, Debug)]
+pub struct UnavailableConnection {
+    pub id: String,
+    pub group_id: Option<String>,
+    pub group_sort_order: u64,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Catalogue {
     pub version: u64,
     pub groups: Vec<ConnectionGroup>,
     pub layout_revision: u64,
     pub connections: Vec<ConnectionRecord>,
+    pub unavailable_connections: Vec<UnavailableConnection>,
     pub next: Option<u32>,
 }
 #[cfg(test)]

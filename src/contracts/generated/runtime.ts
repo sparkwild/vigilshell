@@ -1884,7 +1884,7 @@ export type WorkspaceReply =
   | {
       connectionAccess: ConnectionAccessState
       kind: "ready"
-      version: 16
+      version: 17
     }
   | {
       kind: "catalogue"
@@ -2007,9 +2007,11 @@ export type AgentReply =
     }
   | {
       configuration: AgentConfiguration
+      execution_recovery_error?: string | null
       kind: "configuration"
       protections?: SystemProtection[]
       recording_error?: string | null
+      unrecovered_tasks?: string[]
     }
   | {
       id: string
@@ -2486,7 +2488,7 @@ export type WorkspaceCommand =
   | {
       method: "workspace.negotiate"
       params: {
-        version: 16
+        version: 17
       }
     }
   | {
@@ -2921,6 +2923,10 @@ export type WorkspaceEvent =
       kind: "catalogue"
     }
   | {
+      group: ConnectionGroupView
+      kind: "groupRenamed"
+    }
+  | {
       kind: "operation"
       operation: WorkspaceOperation
     }
@@ -3193,7 +3199,7 @@ export type WorkspaceRequest1 =
   | {
       method: "workspace.negotiate"
       params: {
-        version: 16
+        version: 17
       }
     }
   | {
@@ -3808,6 +3814,7 @@ export interface AgentSnapshot {
   protections?: SystemProtection[]
   running: boolean
   settings: AgentSettings
+  unrecoveredTasks?: string[]
   views: AgentSessionView[]
 }
 /**
@@ -4318,6 +4325,7 @@ export interface RemoteEntry {
  * via the `definition` "FileOperationPage".
  */
 export interface FileOperationPage {
+  cancellable: boolean
   completed: number
   error?: string | null
   failed: number
@@ -4673,6 +4681,10 @@ export interface CataloguePage {
   groups: ConnectionGroupView[]
   layoutRevision: number
   next: number | null
+  /**
+   * @maxItems 50
+   */
+  unavailableConnections?: UnavailableConnectionView[]
   version: number
 }
 /**
@@ -4703,6 +4715,15 @@ export interface ConnectionGroupView {
   name: string
   sortOrder: number
   version: number
+}
+/**
+ * This interface was referenced by `DesktopContract`'s JSON-Schema
+ * via the `definition` "UnavailableConnectionView".
+ */
+export interface UnavailableConnectionView {
+  groupId: string | null
+  groupSortOrder: number
+  id: string
 }
 /**
  * This interface was referenced by `DesktopContract`'s JSON-Schema
@@ -4791,6 +4812,7 @@ export interface CredentialDraftView {
  * via the `definition` "WorkspaceOperation".
  */
 export interface WorkspaceOperation {
+  cancellable: boolean
   challenge: TrustChallenge | null
   connection: ConnectionDetails | null
   draft: CredentialDraftView | null

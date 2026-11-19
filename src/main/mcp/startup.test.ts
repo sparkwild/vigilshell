@@ -16,7 +16,7 @@ it('serves history while key access is unlocking without configuration initializ
     workspaceCall: vi.fn(() => ({
       result: Promise.resolve({
         kind: 'ready',
-        version: 16,
+        version: 17,
         connectionAccess: { phase: 'unlocking', revision: 1, code: null },
       }),
     })),

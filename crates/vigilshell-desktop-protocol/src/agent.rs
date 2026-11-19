@@ -37,6 +37,8 @@ pub struct AgentSnapshot {
     pub endpoint: String,
     pub running: bool,
     pub error: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unrecovered_tasks: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]

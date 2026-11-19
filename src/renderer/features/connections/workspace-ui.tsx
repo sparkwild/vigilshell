@@ -253,7 +253,7 @@ export function WorkspaceUi({
         return;
       }
       if (confirmation || paste || connectionChoice || identity || transferClose) return;
-      store.newConnection(state.details?.groupId ?? null);
+      void store.newConnectionForSelection();
     } else if (command === 'find') {
       if (state.editor || confirmation || paste || connectionChoice || identity || transferClose)
         return;

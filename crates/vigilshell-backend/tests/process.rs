@@ -381,6 +381,138 @@ fn workspace_rejects_previous_version_and_negotiates_current_without_restarting_
 }
 
 #[test]
+fn optional_ui_rows_do_not_prevent_restart_and_repair() {
+    let dir = tempdir().unwrap();
+    let mut runtime = Runtime::start(dir.path());
+    hello(&mut runtime);
+    runtime.send(req("init", "preferences.get", json!({})));
+    drop(runtime.child.stdin.take());
+    assert!(runtime.wait().success());
+
+    let a = "11111111-1111-4111-8111-111111111111";
+    let b = "22222222-2222-4222-8222-222222222222";
+    let a_scope = format!("connection:{a}");
+    let b_scope = format!("connection:{b}");
+    let bad_picker = r#"{"kind":"pickers","upload":"relative","download":""}"#;
+    let bad_directory =
+        r#"{"kind":"directory","connectionRevision":1,"path":3,"scroll":0,"expanded":[]}"#;
+    let directory = json!({"kind":"directory","connectionRevision":1,"path":"/remote","scroll":0,"expanded":[]});
+    let db = rusqlite::Connection::open(dir.path().join("app.sqlite3")).unwrap();
+    db.execute_batch(
+        "UPDATE credential_vault SET initialized=1;
+         UPDATE connection_configuration SET verifier=zeroblob(48);",
+    )
+    .unwrap();
+    for id in [a, b] {
+        db.execute(
+            "INSERT INTO connection_profiles(id, group_sort_order, version, revision, config) VALUES(?1,0,1,1,zeroblob(48))",
+            [id],
+        ).unwrap();
+    }
+    for (scope, body) in [
+        ("pickers", bad_picker),
+        (&a_scope, bad_directory),
+        (&b_scope, &directory.to_string()),
+        ("window", "{ }"),
+    ] {
+        db.execute("INSERT INTO ui_state VALUES(?1,7,?2)", [scope, body])
+            .unwrap();
+    }
+    let raw = |scope: &str| -> (i64, String) {
+        db.query_row(
+            "SELECT revision,data FROM ui_state WHERE scope=?1",
+            [scope],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap()
+    };
+    let mut runtime = Runtime::start(dir.path());
+    hello(&mut runtime);
+    assert_eq!(
+        runtime.send(req("prefs", "preferences.get", json!({})))["result"]["kind"],
+        "preferences"
+    );
+    let mut workspace = |id, method, params| {
+        let mut message = req(id, method, params);
+        message["owner"] = json!(a);
+        runtime.send(message)
+    };
+    assert_eq!(
+        workspace(
+            "ready",
+            "workspace.negotiate",
+            json!({"version":WORKSPACE_PROTOCOL_VERSION})
+        )["result"]["result"]["kind"],
+        "ready"
+    );
+    assert_eq!(
+        workspace(
+            "groups",
+            "catalogue.list",
+            json!({"kind":"groups","query":"","offset":0,"version":null})
+        )["result"]["result"]["kind"],
+        "catalogue"
+    );
+    let picker = json!({"kind":"pickers","upload":"/tmp/saved","download":""});
+    for (scope, bad, good) in [
+        ("pickers", bad_picker, &picker),
+        (&a_scope, bad_directory, &directory),
+    ] {
+        let state = runtime.send(req(
+            &format!("get-{scope}"),
+            "uiState.get",
+            json!({"scope":scope}),
+        ));
+        assert_eq!(state["result"]["state"]["revision"], 7, "{state}");
+        assert_eq!(state["result"]["state"]["data"], Value::Null);
+        assert_eq!(raw(scope), (7, bad.into()));
+        let write = runtime.send(req(
+            &format!("repair-{scope}"),
+            "uiState.update",
+            json!({"scope":scope,"expectedRevision":7,"data":good}),
+        ));
+        assert_eq!(write["result"]["state"]["revision"], 8, "{write}");
+    }
+    let stale = runtime.send(req("stale", "uiState.update", json!({"scope":"pickers","expectedRevision":7,"data":{"kind":"pickers","upload":"/tmp/stale","download":""}})));
+    assert!(stale.get("error").is_some());
+    for (method, params) in [
+        ("uiState.get", json!({"scope":"window"})),
+        (
+            "uiState.update",
+            json!({"scope":"window","expectedRevision":7,"data":picker}),
+        ),
+    ] {
+        assert!(
+            runtime
+                .send(req(method, method, params))
+                .get("error")
+                .is_some()
+        );
+    }
+    drop(runtime.child.stdin.take());
+    assert!(runtime.wait().success());
+    let mut runtime = Runtime::start(dir.path());
+    hello(&mut runtime);
+    for (scope, expected) in [
+        ("pickers", &picker),
+        (&a_scope, &directory),
+        (&b_scope, &directory),
+    ] {
+        assert_eq!(
+            &runtime.send(req(
+                &format!("get-{scope}"),
+                "uiState.get",
+                json!({"scope":scope})
+            ))["result"]["state"]["data"],
+            expected
+        );
+    }
+    assert_eq!(raw("window"), (7, "{ }".into()));
+    drop(runtime.child.stdin.take());
+    assert!(runtime.wait().success());
+}
+
+#[test]
 fn workspace_keeps_group_and_proxy_results_and_rejects_retired_commands() {
     let dir = tempdir().unwrap();
     let mut runtime = Runtime::start(dir.path());
@@ -476,4 +608,276 @@ fn workspace_keeps_group_and_proxy_results_and_rejects_retired_commands() {
     assert_eq!(listing["result"]["result"]["proxies"][0], proxy);
     drop(runtime.child.stdin.take());
     assert!(runtime.wait().success());
+}
+
+#[test]
+fn workspace_renaming_emits_only_a_group_notice_and_reconciles_the_original_write() {
+    let dir = tempdir().unwrap();
+    let mut runtime = Runtime::start(dir.path());
+    let runtime_id = hello(&mut runtime);
+    let owner = "11111111-1111-4111-8111-111111111111";
+    let request = |id: &str, method: &str, params: Value| {
+        let mut v = req(id, method, params);
+        v["owner"] = json!(owner);
+        v
+    };
+    runtime.send(request(
+        "open",
+        "workspace.negotiate",
+        json!({"version":WORKSPACE_PROTOCOL_VERSION}),
+    ));
+    let group = runtime.send(request(
+        "create-a",
+        "groups.create",
+        json!({"name":"Before"}),
+    ))["result"]["result"]["group"]
+        .clone();
+    let change = request(
+        "lost-response",
+        "groups.update",
+        json!({"id":group["id"],"version":group["version"],"name":"After"}),
+    );
+    runtime.write(format!("{change}\n").as_bytes());
+    let mut notice = None;
+    loop {
+        let response = runtime.response();
+        if response["method"] == "workspace.changed" {
+            let event = &response["params"]["event"];
+            assert_ne!(event["kind"], "catalogue");
+            if event["kind"] == "groupRenamed" {
+                notice = Some(event["group"].clone());
+            }
+        }
+        if response["id"] == "lost-response" {
+            break;
+        }
+    }
+    let expected = notice.expect("rename notification precedes its response");
+    assert_eq!(expected["name"], "After");
+    assert_eq!(expected["version"], 2);
+    let reconcile = |id| {
+        request(
+            id,
+            "connections.reconcile",
+            json!({"requestId":"lost-response","runtimeId":runtime_id}),
+        )
+    };
+    let recovered = runtime.send(reconcile("query"));
+    assert_eq!(recovered["result"]["result"]["result"]["group"], expected);
+    for index in 0..256 {
+        let record = runtime.send(request(
+            &format!("retained-{index}"),
+            "groups.update",
+            json!({"id":expected["id"],"version":2,"name":"After"}),
+        ));
+        assert_eq!(record["result"]["result"]["group"], expected);
+    }
+    let evicted = runtime.send(reconcile("evicted-query"));
+    assert_eq!(
+        evicted["result"]["result"],
+        json!({"kind":"reconciled","result":null,"error":null})
+    );
+    drop(runtime.child.stdin.take());
+    assert!(runtime.wait().success());
+
+    let mut runtime = Runtime::start(dir.path());
+    assert_ne!(hello(&mut runtime), runtime_id);
+    runtime.send(request(
+        "open",
+        "workspace.negotiate",
+        json!({"version":WORKSPACE_PROTOCOL_VERSION}),
+    ));
+    let unknown = runtime.send(reconcile("old-query"));
+    assert_eq!(
+        unknown["result"]["result"],
+        json!({"kind":"reconciled","result":null,"error":null})
+    );
+    let duplicate = runtime.send(request(
+        "new-create",
+        "groups.create",
+        json!({"name":"After"}),
+    ));
+    assert_ne!(duplicate["result"]["result"]["group"]["id"], expected["id"]);
+    assert_eq!(duplicate["result"]["result"]["group"]["name"], "After (2)");
+    drop(runtime.child.stdin.take());
+    assert!(runtime.wait().success());
+}
+
+#[test]
+fn task_recovery_uses_row_evidence_on_two_process_restarts_and_keeps_configuration_readable() {
+    use vigilshell_application::ports::{DbCommand, ExecutionDbCommand, WorkspaceRepository};
+    use vigilshell_domain::agent::*;
+    let dir = tempdir().unwrap();
+    let mut store = vigilshell_storage_sqlite::SqlitePreferences::open(dir.path()).unwrap();
+    for id in ["queued", "attempted", "damaged", "invalid-phase"] {
+        let mut task = ExecutionTask {
+            id: id.into(),
+            entry_id: "entry".into(),
+            connection_id: "connection".into(),
+            context_id: "session".into(),
+            created_at: 1,
+            finished_at: None,
+            revision: 0,
+            request: ExecutionRequest {
+                identity: ExecutionIdentity {
+                    task_id: id.into(),
+                    entry_id: "entry".into(),
+                    connection_id: "connection".into(),
+                    session_id: "session".into(),
+                    entry_generation: 1,
+                    connection_revision: 1,
+                    policy_revision: 1,
+                },
+                request_key: id.into(),
+                timeout_seconds: None,
+                operation: RuntimeOperation::Command {
+                    command: "pwd".into(),
+                    directory: ScopedPath {
+                        scope_id: ACCOUNT_SCOPE_ID.into(),
+                        path: "srv".into(),
+                    },
+                },
+            },
+            source_request: None,
+            policy: ConnectionPolicy {
+                connection_id: "connection".into(),
+                connection_revision: 1,
+                revision: 1,
+                verify_connect: true,
+                execution: ExecutionPolicy {
+                    level: OperationLevel::ReadOnly,
+                    ..Default::default()
+                },
+            },
+            state: ExecutionState {
+                phase: ExecutionPhase::Queued,
+                dispatch: DispatchState::NotDispatched {},
+                review: ScriptReviewState::NotRequired {},
+                outcome: None,
+                terminal: false,
+            },
+            phase: None,
+            error: None,
+            output_incomplete: false,
+            file_report: None,
+            native_report: None,
+            script_snapshot: None,
+            script_staging_path: None,
+        };
+        store
+            .execute(DbCommand::Execution(ExecutionDbCommand::Register(
+                Box::new(task.clone()),
+            )))
+            .unwrap();
+        if id == "attempted" {
+            task.revision = 1;
+            task.state.begin_dispatch("attempt".into(), 2).unwrap();
+            store
+                .execute(DbCommand::Execution(ExecutionDbCommand::Save {
+                    task: Box::new(task),
+                    expected: 0,
+                }))
+                .unwrap();
+        }
+    }
+    drop(store);
+    let db = rusqlite::Connection::open(dir.path().join("app.sqlite3")).unwrap();
+    db.execute("UPDATE agent_tasks SET body='{' WHERE id='damaged'", [])
+        .unwrap();
+    db.execute(
+        "UPDATE agent_tasks SET body=json_set(body,'$.phase',42) WHERE id='invalid-phase'",
+        [],
+    )
+    .unwrap();
+    let damaged: Vec<(String, String, String)> = db.prepare("SELECT id,body,fingerprint FROM agent_tasks WHERE id IN ('damaged','invalid-phase') ORDER BY id").unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?))).unwrap().collect::<rusqlite::Result<_>>().unwrap();
+    for _ in 0..2 {
+        let mut runtime = Runtime::start(dir.path());
+        hello(&mut runtime);
+        let owner = "11111111-1111-4111-8111-111111111111";
+        let request = |id: &str, method: &str, params: Value| {
+            let mut v = req(id, method, params);
+            v["owner"] = json!(owner);
+            v
+        };
+        runtime.send(request(
+            "open",
+            "workspace.negotiate",
+            json!({"version":WORKSPACE_PROTOCOL_VERSION}),
+        ));
+        let config = |id: &str| {
+            request(
+                id,
+                "agent.request",
+                json!({"request":{"operation":"configuration"}}),
+            )
+        };
+        let first = runtime.send(config("first"));
+        assert_eq!(
+            first["result"]["result"]["result"]["kind"], "configuration",
+            "{first}"
+        );
+        let deadline = Instant::now() + Duration::from_secs(3);
+        for attempt in 0.. {
+            let configuration = runtime.send(config(&format!("read-{attempt}")));
+            if configuration["result"]["result"]["result"]["unrecovered_tasks"]
+                == json!(["damaged", "invalid-phase"])
+            {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "recovery did not publish damaged row: {configuration}"
+            );
+            thread::sleep(Duration::from_millis(5));
+        }
+        for (id, revision, outcome) in [("queued", 1, "notExecuted"), ("attempted", 2, "unknown")] {
+            let (active, body): (bool, String) = db
+                .query_row(
+                    "SELECT active,body FROM agent_tasks WHERE id=?1",
+                    [id],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .unwrap();
+            let value: Value = serde_json::from_str(&body).unwrap();
+            assert!(!active);
+            assert_eq!(value["revision"], revision);
+            assert_eq!(value["state"]["outcome"]["kind"], outcome, "{value}");
+        }
+        assert_eq!(
+            db.query_row(
+                "SELECT body FROM agent_tasks WHERE id='damaged'",
+                [],
+                |row| row.get::<_, String>(0)
+            )
+            .unwrap(),
+            "{"
+        );
+        let mut read_agent = |id: &str, params: Value| {
+            runtime.send(request(id, "agent.request", json!({"request":params})))["result"]["result"]["result"].clone()
+        };
+        let activity = read_agent(
+            "activity",
+            json!({"operation":"activitySummaries","filter":{}}),
+        );
+        assert_eq!(activity["kind"], "activitySummaries", "{activity}");
+        assert_eq!(activity["items"].as_array().unwrap().len(), 2);
+        let tasks = read_agent("history", json!({"operation":"tasks","offset":0}));
+        assert_eq!(tasks["kind"], "tasks", "{tasks}");
+        assert_eq!(tasks["tasks"].as_array().unwrap().len(), 2);
+        for (id, body, fingerprint) in &damaged {
+            let detail = read_agent(id, json!({"operation":"task","task_id":id}));
+            assert_eq!(
+                detail,
+                json!({"kind":"error","code":"agent_task_record_unavailable"})
+            );
+            let (raw, receipt): (String, String) = db.query_row(
+                "SELECT t.body,r.fingerprint FROM agent_tasks t JOIN agent_receipts r ON t.id=r.task_id WHERE t.id=?1",
+                [id], |r| Ok((r.get(0)?,r.get(1)?)),
+            ).unwrap();
+            assert_eq!((&raw, &receipt), (body, fingerprint));
+        }
+        drop(runtime.child.stdin.take());
+        assert!(runtime.wait().success());
+    }
 }

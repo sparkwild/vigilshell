@@ -457,3 +457,40 @@ async fn retry_of_deep_scan_failure_keeps_original_depth_budget() {
         Some(WorkspaceError::FilesTooLarge)
     );
 }
+
+#[tokio::test]
+async fn only_the_owner_can_cancel_a_cancellable_operation_before_it_finishes() {
+    let f = Fixture::new();
+    let files = f.service.begin(&f.owner, "files", true).unwrap();
+    assert!(files.cancellable);
+    assert!(matches!(
+        f.service
+            .handle(&new_id(), WorkspaceAction::Cancel(files.id.clone()))
+            .await,
+        Err(WorkspaceError::NotFound)
+    ));
+    f.run(WorkspaceAction::Cancel(files.id.clone()))
+        .await
+        .unwrap();
+    assert_eq!(
+        f.service.operation(&f.owner, &files.id).unwrap().phase,
+        "working"
+    );
+    f.service.finish(&files.id, Ok(())).await;
+    assert!(matches!(
+        f.run(WorkspaceAction::Cancel(files.id.clone())).await,
+        Err(WorkspaceError::TooLate)
+    ));
+    assert_eq!(
+        f.service.operation(&f.owner, &files.id).unwrap().phase,
+        "success"
+    );
+    for kind in ["save", "delete"] {
+        let operation = f.service.begin(&f.owner, kind, false).unwrap();
+        assert!(!operation.cancellable);
+        assert!(matches!(
+            f.run(WorkspaceAction::Cancel(operation.id)).await,
+            Err(WorkspaceError::TooLate)
+        ));
+    }
+}

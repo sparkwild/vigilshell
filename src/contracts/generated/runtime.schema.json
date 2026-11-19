@@ -4777,6 +4777,12 @@
             "configuration": {
               "$ref": "#/definitions/AgentConfiguration"
             },
+            "execution_recovery_error": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "kind": {
               "type": "string",
               "const": "configuration"
@@ -4793,6 +4799,12 @@
                 "string",
                 "null"
               ]
+            },
+            "unrecovered_tasks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           "additionalProperties": false,
@@ -5154,6 +5166,12 @@
         },
         "settings": {
           "$ref": "#/definitions/AgentSettings"
+        },
+        "unrecoveredTasks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "views": {
           "type": "array",
@@ -6187,6 +6205,13 @@
           "format": "uint32",
           "maximum": 9007199254740991,
           "minimum": -9007199254740991
+        },
+        "unavailableConnections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnavailableConnectionView"
+          },
+          "maxItems": 50
         },
         "version": {
           "type": "integer",
@@ -7302,20 +7327,20 @@
         "concurrentTasks": {
           "type": "integer",
           "format": "uint16",
-          "maximum": 65535,
-          "minimum": 0
+          "maximum": 16,
+          "minimum": 1
         },
         "concurrentTerminals": {
           "type": "integer",
           "format": "uint16",
-          "maximum": 65535,
-          "minimum": 0
+          "maximum": 16,
+          "minimum": 1
         },
         "concurrentTransfers": {
           "type": "integer",
           "format": "uint16",
-          "maximum": 65535,
-          "minimum": 0
+          "maximum": 16,
+          "minimum": 1
         },
         "maxTaskSeconds": {
           "type": [
@@ -7323,7 +7348,8 @@
             "null"
           ],
           "format": "uint32",
-          "minimum": 0
+          "maximum": 4294967295,
+          "minimum": 1
         },
         "terminalIdleSeconds": {
           "type": [
@@ -7331,7 +7357,8 @@
             "null"
           ],
           "format": "uint32",
-          "minimum": 0
+          "maximum": 4294967295,
+          "minimum": 1
         },
         "terminalSeconds": {
           "type": [
@@ -7339,7 +7366,8 @@
             "null"
           ],
           "format": "uint32",
-          "minimum": 0
+          "maximum": 4294967295,
+          "minimum": 1
         },
         "transferSeconds": {
           "type": [
@@ -7347,7 +7375,8 @@
             "null"
           ],
           "format": "uint32",
-          "minimum": 0
+          "maximum": 4294967295,
+          "minimum": 1
         },
         "transferStallSeconds": {
           "type": [
@@ -7355,7 +7384,8 @@
             "null"
           ],
           "format": "uint32",
-          "minimum": 0
+          "maximum": 4294967295,
+          "minimum": 1
         }
       },
       "additionalProperties": false,
@@ -7363,7 +7393,17 @@
         "concurrentTasks",
         "concurrentTransfers",
         "concurrentTerminals"
-      ]
+      ],
+      "x-vigil-defaults": {
+        "concurrentTasks": 4,
+        "concurrentTerminals": 2,
+        "concurrentTransfers": 2,
+        "maxTaskSeconds": 1800,
+        "terminalIdleSeconds": null,
+        "terminalSeconds": 7200,
+        "transferSeconds": null,
+        "transferStallSeconds": 300
+      }
     },
     "ExecutionOutcome": {
       "description": "RequestAccepted 只确认请求被接纳，Partial 和 Unknown 均不得投影成已成功或已回滚。",
@@ -8104,6 +8144,9 @@
     "FileOperationPage": {
       "type": "object",
       "properties": {
+        "cancellable": {
+          "type": "boolean"
+        },
         "completed": {
           "type": "integer",
           "format": "uint32",
@@ -8170,6 +8213,7 @@
       },
       "additionalProperties": false,
       "required": [
+        "cancellable",
         "id",
         "phase",
         "stage",
@@ -9177,7 +9221,8 @@
       "additionalProperties": false,
       "required": [
         "key"
-      ]
+      ],
+      "x-vigil-rule": "policyLimitPatch"
     },
     "PolicyResourcePage": {
       "oneOf": [
@@ -13694,6 +13739,32 @@
       ],
       "x-vigil-rule": "uiScope"
     },
+    "UnavailableConnectionView": {
+      "type": "object",
+      "properties": {
+        "groupId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groupSortOrder": {
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 0
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "groupId",
+        "groupSortOrder"
+      ]
+    },
     "UpdateCheckPhase": {
       "type": "string",
       "enum": [
@@ -15049,7 +15120,7 @@
                   "type": "integer",
                   "format": "uint8",
                   "enum": [
-                    16
+                    17
                   ],
                   "maximum": 255,
                   "minimum": 0
@@ -15982,6 +16053,23 @@
         {
           "type": "object",
           "properties": {
+            "group": {
+              "$ref": "#/definitions/ConnectionGroupView"
+            },
+            "kind": {
+              "type": "string",
+              "const": "groupRenamed"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "group"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
             "kind": {
               "type": "string",
               "const": "operation"
@@ -16078,6 +16166,9 @@
     "WorkspaceOperation": {
       "type": "object",
       "properties": {
+        "cancellable": {
+          "type": "boolean"
+        },
         "challenge": {
           "anyOf": [
             {
@@ -16172,6 +16263,7 @@
       },
       "additionalProperties": false,
       "required": [
+        "cancellable",
         "proxy",
         "id",
         "kind",
@@ -16527,7 +16619,7 @@
               "type": "integer",
               "format": "uint8",
               "enum": [
-                16
+                17
               ],
               "maximum": 255,
               "minimum": 0
@@ -17865,7 +17957,7 @@
                   "type": "integer",
                   "format": "uint8",
                   "enum": [
-                    16
+                    17
                   ],
                   "maximum": 255,
                   "minimum": 0

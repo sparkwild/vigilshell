@@ -3,7 +3,7 @@
     {
       "method": "workspace.negotiate",
       "params": {
-        "version": 16
+        "version": 17
       }
     },
     {

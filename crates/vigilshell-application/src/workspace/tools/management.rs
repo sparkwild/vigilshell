@@ -167,6 +167,10 @@ impl WorkspaceService {
                 let count = |status| job.items.iter().filter(|i| i.status == status).count() as u32;
                 Ok(WorkspaceResult::Tools(ToolResult::FileOperation(
                     FileOperationPage {
+                        cancellable: state
+                            .operations
+                            .get(&id)
+                            .is_some_and(|op| op.view.cancellable),
                         id,
                         phase: job.phase.clone(),
                         stage: job.stage.clone(),

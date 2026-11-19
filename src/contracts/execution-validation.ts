@@ -8,16 +8,28 @@ import type {
   NativeServiceDefinition,
   PackageSourceDefinition,
   PackageTarget,
+  PolicyLimitKey,
   RuntimeOperation,
   ScopedPath,
   ScriptReviewBinding,
 } from './index';
+import { executionLimitRules } from './generated/execution-limits';
 
 const bytes = (value: string) => new TextEncoder().encode(value).length;
 const control = /\p{Cc}/u;
 const identity = (value: string) => /^[A-Za-z0-9_-]{1,128}$/.test(value);
 const integer = (value: number, max = Number.MAX_SAFE_INTEGER, min = 0) =>
   Number.isSafeInteger(value) && value >= min && value <= max;
+export function policyLimitBounds(key: PolicyLimitKey) {
+  return key.startsWith('concurrent')
+    ? executionLimitRules.concurrency
+    : executionLimitRules.duration;
+}
+export function policyLimitValid(key: PolicyLimitKey, value: number | null | undefined): boolean {
+  if (value == null) return !key.startsWith('concurrent');
+  const { min, max } = policyLimitBounds(key);
+  return integer(value, max, min);
+}
 const hash = (value: string) => /^[\da-fA-F]{64}$/.test(value);
 const text = (value: string, limit: number) =>
   /[^\p{White_Space}]/u.test(value) && bytes(value) <= limit && !value.includes('\0');
@@ -65,15 +77,8 @@ export function executionPolicyValid(policy: ExecutionPolicy): boolean {
     policy.protectedPaths.every((target) => absolutePath(target.path)) &&
     grantsValid(policy.uploadRoots) &&
     grantsValid(policy.downloadRoots) &&
-    [
-      limits.maxTaskSeconds,
-      limits.terminalSeconds,
-      limits.terminalIdleSeconds,
-      limits.transferSeconds,
-      limits.transferStallSeconds,
-    ].every((value) => value == null || integer(value, 0xffff_ffff, 1)) &&
-    [limits.concurrentTasks, limits.concurrentTransfers, limits.concurrentTerminals].every(
-      (value) => integer(value, 16, 1),
+    (Object.keys(executionLimitRules.defaults) as PolicyLimitKey[]).every((key) =>
+      policyLimitValid(key, limits[key]),
     )
   );
 }
