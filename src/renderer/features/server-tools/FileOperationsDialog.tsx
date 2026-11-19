@@ -51,6 +51,7 @@ export function FileOperationsDialog({
     [busy, setBusy] = useState(false);
   const offset = offsets.at(-1)!;
   const runtime = state.runtimeId;
+  const canCancel = !!page?.cancellable && page.id === id && page.phase === 'working';
   const notificationRef = useNotificationSurface(id && page ? `fileOperation:${id}` : null);
   useEffect(() => {
     if (!id) return;
@@ -81,7 +82,7 @@ export function FileOperationsDialog({
     };
   }, [store, id, offset, runtime, refresh, onUnavailable]);
   async function act(retry: boolean) {
-    if (!id || busy || store.getSnapshot().runtimeId !== runtime) return;
+    if (!id || busy || (!retry && !canCancel) || store.getSnapshot().runtimeId !== runtime) return;
     setBusy(true);
     setError(null);
     try {
@@ -224,11 +225,11 @@ export function FileOperationsDialog({
           </>
         ) : null}
         <DialogFooter>
-          {page?.phase === 'working' ? (
+          {canCancel ? (
             <Button variant="outline" disabled={busy} onClick={() => void act(false)}>
               {t('ws_cancel')}
             </Button>
-          ) : page && (page.failed > 0 || page.pending > 0) ? (
+          ) : page && page.phase !== 'working' && (page.failed > 0 || page.pending > 0) ? (
             <Button variant="outline" disabled={busy} onClick={() => void act(true)}>
               {t('files_operation_retry')}
             </Button>

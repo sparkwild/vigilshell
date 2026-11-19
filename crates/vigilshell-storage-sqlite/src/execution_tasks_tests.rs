@@ -192,6 +192,90 @@ fn registration_constraint_failure_rolls_back_task_and_receipt() {
 }
 
 #[test]
+fn recovery_uses_row_identity_and_preserves_bad_bodies_and_receipts() {
+    let mut c = db();
+    for id in [
+        "broken-json",
+        "wrong-identity",
+        "missing-receipt",
+        "queued",
+        "attempted",
+    ] {
+        execute(&mut c, C::Register(Box::new(task(id)))).unwrap();
+    }
+    let mut attempted = *get(&c, "entry", "attempted").unwrap().unwrap();
+    attempted.state.begin_dispatch("attempt".into(), 2).unwrap();
+    attempted.revision = 1;
+    execute(
+        &mut c,
+        C::Save {
+            task: Box::new(attempted),
+            expected: 0,
+        },
+    )
+    .unwrap();
+    c.execute_batch(
+        "UPDATE agent_tasks SET body='{' WHERE id='broken-json';
+         UPDATE agent_tasks SET body=json_set(body,'$.id','queued') WHERE id='wrong-identity';
+         UPDATE agent_receipts SET fingerprint='mismatch' WHERE task_id='missing-receipt';",
+    )
+    .unwrap();
+    let evidence = |c: &Connection| {
+        c.prepare("SELECT t.id,t.body,r.fingerprint FROM agent_tasks t JOIN agent_receipts r ON t.id=r.task_id WHERE t.id IN ('broken-json','wrong-identity','missing-receipt') ORDER BY t.id")
+            .unwrap().query_map([], |r| Ok((r.get::<_, String>(0)?,r.get::<_, String>(1)?,r.get::<_, String>(2)?)))
+            .unwrap().collect::<rusqlite::Result<Vec<_>>>().unwrap()
+    };
+    let original = evidence(&c);
+    c.execute_batch("PRAGMA query_only=ON").unwrap();
+    assert!(matches!(
+        execute(&mut c, C::Recover),
+        Err(WorkspaceError::StorageUnavailable)
+    ));
+    c.execute_batch("PRAGMA query_only=OFF").unwrap();
+    let unavailable = vec!["broken-json", "missing-receipt", "wrong-identity"];
+    for _ in 0..2 {
+        assert!(
+            matches!(execute(&mut c, C::Recover).unwrap(), R::Recovered { unavailable: ids } if ids == unavailable)
+        );
+        assert_eq!(evidence(&c), original);
+        let queued = get(&c, "entry", "queued").unwrap().unwrap();
+        let attempted = get(&c, "entry", "attempted").unwrap().unwrap();
+        assert_eq!(queued.revision, 1);
+        assert_eq!(attempted.revision, 2);
+        assert!(matches!(
+            queued.state.outcome,
+            Some(ExecutionOutcome::NotExecuted {
+                reason: NotExecutedReason::Restarted
+            })
+        ));
+        assert!(matches!(
+            attempted.state.outcome,
+            Some(ExecutionOutcome::Unknown {
+                reason: ExecutionStopReason::Restarted
+            })
+        ));
+    }
+    use vigilshell_application_contracts::ports::{AgentHistoryCommand, AgentHistoryReply};
+    let AgentHistoryReply::Tasks(page) = crate::agent_history::execute(
+        &c,
+        None,
+        AgentHistoryCommand::Tasks {
+            filter: TaskHistoryFilter::default(),
+        },
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert!(page.tasks.iter().any(|task| task.id == "queued"));
+    assert!(
+        !page
+            .tasks
+            .iter()
+            .any(|task| ["broken-json", "wrong-identity"].contains(&task.id.as_str()))
+    );
+}
+
+#[test]
 fn current_task_reads_reject_index_body_mismatch() {
     let mut c = db();
     execute(&mut c, C::Register(Box::new(task("task")))).unwrap();

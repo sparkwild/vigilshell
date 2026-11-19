@@ -8,6 +8,7 @@ import type {
 } from '@contracts';
 import { mcpSnapshotStore } from './snapshot-store';
 import type { McpNavigation } from '../../../contracts/mcp';
+import { executionLimitRules } from '../../../contracts/generated/execution-limits';
 
 export function navigateMcp(target: McpNavigation) {
   window.dispatchEvent(new CustomEvent('vigilshell:mcp-navigation', { detail: target }));
@@ -36,16 +37,7 @@ export function defaultPolicy(connectionId: string): ConnectionPolicy {
       protectedPaths: [],
       uploadRoots: [],
       downloadRoots: [],
-      limits: {
-        maxTaskSeconds: 1800,
-        terminalSeconds: 7200,
-        terminalIdleSeconds: null,
-        concurrentTasks: 4,
-        concurrentTransfers: 2,
-        concurrentTerminals: 2,
-        transferSeconds: null,
-        transferStallSeconds: 300,
-      },
+      limits: { ...executionLimitRules.defaults },
     },
   };
 }

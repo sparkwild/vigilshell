@@ -20,7 +20,7 @@ it('validates workspace negotiation, control ranges and runtime envelopes', () =
   expect(
     validWorkspaceCommand({
       method: 'workspace.negotiate',
-      params: { version: 16 },
+      params: { version: 17 },
     }),
   ).toBe(true);
   expect(
@@ -38,12 +38,12 @@ it('validates workspace negotiation, control ranges and runtime envelopes', () =
   expect(
     isWorkspaceReply({
       kind: 'ready',
-      version: 16,
+      version: 17,
       connectionAccess: { phase: 'locked', revision: 0, code: null },
     }),
   ).toBe(true);
   expect(isWorkspaceReply({ kind: 'ready', version: 7 })).toBe(false);
-  expect(isWorkspaceReply({ kind: 'ready', version: 16, secret: 'synthetic' })).toBe(false);
+  expect(isWorkspaceReply({ kind: 'ready', version: 17, secret: 'synthetic' })).toBe(false);
   expect(
     isWorkspaceNotification({
       jsonrpc: '2.0',
@@ -53,7 +53,7 @@ it('validates workspace negotiation, control ranges and runtime envelopes', () =
   ).toBe(true);
 });
 
-import examples from '../../tests/fixtures/workspace-protocol-v16.json';
+import examples from '../../tests/fixtures/workspace-protocol-v17.json';
 it('shares structural workspace conformance cases with Rust', () => {
   for (const value of examples.valid) expect(validWorkspaceCommand(value)).toBe(true);
   for (const value of examples.invalid) expect(validWorkspaceCommand(value)).toBe(false);

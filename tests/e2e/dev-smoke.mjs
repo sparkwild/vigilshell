@@ -19,6 +19,21 @@ export async function smoke(session) {
       },
       { name, params },
     );
+  let access;
+  try {
+    await until(async () => {
+      access = await page.evaluate(() => window.vigilshell.getConnectionAccess());
+      return access.state?.phase === 'ready' || access.state?.phase === 'blocked';
+    }, 'Connection vault did not finish initialization');
+  } catch (error) {
+    throw new Error(
+      `Connection vault initialization is still ${access?.state?.phase ?? 'unavailable'}`,
+      {
+        cause: error,
+      },
+    );
+  }
+  assert.equal(access.state.phase, 'ready', `Connection vault blocked: ${access.state.code}`);
   const before = await api('listCatalogue', {
     kind: 'connections',
     query: '',

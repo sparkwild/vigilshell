@@ -371,6 +371,7 @@ pub struct FileOperationItem {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FileOperationPage {
+    pub cancellable: bool,
     #[schemars(extend("maxLength" = 64))]
     pub id: String,
     #[schemars(extend("enum" = ["working", "success", "failed", "cancelled"]))]
@@ -390,6 +391,7 @@ pub struct FileOperationPage {
 impl From<domain::FileOperationPage> for FileOperationPage {
     fn from(v: domain::FileOperationPage) -> Self {
         Self {
+            cancellable: v.cancellable,
             id: v.id,
             phase: v.phase,
             stage: v.stage,

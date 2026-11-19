@@ -63,3 +63,41 @@ it('keeps runtime view states without the retired history routing flag', () => {
   expect(validateView(view)).toBe(true);
   expect(validateView({ ...view, archived: true })).toBe(false);
 });
+
+it.each([null, 0, 1, 2_147_483_648, 0xffff_ffff, 0x1_0000_0000])(
+  'applies seconds boundary %s to both the policy and the single-field IPC patch',
+  (value) => {
+    const accepted = value === null || (value > 0 && value <= 0xffff_ffff);
+    for (const key of [
+      'maxTaskSeconds',
+      'terminalSeconds',
+      'terminalIdleSeconds',
+      'transferSeconds',
+      'transferStallSeconds',
+    ] as const) {
+      const policy = defaultPolicy('connection');
+      policy.execution.limits[key] = value;
+      expect(validate({ action: 'previewPolicy', policy })).toBe(accepted);
+      expect(
+        validate({
+          action: 'updatePolicySettings',
+          connectionId: 'connection',
+          connectionRevision: 0,
+          expectedRevision: 0,
+          patch: { field: 'limit', value: { key, value } },
+        }),
+      ).toBe(accepted);
+    }
+  },
+);
+it.each([null, 0, 1, 16, 17])('applies concurrency boundary %s at IPC', (value) => {
+  expect(
+    validate({
+      action: 'updatePolicySettings',
+      connectionId: 'connection',
+      connectionRevision: 0,
+      expectedRevision: 0,
+      patch: { field: 'limit', value: { key: 'concurrentTasks', value } },
+    }),
+  ).toBe(value !== null && value >= 1 && value <= 16);
+});

@@ -209,39 +209,111 @@ pub(crate) fn execute(c: &mut Connection, command: C) -> Result<R> {
         }
         C::Recover => {
             let tx = db(c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate))?;
-            // 精确选择新格式，不解码/重写旧历史，不从重启入口重放命令。
-            let rows=db(tx.prepare("SELECT body FROM agent_tasks WHERE active=1 AND json_type(body,'$.request.identity')='object' AND json_extract(body,'$.policy.execution.version')=2"))?
-                .query_map([],|r|r.get::<_,String>(0)).map_err(|_|WorkspaceError::StorageUnavailable)?
-                .collect::<rusqlite::Result<Vec<_>>>().map_err(|_|WorkspaceError::StorageUnavailable)?;
-            for body in rows {
-                let mut task: ExecutionTask =
-                    serde_json::from_str(&body).map_err(|_| WorkspaceError::StorageUnavailable)?;
-                task.state = task
-                    .state
-                    .recover_after_restart()
-                    .map_err(|_| WorkspaceError::StorageUnavailable)?;
-                if matches!(task.state.outcome, Some(ExecutionOutcome::Unknown { .. }))
-                    && let Some(report) = task.file_report.as_mut()
-                {
-                    report.commit = FileCommitState::Unknown;
-                    report.error = Some("application_restarted".into());
+            let mut unavailable = Vec::new();
+            for row in active_rows(&tx)? {
+                match row.settlement() {
+                    Ok(Some(body)) => {
+                        let updated = db(tx.execute(
+                            "UPDATE agent_tasks SET active=0,body=?1 WHERE id=?2 AND entry_id=?3 AND active=1",
+                            params![body, row.id, row.entry],
+                        ))?;
+                        if updated != 1 {
+                            return Err(WorkspaceError::StorageUnavailable);
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(_) => unavailable.push(row.id),
                 }
-                if matches!(task.state.outcome, Some(ExecutionOutcome::Unknown { .. }))
-                    && let Some(report) = task.native_report.as_mut()
-                {
-                    report.effects = FileCommitState::Unknown;
-                    report.outcome = task.state.outcome.clone();
-                    report.error = Some("application_restarted".into());
-                }
-                task.revision += 1;
-                db(tx.execute(
-                    "UPDATE agent_tasks SET active=0,body=?1 WHERE id=?2",
-                    params![encode(&task)?, task.id],
-                ))?;
             }
             db(tx.commit())?;
-            Ok(R::Done)
+            Ok(R::Recovered { unavailable })
         }
+    }
+}
+
+struct ActiveRow {
+    id: String,
+    entry: String,
+    connection: String,
+    created: i64,
+    body: String,
+    key: Option<String>,
+    fingerprint: Option<String>,
+    has_receipt: bool,
+}
+
+fn active_rows(c: &Connection) -> Result<Vec<ActiveRow>> {
+    let mut query = db(c.prepare(
+        "SELECT t.id,t.entry_id,t.connection_id,t.created_at,t.body,t.request_key,t.fingerprint,
+         EXISTS(SELECT 1 FROM agent_receipts r WHERE r.entry_id=t.entry_id
+             AND r.request_key=t.request_key AND r.task_id=t.id
+             AND r.fingerprint=t.fingerprint AND r.created_at=t.created_at)
+         FROM agent_tasks t WHERE t.active=1 ORDER BY t.id",
+    ))?;
+    db(db(query.query_map([], |row| {
+        Ok(ActiveRow {
+            id: row.get(0)?,
+            entry: row.get(1)?,
+            connection: row.get(2)?,
+            created: row.get(3)?,
+            body: row.get(4)?,
+            key: row.get(5)?,
+            fingerprint: row.get(6)?,
+            has_receipt: row.get(7)?,
+        })
+    }))?
+    .collect())
+}
+
+impl ActiveRow {
+    fn settlement(&self) -> Result<Option<String>> {
+        let invalid = WorkspaceError::InvalidInput;
+        if self.body.len() > 2 * 1024 * 1024 {
+            return Err(invalid);
+        }
+        let value: serde_json::Value = serde_json::from_str(&self.body).map_err(|_| invalid)?;
+        if value["id"].as_str() != Some(&self.id)
+            || value["entryId"].as_str() != Some(&self.entry)
+            || value["connectionId"].as_str() != Some(&self.connection)
+            || value["createdAt"].as_i64() != Some(self.created)
+        {
+            return Err(invalid);
+        }
+        if value.pointer("/request/identity").is_none()
+            && value
+                .pointer("/policy/execution/version")
+                .and_then(|v| v.as_u64())
+                != Some(2)
+            && value["phase"].is_string()
+        {
+            return Ok(None);
+        }
+        let mut task: ExecutionTask = serde_json::from_str(&self.body).map_err(|_| invalid)?;
+        task.validate()?;
+        if !task.state.active()
+            || !self.has_receipt
+            || self.key.as_ref() != Some(&task.request.request_key)
+            || self.fingerprint.as_ref()
+                != Some(&request_fingerprint(
+                    task.source_request.as_ref().unwrap_or(&task.request),
+                )?)
+        {
+            return Err(invalid);
+        }
+        task.state = task.state.recover_after_restart().map_err(|_| invalid)?;
+        if matches!(task.state.outcome, Some(ExecutionOutcome::Unknown { .. })) {
+            if let Some(report) = task.file_report.as_mut() {
+                report.commit = FileCommitState::Unknown;
+                report.error = Some("application_restarted".into());
+            }
+            if let Some(report) = task.native_report.as_mut() {
+                report.effects = FileCommitState::Unknown;
+                report.outcome = task.state.outcome.clone();
+                report.error = Some("application_restarted".into());
+            }
+        }
+        task.revision = task.revision.checked_add(1).ok_or(invalid)?;
+        encode(&task).map(Some)
     }
 }
 

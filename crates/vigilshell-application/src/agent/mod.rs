@@ -18,7 +18,10 @@ mod tests;
 use crate::ports::*;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
@@ -34,6 +37,9 @@ pub struct AgentService {
     sink: Arc<dyn AgentSink>,
     state: Mutex<State>,
     initialized: tokio::sync::OnceCell<()>,
+    execution_recovered: tokio::sync::OnceCell<()>,
+    recordings_recovered: tokio::sync::OnceCell<()>,
+    maintenance_started: AtomicBool,
     administration: tokio::sync::Mutex<()>,
     admissions: tokio::sync::Mutex<()>,
     inspectors: inspection::InspectorPool,
@@ -45,7 +51,7 @@ struct State {
     recording_blocked: bool,
     recording_cleanup_started: bool,
     config: AgentConfiguration,
-    last_prune: u64,
+    execution_recovery_error: Option<&'static str>,
     challenges: HashMap<String, Challenge>,
     contexts: HashMap<String, Arc<Context>>,
     tasks: HashMap<String, AgentTask>,
@@ -102,6 +108,9 @@ impl AgentService {
             sink,
             state: Mutex::new(State::default()),
             initialized: tokio::sync::OnceCell::new(),
+            execution_recovered: tokio::sync::OnceCell::new(),
+            recordings_recovered: tokio::sync::OnceCell::new(),
+            maintenance_started: AtomicBool::new(false),
             administration: tokio::sync::Mutex::new(()),
             admissions: tokio::sync::Mutex::new(()),
             inspectors: inspection::InspectorPool::default(),
@@ -147,11 +156,6 @@ impl AgentService {
                 else {
                     return Err("agent_storage_unavailable");
                 };
-                self.executor.recover().await?;
-                self.db(AgentDbCommand::recording(RecordingCommand::Recover {
-                    now: now(),
-                }))
-                .await?;
                 self.executor
                     .set_recording_limit(u64::from(c.settings.storage_mib) * 1024 * 1024)?;
                 self.state.lock().unwrap().config = c;
@@ -159,6 +163,98 @@ impl AgentService {
             })
             .await
             .map(|_| ())
+    }
+    async fn recover_execution(&self) -> AgentResult<()> {
+        self.execution_recovered
+            .get_or_try_init(|| async {
+                let result = self.executor.recover().await;
+                let issue = result.as_ref().err().copied();
+                let changed = {
+                    let mut state = self.state.lock().unwrap();
+                    let changed = state.execution_recovery_error != issue
+                        || !self.executor.unrecovered().is_empty();
+                    state.execution_recovery_error = issue;
+                    changed
+                };
+                if changed {
+                    self.event(AgentEvent::Configuration {}).await;
+                }
+                result
+            })
+            .await
+            .map(|_| ())
+    }
+    async fn recover_recordings(&self) -> AgentResult<()> {
+        self.recordings_recovered
+            .get_or_try_init(|| async {
+                if self
+                    .db(AgentDbCommand::recording(RecordingCommand::Recover {
+                        now: now(),
+                    }))
+                    .await
+                    .is_err()
+                {
+                    self.recording_failed().await;
+                    return Err("activity_recording_unavailable");
+                }
+                Ok(())
+            })
+            .await
+            .map(|_| ())
+    }
+    async fn ready_for_execution(&self) -> AgentResult<()> {
+        self.recover_execution().await?;
+        self.recover_recordings().await
+    }
+    fn maintain(self: &Arc<Self>) {
+        if self.maintenance_started.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        let service = Arc::downgrade(self);
+        let stop = self.stop.clone();
+        self.jobs.spawn(async move {
+            if let Some(service) = service.upgrade() {
+                let _ = tokio::join!(service.recover_execution(), service.recover_recordings());
+            }
+            let mut tick = tokio::time::interval(Duration::from_secs(60));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tokio::select! {
+                    _ = stop.cancelled() => break,
+                    _ = tick.tick() => {}
+                }
+                let Some(service) = service.upgrade() else {
+                    break;
+                };
+                if service.recordings_recovered.get().is_some()
+                    && !service.state.lock().unwrap().recording_blocked
+                    && service.prune_recordings().await.is_err()
+                {
+                    service.recording_failed().await;
+                }
+            }
+        });
+    }
+    async fn prune_recordings(&self) -> AgentResult<()> {
+        let settings = self.state.lock().unwrap().config.settings.clone();
+        self.db(AgentDbCommand::recording(RecordingCommand::Prune {
+            before: now().saturating_sub(u64::from(settings.retention_days) * 86_400_000),
+            limit_bytes: u64::from(settings.storage_mib) * 1024 * 1024,
+        }))
+        .await?;
+        Ok(())
+    }
+    fn configuration_reply(&self) -> AgentReply {
+        let state = self.state.lock().unwrap();
+        AgentReply::Configuration {
+            protections: system_protections(),
+            configuration: state.config.clone(),
+            recording_error: state
+                .recording_blocked
+                .then(|| "activity_recording_unavailable".into()),
+            execution_recovery_error: state.execution_recovery_error.map(str::to_owned),
+            unrecovered_tasks: self.executor.unrecovered(),
+        }
     }
     async fn event(&self, event: AgentEvent) {
         let _ = self.sink.publish(event).await;
@@ -315,24 +411,7 @@ impl AgentService {
             _ => {}
         }
         self.initialize().await?;
-        let prune = {
-            let mut state = self.state.lock().unwrap();
-            if matches!(&operation, AgentOperation::Configuration {})
-                && now().saturating_sub(state.last_prune) >= 60_000
-            {
-                state.last_prune = now();
-                Some(state.config.settings.clone())
-            } else {
-                None
-            }
-        };
-        if let Some(settings) = prune {
-            self.db(AgentDbCommand::recording(RecordingCommand::Prune {
-                before: now().saturating_sub(settings.retention_days as u64 * 86_400_000),
-                limit_bytes: settings.storage_mib as u64 * 1024 * 1024,
-            }))
-            .await?;
-        }
+        self.maintain();
         match operation {
             AgentOperation::ActivitySummaries { .. }
             | AgentOperation::ActivitySources {}
@@ -404,12 +483,8 @@ impl AgentService {
                     return Ok(AgentReply::Done {});
                 }
                 self.stop_tasks(None).await;
-                let settings = self.state.lock().unwrap().config.settings.clone();
-                self.db(AgentDbCommand::recording(RecordingCommand::Prune {
-                    before: now().saturating_sub(u64::from(settings.retention_days) * 86_400_000),
-                    limit_bytes: u64::from(settings.storage_mib) * 1024 * 1024,
-                }))
-                .await?;
+                self.recover_recordings().await?;
+                self.prune_recordings().await?;
                 self.db(AgentDbCommand::recording(RecordingCommand::Probe))
                     .await?;
                 {
@@ -478,14 +553,7 @@ impl AgentService {
             }
             AgentOperation::Configuration {} => {
                 self.refresh_configuration().await?;
-                let state = self.state.lock().unwrap();
-                Ok(AgentReply::Configuration {
-                    protections: system_protections(),
-                    configuration: state.config.clone(),
-                    recording_error: state
-                        .recording_blocked
-                        .then(|| "activity_recording_unavailable".into()),
-                })
+                Ok(self.configuration_reply())
             }
             AgentOperation::Prepare { change } => self.prepare(change).await,
             AgentOperation::Commit { challenge_id } => self.commit(&challenge_id).await,
@@ -528,20 +596,27 @@ impl AgentService {
         call: AgentAction,
     ) -> AgentResult<AgentReply> {
         let call = match call.into_runtime() {
-            Ok(call) => return self.start_operation(entry, call).await,
+            Ok(call) => {
+                self.ready_for_execution().await?;
+                return self.start_operation(entry, call).await;
+            }
             Err(call) => *call,
         };
         match call {
             AgentAction::WorkspaceTerminal {
                 session_id,
                 command,
-            } => self.workspace_terminal(entry, session_id, command).await,
+            } => {
+                self.ready_for_execution().await?;
+                self.workspace_terminal(entry, session_id, command).await
+            }
             AgentAction::ConnectionsList {} => self.connections().await,
             AgentAction::SessionOpen {
                 tab_id,
                 connection_id,
                 request_key,
             } => {
+                self.ready_for_execution().await?;
                 self.open_context(entry, &connection_id, &request_key, tab_id)
                     .await
             }

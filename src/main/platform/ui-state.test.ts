@@ -127,4 +127,26 @@ describe('browsing state persistence', () => {
     await expect(service.set(connectionScope, pickers, true)).rejects.toThrow();
     expect(host.call).not.toHaveBeenCalled();
   });
+  it('uses a recovered scope revision and surfaces a real write failure before installation', async () => {
+    const host = new FakeHost();
+    host.records.set('pickers', { scope: 'pickers', revision: 7, data: null });
+    const service = new UiStateService(host as unknown as BackendClient);
+    expect(await service.get('pickers')).toEqual({ scope: 'pickers', data: null, error: null });
+    expect(host.call).not.toHaveBeenCalled();
+    const write = host.call.getMockImplementation()!;
+    host.call.mockImplementation(() => ({
+      id: 'failed',
+      result: Promise.reject(new BackendError('storage_unavailable')),
+    }));
+    expect(await service.set('pickers', { kind: 'pickers', upload: '/logs' }, true)).toMatchObject({
+      error: 'storage_unavailable',
+    });
+    await expect(service.flush(true)).rejects.toThrow('ui_state_not_saved');
+    host.call.mockImplementation(write);
+    await expect(service.flush(true)).resolves.toBeUndefined();
+    expect(host.records.get('pickers')).toMatchObject({
+      revision: 8,
+      data: { ...pickers, upload: '/logs' },
+    });
+  });
 });

@@ -765,3 +765,58 @@ it('preserves settings and reports a failed commit without requesting identity',
   expect(f.request.mock.calls.some(([r]) => r.operation === 'abort')).toBe(true);
   await f.controller.stop();
 });
+
+it('keeps the MCP settings snapshot available when execution recovery or observations fail', async () => {
+  const f = fixture(false);
+  const read = f.request.getMockImplementation()!;
+  f.request.mockImplementation(async (request) => {
+    if (request.operation === 'configuration')
+      return {
+        kind: 'configuration',
+        configuration: f.configuration,
+        execution_recovery_error: 'agent_storage_unavailable',
+        unrecovered_tasks: ['damaged'],
+      };
+    if (request.operation === 'observations')
+      return { kind: 'error', code: 'agent_storage_unavailable' };
+    return read(request);
+  });
+  try {
+    const result = await f.controller.ui({ action: 'snapshot' });
+    expect(result).toMatchObject({
+      ok: true,
+      snapshot: {
+        settings: f.configuration.settings,
+        error: 'agent_storage_unavailable',
+        unrecoveredTasks: ['damaged'],
+        observations: [],
+      },
+    });
+  } finally {
+    await f.controller.stop();
+  }
+});
+
+it('reports damaged rows without disabling healthy session authorization', async () => {
+  const f = fixture(false);
+  const read = f.request.getMockImplementation()!;
+  f.request.mockImplementation(async (request) => {
+    if (request.operation === 'configuration')
+      return {
+        kind: 'configuration',
+        configuration: f.configuration,
+        unrecovered_tasks: ['damaged'],
+      };
+    if (request.operation === 'observations')
+      return { kind: 'error', code: 'agent_storage_unavailable' };
+    return read(request);
+  });
+  try {
+    expect(await f.controller.ui({ action: 'snapshot' })).toMatchObject({
+      ok: true,
+      snapshot: { error: null, unrecoveredTasks: ['damaged'] },
+    });
+  } finally {
+    await f.controller.stop();
+  }
+});

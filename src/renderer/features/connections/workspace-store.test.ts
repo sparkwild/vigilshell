@@ -3,6 +3,14 @@ import { expect, it, vi } from 'vitest';
 import { WorkspaceStore } from './workspace-store';
 import type { WorkspaceApi } from '../../../shared/workspace-api';
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 it('restarts both group and connection pages after conflict and publishes only the complete catalogue', async () => {
   Object.assign(window, { vigilshell: { onWorkspaceEvent: () => () => {} } });
   let attempt = 0;
@@ -661,4 +669,314 @@ it('loads plaintext groups during unlock without requesting or inventing encrypt
   });
   expect(listCatalogue.mock.calls.map(([params]) => params.kind)).toEqual(['groups']);
   store.dispose();
+});
+
+const detailReply = (id: string, name = id) => ({
+  ok: true as const,
+  value: {
+    kind: 'connection' as const,
+    connection: { id, config: { name } },
+    trust: { fingerprint: name },
+  },
+});
+const missingConnection = { ok: false as const, code: 'not_found' };
+
+it.each([true, false])('preserves B when A is missing (A completes first: %s)', async (aFirst) => {
+  Object.assign(window, { vigilshell: { onWorkspaceEvent: () => () => {} } });
+  const a = deferred<typeof missingConnection>();
+  const b = deferred<ReturnType<typeof detailReply>>();
+  const store = new WorkspaceStore({
+    getConnection: ({ id }: { id: string }) => (id === 'a' ? a.promise : b.promise),
+  } as unknown as WorkspaceApi);
+  const first = store.select({ kind: 'connection', id: 'a' });
+  const second = store.select({ kind: 'connection', id: 'b' });
+  if (aFirst) {
+    a.resolve(missingConnection);
+    await first;
+  }
+  b.resolve(detailReply('b'));
+  await second;
+  a.resolve(missingConnection);
+  await first;
+  expect(store.getSnapshot()).toMatchObject({
+    selected: { id: 'b' },
+    details: { id: 'b' },
+    trust: { fingerprint: 'b' },
+  });
+  store.dispose();
+});
+
+it('clears the active details and trust when the selected connection has been deleted', async () => {
+  Object.assign(window, { vigilshell: { onWorkspaceEvent: () => () => {} } });
+  const getConnection = vi
+    .fn()
+    .mockResolvedValueOnce(detailReply('a'))
+    .mockResolvedValueOnce(missingConnection);
+  const store = new WorkspaceStore({ getConnection } as unknown as WorkspaceApi);
+  await store.select({ kind: 'connection', id: 'a' });
+  expect(store.getSnapshot().trust).toMatchObject({ fingerprint: 'a' });
+  await store.select({ kind: 'connection', id: 'a' });
+  expect(store.getSnapshot()).toMatchObject({ selected: null, details: null, trust: null });
+  store.dispose();
+});
+
+it.each([missingConnection, detailReply('a', 'old')])(
+  'drops a previous runtime detail reply for the same id',
+  async (late) => {
+    Object.assign(window, { vigilshell: { onWorkspaceEvent: () => () => {} } });
+    const stale = deferred<typeof late>();
+    const getConnection = vi
+      .fn()
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce(detailReply('a', 'new'));
+    const store = new WorkspaceStore({ getConnection } as unknown as WorkspaceApi);
+    store.backend('old-runtime', false);
+    const first = store.select({ kind: 'connection', id: 'a' });
+    store.backend('new-runtime', false);
+    await store.select({ kind: 'connection', id: 'a' });
+    stale.resolve(late);
+    await first;
+    expect(getConnection).toHaveBeenCalledTimes(2);
+    expect(store.getSnapshot()).toMatchObject({
+      selected: { id: 'a' },
+      details: { config: { name: 'new' } },
+      trust: { fingerprint: 'new' },
+    });
+    store.dispose();
+  },
+);
+
+it('re-reads selected details after a same-runtime move and uses the new group immediately', async () => {
+  Object.assign(window, { vigilshell: { onWorkspaceEvent: () => () => {} } });
+  const reply = (groupId: string) => {
+    const detail = detailReply('a', groupId);
+    return {
+      ...detail,
+      value: { ...detail.value, connection: { ...detail.value.connection, groupId, version: 1 } },
+    };
+  };
+  const old = deferred<ReturnType<typeof reply>>();
+  const current = deferred<ReturnType<typeof reply>>();
+  const getConnection = vi
+    .fn()
+    .mockReturnValueOnce(old.promise)
+    .mockReturnValueOnce(current.promise);
+  const listCatalogue = vi.fn(async ({ kind }: { kind: string }) => ({
+    ok: true,
+    value: {
+      kind: 'catalogue',
+      page: {
+        version: 2,
+        layoutRevision: 2,
+        groups: [],
+        connections: kind === 'connections' ? [{ id: 'a', groupId: 'new-group', version: 1 }] : [],
+        next: null,
+      },
+    },
+  }));
+  const store = new WorkspaceStore({ getConnection, listCatalogue } as unknown as WorkspaceApi);
+  try {
+    const selected = store.select({ kind: 'connection', id: 'a' });
+    const refreshed = store.refresh();
+    await vi.waitFor(() => expect(store.getSnapshot().layoutRevision).toBe(2));
+    await store.newConnectionForSelection();
+    expect(store.getSnapshot().editor?.groupId).toBe('new-group');
+    old.resolve(reply('old-group'));
+    await selected;
+    await vi.waitFor(() => expect(getConnection).toHaveBeenCalledTimes(2));
+    expect(store.getSnapshot().details).toBeNull();
+    expect(store.getSnapshot().trust).toBeNull();
+    current.resolve(reply('new-group'));
+    await refreshed;
+    expect(store.getSnapshot().details?.groupId).toBe('new-group');
+    expect(store.getSnapshot().trust?.fingerprint).toBe('new-group');
+  } finally {
+    store.dispose();
+  }
+});
+
+it('ignores a missing response from before the same connection was selected again', async () => {
+  Object.assign(window, { vigilshell: { onWorkspaceEvent: () => () => {} } });
+  const old = deferred<typeof missingConnection>();
+  const getConnection = vi
+    .fn()
+    .mockReturnValueOnce(old.promise)
+    .mockResolvedValueOnce(detailReply('b'))
+    .mockResolvedValueOnce(detailReply('a', 'reselected'));
+  const store = new WorkspaceStore({ getConnection } as unknown as WorkspaceApi);
+  try {
+    const first = store.select({ kind: 'connection', id: 'a' });
+    await store.select({ kind: 'connection', id: 'b' });
+    const last = store.select({ kind: 'connection', id: 'a' });
+    old.resolve(missingConnection);
+    await Promise.all([first, last]);
+    expect(getConnection).toHaveBeenCalledTimes(3);
+    expect(store.getSnapshot()).toMatchObject({
+      selected: { id: 'a' },
+      details: { id: 'a' },
+      trust: { fingerprint: 'reselected' },
+    });
+  } finally {
+    store.dispose();
+  }
+});
+
+function groupFixture() {
+  let listener: Parameters<NonNullable<typeof window.vigilshell.onWorkspaceEvent>>[0];
+  let runtime = 'old-runtime';
+  const a = { id: 'a', name: 'Group A', sortOrder: 0, version: 1 };
+  const b = { id: 'b', name: 'Group B', sortOrder: 1, version: 1 };
+  const groups = [a, b];
+  Object.assign(window, {
+    vigilshell: {
+      onWorkspaceEvent: (receive: typeof listener) => {
+        listener = receive;
+        return () => {};
+      },
+    },
+  });
+  const listCatalogue = vi.fn(async ({ kind }: { kind: string }) => ({
+    ok: true,
+    value: {
+      kind: 'catalogue',
+      page: {
+        groups: kind === 'groups' ? [...groups] : [],
+        connections:
+          kind === 'connections' ? [{ id: 'healthy', groupId: 'b', groupSortOrder: 0 }] : [],
+        unavailableConnections:
+          kind === 'connections' ? [{ id: 'unreadable', groupId: 'a', groupSortOrder: 0 }] : [],
+        version: 1,
+        layoutRevision: 1,
+        next: null,
+      },
+    },
+  }));
+  const getConnection = vi.fn(async () => detailReply('healthy'));
+  const reconcile = vi.fn();
+  const updateGroup = vi.fn(async ({ id, name }: { id: string; name: string }) => {
+    const group = { ...groups.find((g) => g.id === id)!, name, version: 2 };
+    groups[group.sortOrder] = group;
+    listener({
+      jsonrpc: '2.0',
+      method: 'workspace.changed',
+      params: { runtimeId: runtime, owner: 'owner', event: { kind: 'groupRenamed', group } },
+    });
+    return { ok: true, value: { kind: 'group', group } };
+  });
+  const store = new WorkspaceStore({
+    listCatalogue,
+    getConnection,
+    reconcile,
+    updateGroup,
+  } as unknown as WorkspaceApi);
+  const restart = async (next: string) => {
+    runtime = next;
+    store.backend(runtime, false);
+    await store.initialize();
+  };
+  const edit = (id: string, draft: string) =>
+    store.setGroupEditing({ id, draft, surfaceId: 'sidebar', error: null });
+  return { store, a, b, listCatalogue, getConnection, updateGroup, reconcile, restart, edit };
+}
+
+it('applies the rename notification and reply without reading any catalogue page or selected details', async () => {
+  const f = groupFixture();
+  await f.restart('old-runtime');
+  await f.store.select({ kind: 'connection', id: 'healthy' });
+  const layout = f.store.currentLayout();
+  expect(layout.buckets).toContainEqual({ groupId: 'a', connectionIds: ['unreadable'] });
+  f.listCatalogue.mockClear();
+  f.getConnection.mockClear();
+  f.edit('a', 'Renamed');
+  await f.store.renameGroup(f.a, 'Renamed');
+  expect(f.store.getSnapshot().groups[0]).toMatchObject({ name: 'Renamed', version: 2 });
+  expect(f.store.getSnapshot().details).toMatchObject({ id: 'healthy' });
+  expect(f.store.currentLayout()).toEqual(layout);
+  expect(f.listCatalogue).not.toHaveBeenCalled();
+  expect(f.getConnection).not.toHaveBeenCalled();
+  f.store.dispose();
+});
+
+it.each(['applied', 'conflict'])(
+  'reconciles a lost rename response as %s using the original request once',
+  async (state) => {
+    const f = groupFixture();
+    await f.restart('old-runtime');
+    f.edit('a', 'Renamed');
+    f.updateGroup.mockResolvedValueOnce({
+      ok: false,
+      code: 'timeout',
+      requestId: 'original',
+      runtimeId: 'old-runtime',
+    } as never);
+    f.reconcile.mockResolvedValue({
+      ok: true,
+      value: {
+        kind: 'reconciled',
+        result:
+          state === 'applied'
+            ? { kind: 'group', group: { ...f.a, name: 'Renamed', version: 2 } }
+            : null,
+        error: state === 'conflict' ? 'conflict' : null,
+      },
+    });
+    await f.store.renameGroup(f.a, 'Renamed');
+    expect(f.updateGroup).toHaveBeenCalledTimes(1);
+    expect(f.reconcile).toHaveBeenCalledExactlyOnceWith({
+      requestId: 'original',
+      runtimeId: 'old-runtime',
+    });
+    if (state === 'applied') {
+      expect(f.store.getSnapshot().groups[0]?.name).toBe('Renamed');
+      expect(f.store.getSnapshot().groupEditing).toBeNull();
+    } else {
+      expect(f.store.getSnapshot().groupEditing).toMatchObject({
+        draft: 'Renamed',
+        error: 'conflict',
+      });
+    }
+    f.store.dispose();
+  },
+);
+
+it('retains the unknown rename after restart without locking B or applying A’s late receipt', async () => {
+  const f = groupFixture();
+  await f.restart('old-runtime');
+  f.edit('a', 'Uncertain');
+  const original = deferred<unknown>();
+  f.reconcile.mockReturnValueOnce(original.promise);
+  f.updateGroup.mockResolvedValueOnce({
+    ok: false,
+    code: 'timeout',
+    requestId: 'original',
+    runtimeId: 'old-runtime',
+  } as never);
+  const a = f.store.renameGroup(f.a, 'Uncertain');
+  await vi.waitFor(() => expect(f.reconcile).toHaveBeenCalledTimes(1));
+  expect(f.store.feedback.isBusy('group:a')).toBe(true);
+  await f.restart('new-runtime');
+  f.edit('b', 'B draft');
+  original.resolve({
+    ok: true,
+    value: {
+      kind: 'reconciled',
+      result: { kind: 'group', group: { ...f.a, name: 'Uncertain', version: 2 } },
+      error: null,
+    },
+  });
+  await a;
+  expect(f.store.getSnapshot().groupEditing).toMatchObject({
+    id: 'b',
+    draft: 'B draft',
+    error: null,
+  });
+  expect(f.store.feedback.forOwner('group:a')).toMatchObject({
+    phase: 'unknown',
+    error: { requestId: 'original', runtimeId: 'old-runtime' },
+  });
+  expect(f.store.feedback.isBusy('group:a')).toBe(false);
+  await f.store.renameGroup(f.b, 'B draft');
+  expect(f.updateGroup.mock.calls.map(([p]) => p.id)).toEqual(['a', 'b']);
+  expect(f.store.getSnapshot().groups[1]).toMatchObject({ name: 'B draft', version: 2 });
+  f.store.dispose();
 });

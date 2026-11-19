@@ -91,14 +91,18 @@ export function OperationMessage({
             {t('cancelOperation')}
           </Button>
         ) : null}
-        {operation.phase === 'unknown' && operationCanReconcile(operation) ? (
+        {operation.phase === 'unknown' &&
+        (operation.error?.runtimeId ?? operation.runtimeId) === state.runtimeId &&
+        operationCanReconcile(operation) ? (
           <Button
             size="xs"
             variant="outline"
             onClick={() =>
               void state.operations
                 .reconcile(operation.id)
-                .then(() => state.refresh())
+                .then((reply) => {
+                  if (reply?.kind !== 'group' || !operation.onResult) return state.refresh();
+                })
                 .catch(() => undefined)
             }
           >

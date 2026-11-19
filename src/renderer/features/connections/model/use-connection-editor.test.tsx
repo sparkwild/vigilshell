@@ -36,6 +36,7 @@ function setup() {
     config: { name: 'Fixture', host: 'localhost', port: 22, username: 'fixture', auth: 'password' },
   } as ConnectionDetails;
   const job: WorkspaceOperation = {
+    cancellable: false,
     id: 'saved',
     kind: 'save',
     phase: 'success',
@@ -187,7 +188,7 @@ it('shows a passing test for a saved connection until its parameters change', as
   });
   fixture.mutation.mockResolvedValue({
     kind: 'operation',
-    operation: { ...fixture.job, kind: 'test', id: 'test', connection: null },
+    operation: { ...fixture.job, kind: 'test', id: 'test', connection: null, cancellable: true },
   });
   const { result } = mount();
   await act(async () => {

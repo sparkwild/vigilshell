@@ -1,5 +1,5 @@
 //! 工作区域 v9 的有限业务接口；不包含秘密或系统凭据引用。
-pub const WORKSPACE_PROTOCOL_VERSION: u8 = 16;
+pub const WORKSPACE_PROTOCOL_VERSION: u8 = 17;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use vigilshell_domain::workspace as domain;
@@ -454,6 +454,18 @@ impl From<domain::ConnectionRecord> for ConnectionDetails {
 }
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct UnavailableConnectionView {
+    pub id: String,
+    #[serde(deserialize_with = "crate::schema::required_nullable")]
+    #[schemars(with = "crate::schema::NullableRequired<String>")]
+    pub group_id: Option<String>,
+    #[schemars(range(min = 0, max = 9_007_199_254_740_991_u64))]
+    #[schemars(extend("maximum" = 9007199254740991_u64, "minimum" = 0))]
+    pub group_sort_order: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CataloguePage {
     #[schemars(range(min = 0, max = 9_007_199_254_740_991_u64))]
     #[schemars(extend("maximum" = 9007199254740991_u64, "minimum" = 0))]
@@ -466,6 +478,9 @@ pub struct CataloguePage {
     pub layout_revision: u64,
     #[schemars(extend("maxItems" = 50))]
     pub connections: Vec<ConnectionSummary>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schemars(extend("maxItems" = 50))]
+    pub unavailable_connections: Vec<UnavailableConnectionView>,
     #[serde(deserialize_with = "crate::schema::required_nullable")]
     #[schemars(with = "crate::schema::NullableRequired<u32>")]
     #[schemars(extend("maximum" = 9007199254740991_u64, "minimum" = -9007199254740991_i64))]
@@ -478,6 +493,15 @@ impl From<domain::Catalogue> for CataloguePage {
             groups: v.groups.into_iter().map(Into::into).collect(),
             layout_revision: v.layout_revision,
             connections: v.connections.into_iter().map(Into::into).collect(),
+            unavailable_connections: v
+                .unavailable_connections
+                .into_iter()
+                .map(|c| UnavailableConnectionView {
+                    id: c.id,
+                    group_id: c.group_id,
+                    group_sort_order: c.group_sort_order,
+                })
+                .collect(),
             next: v.next,
         }
     }
@@ -633,6 +657,7 @@ pub enum OperationPhase {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct WorkspaceOperation {
+    pub cancellable: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file_summary: Option<FileOperationSummary>,
     #[serde(deserialize_with = "crate::schema::required_nullable")]
@@ -1300,6 +1325,9 @@ pub enum WorkspaceEvent {
         states: Vec<TunnelStatus>,
     },
     Catalogue {},
+    GroupRenamed {
+        group: ConnectionGroupView,
+    },
     Operation {
         operation: Box<WorkspaceOperation>,
     },
@@ -1340,7 +1368,7 @@ mod tests {
     #[test]
     fn shared_workspace_examples_reject_secret_and_unknown_fields() {
         let examples: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../tests/fixtures/workspace-protocol-v16.json"
+            "../../../tests/fixtures/workspace-protocol-v17.json"
         ))
         .unwrap();
         for value in examples["valid"].as_array().unwrap() {

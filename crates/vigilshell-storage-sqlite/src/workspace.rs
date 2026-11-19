@@ -282,14 +282,11 @@ impl WorkspaceRepository for SqlitePreferences {
             }
             DbCommand::DeleteProxy { id, version } => {
                 check_version(proxy_get(&tx, &id)?.version, version)?;
-                if !proxy_references(
-                    &tx,
-                    cipher.ok_or(WorkspaceError::ConfigurationLocked)?,
-                    &id,
-                    0,
-                )?
-                .is_empty()
-                {
+                if db(tx.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM connection_profiles WHERE proxy_id=?1)",
+                    [&id],
+                    |r| r.get::<_, bool>(0),
+                ))? {
                     return Err(WorkspaceError::ProxyInUse);
                 }
                 db(tx.execute("DELETE FROM proxy_profiles WHERE id=?1", [id]))?;
@@ -565,18 +562,53 @@ fn list(
             layout_revision: layout_revision(c)?,
             ..Default::default()
         };
-        let mut query = db(c.prepare("SELECT id FROM connection_profiles ORDER BY rowid"))?;
-        let mut rows = db(query.query([]))?;
+        let cipher = cipher.ok_or(WorkspaceError::ConfigurationLocked)?;
+        if query.trim().is_empty() {
+            let mut page = db(c.prepare(
+                "SELECT id,group_id,group_sort_order FROM connection_profiles ORDER BY rowid LIMIT ?1 OFFSET ?2",
+            ))?;
+            let mut members = db(page.query(params![limit + 1, offset]))?;
+            for index in 0..=limit {
+                let Some(row) = db(members.next())? else {
+                    break;
+                };
+                if index == limit {
+                    result.next = Some(offset.saturating_add(limit));
+                    break;
+                }
+                let id: String = db(row.get(0))?;
+                match get(c, cipher, &id) {
+                    Ok(profile) => result.connections.push(profile),
+                    Err(WorkspaceError::ConnectionRecordUnavailable) => {
+                        result.unavailable_connections.push(UnavailableConnection {
+                            id,
+                            group_id: db(row.get(1))?,
+                            group_sort_order: db(row.get::<_, i64>(2))? as u64,
+                        });
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            return Ok(result);
+        }
+        let mut scan = db(c.prepare("SELECT id FROM connection_profiles ORDER BY rowid"))?;
+        let mut rows = db(scan.query([]))?;
         let mut matched = 0u32;
         while let Some(row) = db(rows.next())? {
-            let p = get(
-                c,
-                cipher.ok_or(WorkspaceError::ConfigurationLocked)?,
-                &db(row.get::<_, String>(0))?,
-            )?;
+            let id: String = db(row.get(0))?;
+            let profile = match get(c, cipher, &id) {
+                Ok(p) => p,
+                Err(WorkspaceError::ConnectionRecordUnavailable) => continue,
+                Err(error) => return Err(error),
+            };
             let matches: bool = db(c.query_row(
                 "SELECT ?1 LIKE ?4 ESCAPE '\\' OR ?2 LIKE ?4 ESCAPE '\\' OR ?3 LIKE ?4 ESCAPE '\\'",
-                params![p.input.name, p.input.host, p.input.username, pattern],
+                params![
+                    profile.input.name,
+                    profile.input.host,
+                    profile.input.username,
+                    pattern
+                ],
                 |r| r.get(0),
             ))?;
             if !matches {
@@ -587,7 +619,7 @@ fn list(
                     result.next = Some(offset.saturating_add(limit));
                     break;
                 }
-                result.connections.push(p);
+                result.connections.push(profile);
             }
             matched = matched.saturating_add(1);
         }
@@ -595,13 +627,13 @@ fn list(
     }
     let sql = match kind {
         "groups" => {
-            "SELECT 'group',id FROM connection_groups WHERE name LIKE ?1 ESCAPE '\\' ORDER BY sort_order,id LIMIT ?2 OFFSET ?3"
+            "SELECT id FROM connection_groups WHERE name LIKE ?1 ESCAPE '\\' ORDER BY sort_order,id LIMIT ?2 OFFSET ?3"
         }
         _ => return Err(WorkspaceError::InvalidInput),
     };
     let mut q = db(c.prepare(sql))?;
     let mut ids = db(db(q.query_map(params![pattern, limit + 1, offset], |r| {
-        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+        r.get::<_, String>(0)
     }))?
     .collect::<rusqlite::Result<Vec<_>>>())?;
     let next = if ids.len() > limit as usize {
@@ -616,16 +648,8 @@ fn list(
         next,
         ..Default::default()
     };
-    for (kind, id) in ids {
-        if kind == "group" {
-            result.groups.push(group(c, &id)?);
-        } else {
-            result.connections.push(get(
-                c,
-                cipher.ok_or(WorkspaceError::ConfigurationLocked)?,
-                &id,
-            )?);
-        }
+    for id in ids {
+        result.groups.push(group(c, &id)?);
     }
     Ok(result)
 }
@@ -1038,7 +1062,11 @@ fn proxy_references(
     )?;
     let mut names = ids
         .iter()
-        .map(|id| get(c, cipher, id).map(|p| p.input.name))
+        .map(|id| match get(c, cipher, id) {
+            Ok(p) => Ok(p.input.name),
+            Err(WorkspaceError::ConnectionRecordUnavailable) => Ok(id.clone()),
+            Err(error) => Err(error),
+        })
         .collect::<Result<Vec<_>, _>>()?;
     names.sort();
     Ok(names.into_iter().skip(offset as usize).take(51).collect())

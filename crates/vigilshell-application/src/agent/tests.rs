@@ -91,6 +91,7 @@ struct Connection {
     unavailable: AtomicBool,
     snapshot_text: Mutex<Option<String>>,
     snapshot_reads: AtomicUsize,
+    pause_snapshot: Mutex<Option<Arc<tokio::sync::Notify>>>,
 }
 fn support() -> ExecutionEnvironment {
     let policy = ConnectionPolicy::default();
@@ -342,6 +343,11 @@ impl AgentConnection for Connection {
     ) -> FutureResult<'_, ScriptPreparation> {
         Box::pin(async move {
             self.snapshot_reads.fetch_add(1, Ordering::Relaxed);
+            let pause = self.pause_snapshot.lock().unwrap().take();
+            if let Some(entered) = pause {
+                entered.notify_one();
+                std::future::pending::<()>().await;
+            }
             let RuntimeOperation::Script {
                 source,
                 interpreter,
@@ -487,6 +493,7 @@ impl Fixture {
             Arc::new(vigilshell_local_files::LocalFiles::new(vec![])),
         );
         service.initialize().await.unwrap();
+        service.ready_for_execution().await.unwrap();
         let connection_id = new_id();
         service
             .database
@@ -1050,3 +1057,36 @@ async fn rejection_storage_failure_never_publishes_a_completed_audit_task() {
 mod policy_settings;
 
 mod workspace_takeover;
+
+#[tokio::test]
+async fn unreadable_profile_cannot_be_used_for_new_agent_execution() {
+    let f = Fixture::new().await;
+    let raw = rusqlite::Connection::open(f._directory.path().join("app.sqlite3")).unwrap();
+    raw.execute(
+        "UPDATE connection_profiles SET config=zeroblob(48) WHERE id=?1",
+        [&f.connection_id],
+    )
+    .unwrap();
+    assert!(
+        matches!(f.service.connections().await.unwrap(), AgentReply::Connections { connections } if connections.is_empty())
+    );
+    let action = AgentAction::Runtime(RuntimeCall {
+        parent_task_id: None,
+        session_id: "session".into(),
+        request_key: "damaged-profile".into(),
+        timeout_seconds: None,
+        operation: RuntimeOperation::Command {
+            command: "pwd".into(),
+            directory: ScopedPath {
+                scope_id: ACCOUNT_SCOPE_ID.into(),
+                path: "srv".into(),
+            },
+        },
+    });
+    assert!(matches!(
+        f.service.invoke(f.entry.clone(), action).await,
+        Err("access_revoked")
+    ));
+    assert!(f.connection.requests.lock().unwrap().is_empty());
+    f.service.shutdown().await;
+}

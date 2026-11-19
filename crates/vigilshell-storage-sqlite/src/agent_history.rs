@@ -74,13 +74,14 @@ fn task_row(row: &Row<'_>) -> rusqlite::Result<HistoricalTask> {
 }
 
 fn project_task(mut task: HistoricalTask) -> Result<HistoricalTask> {
-    let body: TaskEnvelope = decode(&task.raw_body)?;
+    let body: TaskEnvelope =
+        decode(&task.raw_body).map_err(|_| WorkspaceError::TaskRecordUnavailable)?;
     if body.id != task.id
         || body.entry_id != task.entry_id
         || body.connection_id != task.connection_id
         || body.created_at != task.created_at
     {
-        return Err(WorkspaceError::StorageUnavailable);
+        return Err(WorkspaceError::TaskRecordUnavailable);
     }
     task.display = body.display;
     // 只补充新格式的展示字段，不覆盖旧投影，也不解码为可执行请求。
@@ -142,34 +143,48 @@ fn project_task(mut task: HistoricalTask) -> Result<HistoricalTask> {
 }
 
 fn task(c: &Connection, id: &str) -> Result<Option<HistoricalTask>> {
-    db(c.query_row(
-        &format!("SELECT {TASK_COLUMNS} FROM agent_tasks WHERE id=?1"),
-        [id],
-        task_row,
-    )
-    .optional())?
-    .map(project_task)
-    .transpose()
+    let mut query = db(c.prepare(&format!(
+        "SELECT {TASK_COLUMNS} FROM agent_tasks WHERE id=?1"
+    )))?;
+    let mut rows = db(query.query([id]))?;
+    db(rows.next())?
+        .map(|row| {
+            let task = task_row(row).map_err(|_| WorkspaceError::TaskRecordUnavailable)?;
+            project_task(task)
+        })
+        .transpose()
 }
 
 fn tasks(c: &Connection, filter: TaskHistoryFilter) -> Result<TaskHistoryPage> {
     let mut query = db(c.prepare(&format!(
-        "SELECT {TASK_COLUMNS} FROM agent_tasks WHERE (?1 IS NULL OR entry_id=?1) AND (?2 IS NULL OR connection_id=?2) AND (?3 IS NULL OR json_extract(body,'$.contextId')=?3) AND (?4 IS NULL OR COALESCE(json_extract(body,'$.phase'),json_extract(body,'$.state.phase'))=?4) ORDER BY created_at DESC,id DESC LIMIT 101 OFFSET ?5"
+        "SELECT {TASK_COLUMNS} FROM agent_tasks
+         WHERE (?1 IS NULL OR entry_id=?1) AND (?2 IS NULL OR connection_id=?2)
+           AND CASE WHEN json_valid(body) THEN
+               (?3 IS NULL OR json_extract(body,'$.contextId')=?3)
+               AND (?4 IS NULL OR COALESCE(json_extract(body,'$.phase'),json_extract(body,'$.state.phase'))=?4)
+             ELSE 0 END
+         ORDER BY created_at DESC,id DESC"
     )))?;
-    let rows = db(query.query_map(
-        params![
-            filter.entry_id,
-            filter.connection_id,
-            filter.session_id,
-            filter.phase,
-            filter.offset
-        ],
-        task_row,
-    ))?;
+    let mut rows = db(query.query(params![
+        filter.entry_id,
+        filter.connection_id,
+        filter.session_id,
+        filter.phase
+    ]))?;
     let mut page = TaskHistoryPage::default();
     let mut bytes = 0;
-    for row in rows {
-        let task = db(row)?;
+    let mut remaining_offset = filter.offset;
+    while let Some(row) = db(rows.next())? {
+        let Ok(task) = task_row(row)
+            .map_err(|_| WorkspaceError::TaskRecordUnavailable)
+            .and_then(project_task)
+        else {
+            continue;
+        };
+        if remaining_offset > 0 {
+            remaining_offset -= 1;
+            continue;
+        }
         if page.tasks.len() == 100
             || (!page.tasks.is_empty() && bytes + task.raw_body.len() > MAX_PAGE_BYTES)
         {
@@ -182,7 +197,7 @@ fn tasks(c: &Connection, filter: TaskHistoryFilter) -> Result<TaskHistoryPage> {
             break;
         }
         bytes += task.raw_body.len();
-        page.tasks.push(project_task(task)?);
+        page.tasks.push(task);
     }
     Ok(page)
 }
@@ -376,155 +391,183 @@ fn summaries(
         .transpose()
         .map_err(|_| WorkspaceError::InvalidInput)?;
     // Task transitions collapse into one row; independent events retain their recorded identity.
-    let mut statement = db(c.prepare("SELECT identity,stamp,session,task,sequence FROM (
-        SELECT 't:'||id AS identity,created_at AS stamp,json_extract(body,'$.contextId') AS session,id AS task,NULL AS sequence,active,body || COALESCE((SELECT r.body FROM agent_recordings r WHERE r.id=json_extract(agent_tasks.body,'$.contextId')), '') AS searchable FROM agent_tasks
+    let mut statement = db(c.prepare("WITH task_candidates AS (
+        SELECT id,created_at,active,body,CASE WHEN json_valid(body) THEN CAST(json_extract(body,'$.contextId') AS TEXT) END AS session
+        FROM agent_tasks WHERE json_valid(body)
+        ) SELECT identity,stamp,session,task,sequence FROM (
+        SELECT 't:'||t.id AS identity,t.created_at AS stamp,t.session,t.id AS task,NULL AS sequence,t.active,t.body || COALESCE(r.body, '') AS searchable FROM task_candidates t LEFT JOIN agent_recordings r ON r.id=t.session
         UNION ALL
         SELECT 'e:'||e.session_id||':'||e.sequence,e.timestamp_ms,e.session_id,NULL,e.sequence,0,r.body FROM agent_recording_events e JOIN agent_recordings r ON r.id=e.session_id AND r.deleting=0 WHERE e.kind IN ('session','policy','decision','control','fileChanged','gap','historical') AND (e.task_id IS NULL OR e.kind<>'fileChanged')
         ) WHERE (?1 IS NULL OR stamp<?1 OR (stamp=?1 AND identity<?2)) AND (?3 IS NULL OR instr(lower(searchable),lower(?3))>0) AND (?4 IS NULL OR active=?4) AND (?5 IS NULL OR session=?5) ORDER BY stamp DESC,identity DESC LIMIT 101"))?;
-    let rows = db(statement.query_map(
-        params![
-            before,
-            filter.before,
-            filter.query,
-            filter.active,
-            filter.session_id
-        ],
-        |r| {
-            Ok((
-                r.get::<_, String>(0)?,
-                unsigned(r, 1)?,
-                r.get::<_, Option<String>>(2)?,
-                r.get::<_, Option<String>>(3)?,
-                optional_unsigned(r, 4)?,
-            ))
-        },
-    ))?;
+    let mut cursor = (before, filter.before);
     let mut result = Vec::new();
-    for row in rows {
-        let (id, created_at, session, task_id, sequence) = db(row)?;
-        let session_id = session.unwrap_or_default();
-        let recording = match recording(c, &session_id) {
-            Ok(r) => Some(r),
-            Err(WorkspaceError::NotFound) => None,
-            Err(e) => return Err(e),
-        };
-        let mut item = ActivitySummary {
-            entry_id: recording
-                .as_ref()
-                .map(|r| r.entry_id.clone())
-                .unwrap_or_default(),
-            id,
-            session_id: session_id.clone(),
-            task_id: task_id.clone(),
-            sequence,
-            created_at,
-            connection_name: recording
-                .as_ref()
-                .and_then(|r| r.connection_name.clone())
-                .unwrap_or_default(),
-            entry_name: recording
-                .as_ref()
-                .and_then(|r| r.entry_name.clone())
-                .unwrap_or_default(),
-            kind: String::new(),
-            summary: String::new(),
-            phase: None,
-            started_at: None,
-            finished_at: None,
-            uncertain: false,
-        };
-        if let Some(id) = task_id {
-            let history = task(c, &id)?.ok_or(WorkspaceError::NotFound)?;
-            item.entry_id = history.entry_id.clone();
-            item.connection_name = history
-                .display
-                .connection_name
-                .clone()
-                .filter(|s| !s.is_empty())
-                .unwrap_or(item.connection_name);
-            item.entry_name = history
-                .display
-                .entry_name
-                .clone()
-                .filter(|s| !s.is_empty())
-                .unwrap_or(item.entry_name);
-            if let Ok(task) = serde_json::from_str::<ExecutionTask>(&history.raw_body) {
-                item.kind = task.request.operation.label().into();
-                item.summary = match &task.request.operation {
-                    RuntimeOperation::Command { command, .. } => command.clone(),
-                    RuntimeOperation::Script {
-                        source: ScriptSource::RemoteFile { target, .. },
-                        ..
-                    } => target.path.clone(),
-                    op => op
-                        .business_targets()
-                        .unwrap_or_default()
-                        .iter()
-                        .map(|t| t.path.clone())
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                };
-                item.phase = Some(task.view_phase());
-                item.started_at = match task.state.dispatch {
-                    DispatchState::Attempted { attempted_at, .. } => Some(attempted_at),
-                    _ => None,
-                };
-                item.finished_at = task.finished_at;
-                item.uncertain =
-                    matches!(task.state.outcome, Some(ExecutionOutcome::Unknown { .. }));
-            } else if let Ok(task) = serde_json::from_str::<AgentTask>(&history.raw_body) {
-                item.kind = task.tool;
-                item.summary = task.command;
-                item.phase = Some(task.phase);
-                item.finished_at = task.finished_at;
-                item.started_at = task
-                    .execution_state
+    loop {
+        let rows = db(statement.query_map(
+            params![
+                cursor.0,
+                cursor.1,
+                filter.query,
+                filter.active,
+                filter.session_id
+            ],
+            |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, i64>(1)?,
+                    r.get::<_, Option<String>>(2)?,
+                    r.get::<_, Option<String>>(3)?,
+                    optional_unsigned(r, 4)?,
+                ))
+            },
+        ))?;
+        let mut examined = 0;
+        for row in rows {
+            let (id, stamp, session, task_id, sequence) = db(row)?;
+            examined += 1;
+            cursor = (Some(stamp), Some(id.clone()));
+            let created_at = match u64::try_from(stamp) {
+                Ok(created_at) => created_at,
+                Err(_) if task_id.is_some() => continue,
+                Err(_) => return Err(WorkspaceError::StorageUnavailable),
+            };
+            let history = if let Some(id) = &task_id {
+                match task(c, id) {
+                    Ok(Some(history)) => Some(history),
+                    Ok(None) | Err(WorkspaceError::TaskRecordUnavailable) => continue,
+                    Err(error) => return Err(error),
+                }
+            } else {
+                None
+            };
+            let session_id = session.unwrap_or_default();
+            let recording = match recording(c, &session_id) {
+                Ok(r) => Some(r),
+                Err(WorkspaceError::NotFound) => None,
+                Err(e) => return Err(e),
+            };
+            let mut item = ActivitySummary {
+                entry_id: recording
                     .as_ref()
-                    .and_then(|s| match s.dispatch {
+                    .map(|r| r.entry_id.clone())
+                    .unwrap_or_default(),
+                id,
+                session_id: session_id.clone(),
+                task_id: task_id.clone(),
+                sequence,
+                created_at,
+                connection_name: recording
+                    .as_ref()
+                    .and_then(|r| r.connection_name.clone())
+                    .unwrap_or_default(),
+                entry_name: recording
+                    .as_ref()
+                    .and_then(|r| r.entry_name.clone())
+                    .unwrap_or_default(),
+                kind: String::new(),
+                summary: String::new(),
+                phase: None,
+                started_at: None,
+                finished_at: None,
+                uncertain: false,
+            };
+            if let Some(history) = history {
+                item.entry_id = history.entry_id.clone();
+                item.connection_name = history
+                    .display
+                    .connection_name
+                    .clone()
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or(item.connection_name);
+                item.entry_name = history
+                    .display
+                    .entry_name
+                    .clone()
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or(item.entry_name);
+                if let Ok(task) = serde_json::from_str::<ExecutionTask>(&history.raw_body) {
+                    item.kind = task.request.operation.label().into();
+                    item.summary = match &task.request.operation {
+                        RuntimeOperation::Command { command, .. } => command.clone(),
+                        RuntimeOperation::Script {
+                            source: ScriptSource::RemoteFile { target, .. },
+                            ..
+                        } => target.path.clone(),
+                        op => op
+                            .business_targets()
+                            .unwrap_or_default()
+                            .iter()
+                            .map(|t| t.path.clone())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    };
+                    item.phase = Some(task.view_phase());
+                    item.started_at = match task.state.dispatch {
                         DispatchState::Attempted { attempted_at, .. } => Some(attempted_at),
                         _ => None,
-                    });
-                item.uncertain = !task.termination_confirmed;
-            } else {
-                item.kind = history.display.tool.unwrap_or_else(|| "historical".into());
-                item.summary = history.display.command.unwrap_or_default();
+                    };
+                    item.finished_at = task.finished_at;
+                    item.uncertain =
+                        matches!(task.state.outcome, Some(ExecutionOutcome::Unknown { .. }));
+                } else if let Ok(task) = serde_json::from_str::<AgentTask>(&history.raw_body) {
+                    item.kind = task.tool;
+                    item.summary = task.command;
+                    item.phase = Some(task.phase);
+                    item.finished_at = task.finished_at;
+                    item.started_at =
+                        task.execution_state
+                            .as_ref()
+                            .and_then(|s| match s.dispatch {
+                                DispatchState::Attempted { attempted_at, .. } => Some(attempted_at),
+                                _ => None,
+                            });
+                    item.uncertain = !task.termination_confirmed;
+                } else {
+                    item.kind = history.display.tool.unwrap_or_else(|| "historical".into());
+                    item.summary = history.display.command.unwrap_or_default();
+                    item.uncertain = true;
+                }
+            } else if let Some(sequence) = sequence {
+                let position: String = db(c.query_row(
+                    "SELECT position FROM agent_recording_events WHERE session_id=?1 AND sequence=?2",
+                    params![
+                        session_id,
+                        i64::try_from(sequence).map_err(|_| WorkspaceError::InvalidInput)?
+                    ],
+                    |r| r.get(0),
+                ))?;
+                let store =
+                    RecordingStore::open_read_only(root.ok_or(WorkspaceError::StorageUnavailable)?)
+                        .map_err(|_| WorkspaceError::StorageUnavailable)?;
+                let record = store
+                    .read_history(&decode(&position)?)
+                    .map_err(|_| WorkspaceError::StorageUnavailable)?;
+                item.kind = record.kind;
+                if let Ok(record) = serde_json::from_str::<ActivityRecord>(&record.raw_json) {
+                    item.summary = match record.body {
+                        ActivityBody::Session { phase, .. } => format!("session:{phase:?}"),
+                        ActivityBody::Control { action } => action,
+                        ActivityBody::Decision { allowed, .. } => {
+                            if allowed { "allowed" } else { "denied" }.into()
+                        }
+                        ActivityBody::FileChanged { paths } => paths.join(", "),
+                        _ => String::new(),
+                    };
+                }
+            }
+            // A restarted backend cannot attest that an old dispatched task is still executing.
+            if item.phase.as_ref().is_some_and(TaskPhase::active)
+                && recording.as_ref().is_none_or(|r| r.ended_at.is_some())
+            {
                 item.uncertain = true;
             }
-        } else if let Some(sequence) = sequence {
-            let position: String = db(c.query_row(
-                "SELECT position FROM agent_recording_events WHERE session_id=?1 AND sequence=?2",
-                params![
-                    session_id,
-                    i64::try_from(sequence).map_err(|_| WorkspaceError::InvalidInput)?
-                ],
-                |r| r.get(0),
-            ))?;
-            let store =
-                RecordingStore::open_read_only(root.ok_or(WorkspaceError::StorageUnavailable)?)
-                    .map_err(|_| WorkspaceError::StorageUnavailable)?;
-            let record = store
-                .read_history(&decode(&position)?)
-                .map_err(|_| WorkspaceError::StorageUnavailable)?;
-            item.kind = record.kind;
-            if let Ok(record) = serde_json::from_str::<ActivityRecord>(&record.raw_json) {
-                item.summary = match record.body {
-                    ActivityBody::Session { phase, .. } => format!("session:{phase:?}"),
-                    ActivityBody::Control { action } => action,
-                    ActivityBody::Decision { allowed, .. } => {
-                        if allowed { "allowed" } else { "denied" }.into()
-                    }
-                    ActivityBody::FileChanged { paths } => paths.join(", "),
-                    _ => String::new(),
-                };
+            result.push(item);
+            if result.len() == 101 {
+                return Ok(result);
             }
         }
-        // A restarted backend cannot attest that an old dispatched task is still executing.
-        if item.phase.as_ref().is_some_and(TaskPhase::active)
-            && recording.as_ref().is_none_or(|r| r.ended_at.is_some())
-        {
-            item.uncertain = true;
+        if examined < 101 {
+            break;
         }
-        result.push(item);
     }
     Ok(result)
 }
@@ -752,7 +795,7 @@ mod tests {
     }
 
     #[test]
-    fn corrupt_task_json_and_identity_conflicts_are_rejected() {
+    fn corrupt_task_json_and_identity_conflicts_are_rejected_by_id_and_omitted_from_lists() {
         for body in [
             "{broken",
             r#"{"id":"other","entryId":"entry","connectionId":"connection","createdAt":42}"#,
@@ -768,7 +811,12 @@ mod tests {
             .unwrap();
             c.pragma_update(None, "query_only", true).unwrap();
             assert!(task(&c, "task").is_err());
-            assert!(tasks(&c, TaskHistoryFilter::default()).is_err());
+            assert!(
+                tasks(&c, TaskHistoryFilter::default())
+                    .unwrap()
+                    .tasks
+                    .is_empty()
+            );
             assert_eq!(
                 c.query_row("SELECT body FROM agent_tasks", [], |row| row
                     .get::<_, String>(0))
@@ -850,7 +898,67 @@ mod tests {
             "too-large",
             &format!(r#""legacy":"{}""#, "x".repeat(MAX_BODY_BYTES)),
         );
-        assert!(tasks(&oversized, TaskHistoryFilter::default()).is_err());
+        assert!(matches!(
+            task(&oversized, "too-large"),
+            Err(WorkspaceError::TaskRecordUnavailable)
+        ));
+        assert!(
+            tasks(&oversized, TaskHistoryFilter::default())
+                .unwrap()
+                .tasks
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn history_pages_fill_with_healthy_rows_after_a_batch_of_bad_records() {
+        let c = database();
+        for index in 0..102 {
+            insert(&c, &format!("good-{index:03}"), r#""legacy":true"#);
+        }
+        for index in 0..102 {
+            insert(&c, &format!("invalid-{index:03}"), r#""legacy":true"#);
+        }
+        c.execute_batch(
+            "UPDATE agent_tasks SET body=json_set(body,'$.phase',42) WHERE id LIKE 'invalid-%';
+             UPDATE agent_tasks SET body='{' WHERE id='invalid-000';
+             UPDATE agent_tasks SET body=json_set(body,'$.id','other') WHERE id='invalid-001';",
+        )
+        .unwrap();
+        let first = tasks(&c, TaskHistoryFilter::default()).unwrap();
+        assert_eq!(first.tasks.len(), 100);
+        assert_eq!(first.tasks[0].id, "good-101");
+        let next = tasks(
+            &c,
+            TaskHistoryFilter {
+                offset: first.next_offset.unwrap(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            next.tasks.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(),
+            ["good-001", "good-000"]
+        );
+        assert_eq!(next.next_offset, None);
+
+        let activity = summaries(&c, None, ActivitySummaryFilter::default()).unwrap();
+        assert_eq!(activity.len(), 101);
+        assert_eq!(activity[0].id, "t:good-101");
+        let next = summaries(
+            &c,
+            None,
+            ActivitySummaryFilter {
+                before: Some(activity[99].id.clone()),
+                before_time: Some(42),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            next.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(),
+            ["t:good-001", "t:good-000"]
+        );
     }
 
     #[test]

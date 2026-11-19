@@ -7,6 +7,7 @@ import type {
   ProxyConfig,
   TunnelRule,
   PreferencesPatch,
+  PolicyLimitPatch,
   UiStateData,
   UpdatePreferencesRequest,
   WriteOutcome,
@@ -16,6 +17,7 @@ import {
   executionPolicyValid,
   executionRequestValid,
   executionStateValid,
+  policyLimitValid,
   scriptReviewBindingValid,
 } from './execution-validation';
 
@@ -111,6 +113,10 @@ export function semanticRule(rule: string, value: unknown): boolean {
     switch (rule) {
       case 'executionPolicy':
         return executionPolicyValid(value as ExecutionPolicy);
+      case 'policyLimitPatch': {
+        const patch = value as PolicyLimitPatch;
+        return policyLimitValid(patch.key, patch.value);
+      }
       case 'executionRequest':
         return executionRequestValid(value as ExecutionRequest);
       case 'scriptReviewBinding':

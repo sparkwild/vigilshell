@@ -181,8 +181,7 @@ fn validate_schema(connection: &Connection) -> rusqlite::Result<bool> {
         && agent::validate_rows(connection)?
         && vault::validate_rows(connection)?
         && workspace::validate_rows(connection)?
-        && connection_configuration::validate_rows(connection)?
-        && ui_state::validate_rows(connection)?)
+        && connection_configuration::validate_rows(connection)?)
 }
 fn validate_against(connection: &Connection, expected: &Connection) -> rusqlite::Result<bool> {
     fn objects(c: &Connection) -> rusqlite::Result<Vec<(String, String, String, String)>> {

@@ -136,6 +136,7 @@ pub struct FileOperationItem {
 }
 #[derive(Clone, Debug)]
 pub struct FileOperationPage {
+    pub cancellable: bool,
     pub id: String,
     pub phase: String,
     pub stage: String,

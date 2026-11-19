@@ -95,6 +95,7 @@ impl PolicySettingsPatch {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(extend("x-vigil-rule" = "policyLimitPatch")))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PolicyLimitPatch {
     pub key: PolicyLimitKey,
@@ -126,7 +127,9 @@ impl PolicyLimitPatch {
             | PolicyLimitKey::ConcurrentTransfers => {
                 let v = self
                     .value
-                    .filter(|v| (1..=16).contains(v))
+                    .filter(|v| {
+                        (u32::from(CONCURRENCY_MIN)..=u32::from(CONCURRENCY_MAX)).contains(v)
+                    })
                     .ok_or("invalid_limits")? as u16;
                 match self.key {
                     PolicyLimitKey::ConcurrentTasks => limits.concurrent_tasks = v,

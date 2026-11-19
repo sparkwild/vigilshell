@@ -723,3 +723,12 @@ it('restores activity retention inputs when saving fails', async () => {
   expect(state.issue).toHaveBeenCalledOnce();
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
+
+it('keeps service settings usable and shows the affected task IDs for partial recovery', async () => {
+  state.snapshot!.unrecoveredTasks = ['damaged-task'];
+  view();
+  expect(screen.getByRole('switch', { name: 'Enable MCP service' })).toBeEnabled();
+  expect(screen.getByText('Some task records could not be recovered.')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Affected task IDs' }));
+  expect(screen.getByText('damaged-task')).toBeVisible();
+});

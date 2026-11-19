@@ -74,6 +74,7 @@ impl LocalExecutor {
         connection: Option<&str>,
         context: Option<&str>,
     ) {
+        let _admission = self.admissions.lock().await;
         for active in self.active.lock().unwrap().values() {
             if entry.is_none_or(|v| active.identity.entry_id == v)
                 && connection.is_none_or(|v| active.identity.connection_id == v)

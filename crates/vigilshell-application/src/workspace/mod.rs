@@ -37,7 +37,6 @@ struct Operation {
     view: OperationView,
     cancel: CancellationToken,
     flag: Arc<AtomicBool>,
-    cancellable: bool,
 }
 struct Session {
     control_deadline: Option<std::time::Instant>,
@@ -219,6 +218,7 @@ impl WorkspaceService {
         }
         let id = new_id();
         let view = OperationView {
+            cancellable,
             file_summary: None,
             proxy: None,
             id: id.clone(),
@@ -239,7 +239,6 @@ impl WorkspaceService {
                 view: view.clone(),
                 cancel: CancellationToken::new(),
                 flag: Arc::new(AtomicBool::new(false)),
-                cancellable,
             },
         );
         Ok(view)
@@ -356,6 +355,7 @@ impl WorkspaceService {
             }
 
             WorkspaceAction::Database(command) => {
+                let rename = matches!(&command, DbCommand::UpdateGroup { .. });
                 let read = matches!(
                     &command,
                     DbCommand::ListProxies { .. }
@@ -366,7 +366,12 @@ impl WorkspaceService {
                         | DbCommand::Trust(_)
                 );
                 let reply = self.database.execute(command).await?;
-                if !read {
+                if let (true, DbReply::Group(group)) = (rename, &reply) {
+                    let _ = self
+                        .sink
+                        .event(owner.into(), WorkspaceNotice::GroupRenamed(group.clone()))
+                        .await;
+                } else if !read {
                     self.changed(owner).await;
                 }
                 Ok(WorkspaceResult::Database(reply))
@@ -550,7 +555,7 @@ impl WorkspaceService {
                     .get_mut(&id)
                     .filter(|o| o.owner == owner)
                     .ok_or(WorkspaceError::NotFound)?;
-                if !o.cancellable || !matches!(o.view.phase.as_str(), "working" | "trust") {
+                if !o.view.cancellable || !matches!(o.view.phase.as_str(), "working" | "trust") {
                     return Err(WorkspaceError::TooLate);
                 }
                 o.flag.store(true, Ordering::Release);
@@ -699,7 +704,7 @@ impl WorkspaceService {
             for o in state
                 .operations
                 .values()
-                .filter(|o| o.owner == owner && o.cancellable)
+                .filter(|o| o.owner == owner && o.view.cancellable)
             {
                 o.flag.store(true, Ordering::Release);
                 o.cancel.cancel();
@@ -754,7 +759,7 @@ impl WorkspaceService {
             for listing in state.listings.values() {
                 listing.cancel.store(true, Ordering::Release);
             }
-            for o in state.operations.values().filter(|o| o.cancellable) {
+            for o in state.operations.values().filter(|o| o.view.cancellable) {
                 o.flag.store(true, Ordering::Release);
                 o.cancel.cancel();
             }

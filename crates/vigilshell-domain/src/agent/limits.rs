@@ -1,6 +1,10 @@
 //! 限制按真实执行类型计算；传输、终端和普通任务不共享默认时限或连接名额。
 use super::*;
 
+pub const CONCURRENCY_MIN: u16 = 1;
+pub const CONCURRENCY_MAX: u16 = 16;
+const DURATION_MIN: u32 = 1;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
@@ -12,15 +16,24 @@ pub enum ExecutionClass {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(extend("x-vigil-defaults" = ExecutionLimits::default())))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ExecutionLimits {
+    #[cfg_attr(feature = "schema", schemars(range(min = DURATION_MIN, max = u32::MAX)))]
     pub max_task_seconds: Option<u32>,
+    #[cfg_attr(feature = "schema", schemars(range(min = DURATION_MIN, max = u32::MAX)))]
     pub terminal_seconds: Option<u32>,
+    #[cfg_attr(feature = "schema", schemars(range(min = DURATION_MIN, max = u32::MAX)))]
     pub terminal_idle_seconds: Option<u32>,
+    #[cfg_attr(feature = "schema", schemars(range(min = DURATION_MIN, max = u32::MAX)))]
     pub transfer_seconds: Option<u32>,
+    #[cfg_attr(feature = "schema", schemars(range(min = DURATION_MIN, max = u32::MAX)))]
     pub transfer_stall_seconds: Option<u32>,
+    #[cfg_attr(feature = "schema", schemars(range(min = CONCURRENCY_MIN, max = CONCURRENCY_MAX)))]
     pub concurrent_tasks: u16,
+    #[cfg_attr(feature = "schema", schemars(range(min = CONCURRENCY_MIN, max = CONCURRENCY_MAX)))]
     pub concurrent_transfers: u16,
+    #[cfg_attr(feature = "schema", schemars(range(min = CONCURRENCY_MIN, max = CONCURRENCY_MAX)))]
     pub concurrent_terminals: u16,
 }
 
@@ -48,14 +61,16 @@ impl ExecutionLimits {
             self.transfer_seconds,
             self.transfer_stall_seconds,
         ]
-        .contains(&Some(0))
+        .into_iter()
+        .flatten()
+        .any(|v| v < DURATION_MIN)
             || [
                 self.concurrent_tasks,
                 self.concurrent_transfers,
                 self.concurrent_terminals,
             ]
             .iter()
-            .any(|v| !(1..=16).contains(v))
+            .any(|v| !(CONCURRENCY_MIN..=CONCURRENCY_MAX).contains(v))
         {
             return Err("invalid_limits");
         }
@@ -135,5 +150,76 @@ mod tests {
         assert_eq!(limits.concurrency(ExecutionClass::Task), 1);
         assert_eq!(limits.concurrency(ExecutionClass::Terminal), 2);
         assert_eq!(limits.concurrency(ExecutionClass::Transfer), 2);
+    }
+
+    #[test]
+    fn full_policies_and_limit_patches_agree_on_boundaries() {
+        for value in [
+            serde_json::Value::Null,
+            serde_json::json!(0),
+            serde_json::json!(1),
+            serde_json::json!(2_147_483_648_u64),
+            serde_json::json!(u32::MAX),
+            serde_json::json!(u64::from(u32::MAX) + 1),
+        ] {
+            let expected = value.is_null()
+                || value
+                    .as_u64()
+                    .is_some_and(|v| (1..=u64::from(u32::MAX)).contains(&v));
+            for field in [
+                "maxTaskSeconds",
+                "terminalSeconds",
+                "terminalIdleSeconds",
+                "transferSeconds",
+                "transferStallSeconds",
+            ] {
+                let base = ConnectionPolicy {
+                    connection_id: "fixture".into(),
+                    ..Default::default()
+                };
+                let mut policy = serde_json::to_value(base.clone()).unwrap();
+                policy["execution"]["limits"][field] = value.clone();
+                assert_eq!(
+                    serde_json::from_value::<ConnectionPolicy>(policy).is_ok(),
+                    expected
+                );
+                let patch = serde_json::from_value::<PolicySettingsPatch>(serde_json::json!({
+                    "field":"limit","value":{"key":field,"value":value}
+                }));
+                assert_eq!(
+                    patch.is_ok_and(|patch| patch.apply(&base).is_ok()),
+                    expected
+                );
+            }
+        }
+        let base = ConnectionPolicy {
+            connection_id: "fixture".into(),
+            ..Default::default()
+        };
+        let limits = PolicySettingsPatch::Limit(PolicyLimitPatch {
+            key: PolicyLimitKey::MaxTaskSeconds,
+            value: Some(u32::MAX),
+        })
+        .apply(&base)
+        .unwrap()
+        .execution
+        .limits;
+        assert_eq!(
+            limits.timeout(ExecutionClass::Task, None),
+            Ok(Some(u32::MAX))
+        );
+        assert_eq!(
+            limits.timeout(ExecutionClass::Terminal, None),
+            Ok(Some(7200))
+        );
+        assert_eq!(limits.timeout(ExecutionClass::Transfer, None), Ok(None));
+        for v in [1, 16, 17] {
+            let patched = PolicySettingsPatch::Limit(PolicyLimitPatch {
+                key: PolicyLimitKey::ConcurrentTasks,
+                value: Some(v),
+            })
+            .apply(&base);
+            assert_eq!(patched.is_ok(), v <= 16);
+        }
     }
 }

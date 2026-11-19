@@ -9,6 +9,8 @@ type GroupPort = Pick<
   | 'run'
   | 'mutation'
   | 'refresh'
+  | 'refreshGroups'
+  | 'acceptGroupRename'
   | 'setNavigation'
   | 'setGroupExpanded'
   | 'setGroupEditing'
@@ -20,17 +22,16 @@ export class GroupCoordinator {
   constructor(private readonly context: GroupPort) {}
 
   currentLayout = (): GroupLayout => {
-    const groupIds = [...this.context.getSnapshot().groups]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((g) => g.id);
+    const { groups, connections, unavailableConnections, layoutRevision } =
+      this.context.getSnapshot();
+    const groupIds = [...groups].sort((a, b) => a.sortOrder - b.sortOrder).map((g) => g.id);
     return {
-      revision: this.context.getSnapshot().layoutRevision,
+      revision: layoutRevision,
       groupIds,
       buckets: [...groupIds, null].map((groupId) => ({
         groupId,
-        connectionIds: this.context
-          .getSnapshot()
-          .connections.filter((c) => c.groupId === groupId)
+        connectionIds: [...connections, ...unavailableConnections]
+          .filter((c) => c.groupId === groupId)
           .sort((a, b) => a.groupSortOrder - b.groupSortOrder)
           .map((c) => c.id),
       })),
@@ -41,6 +42,7 @@ export class GroupCoordinator {
     if (this.context.getSnapshot().groupBusy || this.context.feedback.isBusy('group-layout'))
       throw new WorkspaceFailure('busy');
     this.context.set({ groupBusy: true });
+    const runtime = this.context.getSnapshot().runtimeId;
     try {
       await this.context.run({
         owner: 'navigation:groups',
@@ -49,18 +51,20 @@ export class GroupCoordinator {
         label: 'SSH',
         execute: () => this.context.mutation('updateLayout', layout),
       });
-      await this.context.refresh();
+      if (runtime === this.context.getSnapshot().runtimeId) await this.context.refresh();
     } catch (error) {
-      await this.context.refresh().catch(() => undefined);
+      if (runtime === this.context.getSnapshot().runtimeId)
+        await this.context.refresh().catch(() => undefined);
       throw error;
     } finally {
-      this.context.set({ groupBusy: false });
+      if (runtime === this.context.getSnapshot().runtimeId) this.context.set({ groupBusy: false });
     }
   };
 
   createGroup = async (surfaceId: string, name: string) => {
     if (this.context.getSnapshot().groupBusy || this.context.feedback.isBusy('group-layout'))
       return;
+    const runtime = this.context.getSnapshot().runtimeId;
     this.context.set({ groupBusy: true, interactionSurface: surfaceId });
     this.context.setNavigation((p) => ({ ...p, view: 'groups' }));
     try {
@@ -71,7 +75,9 @@ export class GroupCoordinator {
         label: name,
         execute: () => this.context.mutation('createGroup', { name }),
       });
+      if (runtime !== this.context.getSnapshot().runtimeId) return;
       await this.context.refresh();
+      if (runtime !== this.context.getSnapshot().runtimeId) return;
       if (result.kind !== 'group') throw new WorkspaceFailure('protocol_mismatch');
       const group = result.group;
       this.context.setGroupExpanded((p) => new Set(p).add('f:' + group.id));
@@ -82,30 +88,37 @@ export class GroupCoordinator {
         error: null,
       });
     } catch {
-      await this.context.refresh().catch(() => undefined);
+      if (runtime === this.context.getSnapshot().runtimeId)
+        await this.context.refresh().catch(() => undefined);
     } finally {
-      this.context.set({ groupBusy: false, interactionSurface: null });
+      if (runtime === this.context.getSnapshot().runtimeId)
+        this.context.set({ groupBusy: false, interactionSurface: null });
     }
   };
 
   renameGroup = async (group: ConnectionGroupView, draft: string) => {
-    if (this.context.getSnapshot().groupBusy || this.context.feedback.isBusy('group-layout'))
-      return;
+    const { runtimeId, groupsReady, groupEditing } = this.context.getSnapshot();
+    let editing = groupEditing;
+    const owner = 'group:' + group.id;
+    if ((runtimeId && !groupsReady) || this.context.feedback.isBusy(owner)) return;
+    const ownsDraft = () =>
+      this.context.getSnapshot().runtimeId === runtimeId &&
+      this.context.getSnapshot().groupEditing === editing &&
+      editing?.id === group.id;
     const name = draft.trim();
     if (!name || name === group.name) {
-      this.context.setGroupEditing(null);
+      if (ownsDraft()) this.context.setGroupEditing(null);
       return;
     }
-    this.context.set({ groupBusy: true });
     try {
       await this.context.run({
-        owner: 'group:' + group.id,
-        resources: ['group-layout'],
+        owner,
         action: 'nav_rename',
         label: group.name,
-        onResult: () => {
-          if (this.context.getSnapshot().groupEditing?.id === group.id)
-            this.context.setGroupEditing(null);
+        onResult: (result) => {
+          if (result.kind !== 'group') throw new WorkspaceFailure('protocol_mismatch');
+          this.context.acceptGroupRename(result.group);
+          if (ownsDraft()) this.context.setGroupEditing(null);
         },
         execute: () =>
           this.context.mutation('updateGroup', {
@@ -114,25 +127,30 @@ export class GroupCoordinator {
             name,
           }),
       });
-      this.context.setGroupEditing(null);
-      await this.context.refresh();
     } catch (error) {
-      this.context.setGroupEditing(
-        (p) =>
-          p && {
-            ...p,
-            error: error instanceof WorkspaceFailure ? error.code : 'runtime_unavailable',
-          },
-      );
-      await this.context.refresh().catch(() => undefined);
-    } finally {
-      this.context.set({ groupBusy: false });
+      if (ownsDraft() && editing) {
+        editing = {
+          ...editing,
+          error: error instanceof WorkspaceFailure ? error.code : 'runtime_unavailable',
+        };
+        this.context.setGroupEditing(editing);
+      }
+      if (
+        runtimeId === this.context.getSnapshot().runtimeId &&
+        error instanceof WorkspaceFailure &&
+        ['conflict', 'not_found'].includes(error.code)
+      )
+        await this.context.refreshGroups();
     }
   };
 
   removeGroup = async (group: ConnectionGroupView) => {
-    if (this.context.getSnapshot().groupBusy || this.context.feedback.isBusy('group-layout'))
+    if (
+      this.context.getSnapshot().groupBusy ||
+      this.context.feedback.isBusy('group-layout', 'group:' + group.id)
+    )
       return;
+    const runtime = this.context.getSnapshot().runtimeId;
     this.context.set({ groupBusy: true });
     try {
       await this.context.run({
@@ -146,13 +164,15 @@ export class GroupCoordinator {
             version: group.version,
           }),
       });
+      if (runtime !== this.context.getSnapshot().runtimeId) return;
       if (this.context.getSnapshot().groupEditing?.id === group.id)
         this.context.setGroupEditing(null);
       await this.context.refresh();
     } catch {
-      await this.context.refresh().catch(() => undefined);
+      if (runtime === this.context.getSnapshot().runtimeId)
+        await this.context.refresh().catch(() => undefined);
     } finally {
-      this.context.set({ groupBusy: false });
+      if (runtime === this.context.getSnapshot().runtimeId) this.context.set({ groupBusy: false });
     }
   };
 }

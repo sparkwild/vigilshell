@@ -6,27 +6,25 @@ impl LocalExecutor {
         id: &str,
         verified: ScriptReviewBinding,
     ) -> AgentResult<ExecutionTask> {
+        let before = self.get(entry, id).await?;
+        let current = tokio::time::timeout(
+            Duration::from_secs(10),
+            self.authority.current(before.request.identity.clone()),
+        )
+        .await
+        .map_err(|_| "authorization_timeout")?
+        .map_err(|_| "access_revoked")?;
         let _admission = self.admissions.lock().await;
+        self.check_admission()?;
         let mut task = self.get(entry, id).await?;
-        let current = self
-            .authority
-            .current(task.request.identity.clone())
-            .await
-            .map_err(|_| "access_revoked")?;
         if current.policy != task.policy || current.connection.is_closed() {
             return Err("access_revoked");
         }
+        let cancel = self.review_token(id)?;
         verified.matches_request(&task.request)?;
         task.state.approve_verified(&verified)?;
         self.script_decision(&task, true).await?;
         self.save(&mut task).await?;
-        let cancel = self
-            .active
-            .lock()
-            .unwrap()
-            .get(id)
-            .map(|v| v.cancel.clone())
-            .ok_or("execution_not_active")?;
         self.reviews_changed.send_modify(|v| *v = v.wrapping_add(1));
         self.spawn_run(task.clone(), cancel);
         Ok(task)
@@ -34,12 +32,22 @@ impl LocalExecutor {
     pub async fn reject_script(&self, entry: &str, id: &str) -> AgentResult<ExecutionTask> {
         let _admission = self.admissions.lock().await;
         let mut task = self.get(entry, id).await?;
+        self.review_token(id)?;
         task.state.reject_review()?;
         let recorded = self.script_decision(&task, false).await;
         self.save(&mut task).await?;
         recorded?;
         self.reviews_changed.send_modify(|v| *v = v.wrapping_add(1));
         Ok(task)
+    }
+    fn review_token(&self, id: &str) -> AgentResult<CancellationToken> {
+        self.active
+            .lock()
+            .unwrap()
+            .get(id)
+            .filter(|active| !active.cancel.is_cancelled() && !self.shutdown.is_cancelled())
+            .map(|active| active.cancel.clone())
+            .ok_or("execution_not_active")
     }
     async fn script_decision(&self, task: &ExecutionTask, allowed: bool) -> AgentResult<()> {
         let record = ActivityRecord {

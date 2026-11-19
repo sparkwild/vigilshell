@@ -23,30 +23,21 @@ pub(super) fn read_state(db: &Connection, scope: &str) -> Result<UiStateRecord, 
         Some((revision, json)) => {
             let revision =
                 u64::try_from(revision).map_err(|_| SettingsError::StorageUnavailable)?;
-            let data =
-                serde_json::from_str(&json).map_err(|_| SettingsError::StorageUnavailable)?;
-            let validated = UiStateUpdate {
-                scope: scope.into(),
-                expected_revision: revision,
-                data,
-            };
-            validated
-                .validate()
-                .map_err(|_| SettingsError::StorageUnavailable)?;
+            let data = serde_json::from_str(&json).ok().and_then(|data| {
+                let update = UiStateUpdate {
+                    scope: scope.into(),
+                    expected_revision: revision,
+                    data,
+                };
+                update.validate().ok().map(|()| update.data)
+            });
             Ok(UiStateRecord {
                 scope: scope.into(),
                 revision,
-                data: Some(validated.data),
+                data,
             })
         }
     }
-}
-pub(super) fn validate_rows(db: &Connection) -> rusqlite::Result<bool> {
-    let scopes = db
-        .prepare("SELECT scope FROM ui_state")?
-        .query_map([], |r| r.get::<_, String>(0))?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    Ok(scopes.iter().all(|scope| read_state(db, scope).is_ok()))
 }
 pub(super) fn update_state(
     db: &mut Connection,
@@ -170,12 +161,33 @@ mod tests {
     }
 
     #[test]
-    fn unknown_layout_records_are_rejected_without_implicit_cleanup() {
+    fn unknown_layout_records_are_preserved_and_inaccessible() {
         let repo = SqlitePreferences::initialize(Connection::open_in_memory().unwrap()).unwrap();
         repo.connection
             .execute("INSERT INTO ui_state VALUES('window',9,'{}')", [])
             .unwrap();
-        assert!(SqlitePreferences::initialize(repo.connection).is_err());
+        let mut repo = SqlitePreferences::initialize(repo.connection).unwrap();
+        assert!(matches!(
+            repo.ui_state("window"),
+            Err(SettingsError::InvalidRequest)
+        ));
+        assert!(matches!(
+            repo.update_ui_state(UiStateUpdate {
+                scope: "window".into(),
+                expected_revision: 9,
+                data: pickers(220),
+            }),
+            Err(SettingsError::InvalidRequest)
+        ));
+        let raw: (i64, String) = repo
+            .connection
+            .query_row(
+                "SELECT revision,data FROM ui_state WHERE scope='window'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(raw, (9, "{}".into()));
     }
     #[test]
     fn six_preferences_roundtrip_and_preserve_existing_values() {

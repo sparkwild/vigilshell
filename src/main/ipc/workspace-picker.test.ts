@@ -182,7 +182,7 @@ it('navigation during negotiation releases only the owner whose late handshake s
   expect(call).toHaveBeenCalledTimes(1);
   finish({
     kind: 'ready',
-    version: 16,
+    version: 17,
     connectionAccess: { phase: 'locked', revision: 0, code: null },
   });
   await failed;
@@ -280,7 +280,7 @@ it('caches explicit access snapshots and rejects stale owner/runtime/revision up
   const call = vi.fn((_owner: string, c: { method: string }) => ({
     result: Promise.resolve(
       c.method === 'workspace.negotiate'
-        ? { kind: 'ready', version: 16, connectionAccess: locked }
+        ? { kind: 'ready', version: 17, connectionAccess: locked }
         : c.method === 'connections.initialize'
           ? { kind: 'connectionAccess', state: { phase: 'unlocking', revision: 1, code: null } }
           : { kind: 'done' },

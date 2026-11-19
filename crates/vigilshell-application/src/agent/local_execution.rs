@@ -9,12 +9,19 @@ mod scripts;
 mod terminal;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex, Weak,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 pub use terminal::TerminalDelivery;
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 use vigilshell_domain::{agent::*, workspace::WorkspaceError};
+
+type RequestLocks = HashMap<(String, String), Weak<tokio::sync::Mutex<()>>>;
+const TASK_CAPACITY: usize = 128;
 
 pub struct LocalExecutor {
     database: Arc<dyn WorkspaceDatabase>,
@@ -23,6 +30,10 @@ pub struct LocalExecutor {
     scheduler: Arc<Scheduler>,
     recording_limit_bytes: Arc<std::sync::atomic::AtomicU64>,
     admissions: tokio::sync::Mutex<()>,
+    request_locks: Mutex<RequestLocks>,
+    capacity: Arc<Semaphore>,
+    recovery_failed: AtomicBool,
+    unrecovered: Mutex<Vec<String>>,
     active: Mutex<HashMap<String, ActiveExecution>>,
     shutdown: CancellationToken,
     failed: Mutex<HashMap<String, &'static str>>,
@@ -30,10 +41,10 @@ pub struct LocalExecutor {
     events: tokio::sync::broadcast::Sender<LocalExecutionEvent>,
     terminals: Mutex<HashMap<String, tokio::sync::mpsc::Sender<terminal::TerminalRequest>>>,
 }
-#[derive(Clone)]
 struct ActiveExecution {
     identity: ExecutionIdentity,
     cancel: CancellationToken,
+    _slot: OwnedSemaphorePermit,
 }
 impl LocalExecutor {
     /// recording_limit_bytes 来自现有记录设置，不另建命令记录配置。
@@ -55,6 +66,10 @@ impl LocalExecutor {
                 recording_limit_bytes,
             )),
             admissions: tokio::sync::Mutex::new(()),
+            request_locks: Mutex::default(),
+            capacity: Arc::new(Semaphore::new(TASK_CAPACITY)),
+            recovery_failed: AtomicBool::new(false),
+            unrecovered: Mutex::default(),
             active: Mutex::default(),
             shutdown: CancellationToken::new(),
             failed: Mutex::default(),
@@ -69,40 +84,85 @@ impl LocalExecutor {
         if !self.active.lock().unwrap().is_empty() {
             return Err("tasks_still_running");
         }
-        self.db(ExecutionDbCommand::Recover).await?;
+        self.recovery_failed.store(true, Ordering::Release);
+        let ExecutionDbReply::Recovered { unavailable } =
+            self.db(ExecutionDbCommand::Recover).await?
+        else {
+            return Err("agent_storage_unavailable");
+        };
+        *self.unrecovered.lock().unwrap() = unavailable;
         self.failed.lock().unwrap().clear();
+        self.recovery_failed.store(false, Ordering::Release);
+        Ok(())
+    }
+    pub(super) fn unrecovered(&self) -> Vec<String> {
+        self.unrecovered.lock().unwrap().clone()
+    }
+    fn request_lock(&self, request: &ExecutionRequest) -> Arc<tokio::sync::Mutex<()>> {
+        let key = (
+            request.identity.entry_id.clone(),
+            request.request_key.clone(),
+        );
+        let mut locks = self.request_locks.lock().unwrap();
+        locks.retain(|_, lock| lock.strong_count() > 0);
+        if let Some(lock) = locks.get(&key).and_then(Weak::upgrade) {
+            return lock;
+        }
+        let lock = Arc::new(tokio::sync::Mutex::new(()));
+        locks.insert(key, Arc::downgrade(&lock));
+        lock
+    }
+    fn check_admission(&self) -> AgentResult<()> {
+        if self.shutdown.is_cancelled() {
+            return Err("application_stopping");
+        }
+        if self.recovery_failed.load(Ordering::Acquire) || !self.failed.lock().unwrap().is_empty() {
+            return Err("agent_storage_unavailable");
+        }
         Ok(())
     }
     pub async fn submit(
         self: &Arc<Self>,
         mut request: ExecutionRequest,
     ) -> AgentResult<ExecutionTask> {
-        let _admission = self.admissions.lock().await;
-        if self.shutdown.is_cancelled() {
-            return Err("application_stopping");
-        }
-        if !self.failed.lock().unwrap().is_empty() {
-            return Err("agent_storage_unavailable");
-        }
-        if self.active.lock().unwrap().len() >= 128 {
-            return Err("execution_queue_full");
-        }
         request.validate()?;
-        let access = tokio::time::timeout(
+        let key = self.request_lock(&request);
+        let request_guard = tokio::select! {
+            lock = key.lock_owned() => lock,
+            _ = self.shutdown.cancelled() => return Err("application_stopping"),
+        };
+        {
+            let _admission = self.admissions.lock().await;
+            self.check_admission()?;
+        }
+        let existing = self
+            .db(ExecutionDbCommand::FindRequest(Box::new(request.clone())))
+            .await;
+        let slot = if matches!(&existing, Ok(ExecutionDbReply::Task(None))) {
+            Some(
+                self.capacity
+                    .clone()
+                    .try_acquire_owned()
+                    .map_err(|_| "execution_queue_full")?,
+            )
+        } else {
+            None
+        };
+        let authorize = tokio::time::timeout(
             Duration::from_secs(10),
             self.authority.current(request.identity.clone()),
-        )
-        .await
-        .map_err(|_| "authorization_timeout")?
-        .map_err(|_| "access_revoked")?;
-        if let ExecutionDbReply::Task(Some(task)) = self
-            .db(ExecutionDbCommand::FindRequest(Box::new(request.clone())))
-            .await?
-        {
-            return Ok(*task);
-        }
+        );
+        let access = tokio::select! {
+            result = authorize => result.map_err(|_| "authorization_timeout")?.map_err(|_| "access_revoked")?,
+            _ = self.shutdown.cancelled() => return Err("application_stopping"),
+        };
+        let slot = match existing? {
+            ExecutionDbReply::Task(Some(task)) => return Ok(*task),
+            ExecutionDbReply::Task(None) => slot.ok_or("agent_storage_unavailable")?,
+            _ => return Err("agent_storage_unavailable"),
+        };
         let mut source_request = None;
-        let prepared = async {
+        let prepare = async {
             request.authorize(&access.policy)?;
             if access.policy.execution.level == OperationLevel::Operate
                 && let Some((path, arguments, interpreter)) = script_command_candidate(&request)?
@@ -162,8 +222,11 @@ impl LocalExecutor {
                 None
             };
             Ok::<_, &'static str>(script)
-        }
-        .await;
+        };
+        let prepared = tokio::select! {
+            result = prepare => result,
+            _ = self.shutdown.cancelled() => return Err("application_stopping"),
+        };
         let (script, denial) = match prepared {
             Ok(script) => (script, None),
             Err(code) => (None, Some(code)),
@@ -218,6 +281,30 @@ impl LocalExecutor {
             script_snapshot: script.as_ref().map(|p| p.snapshot.clone()),
             script_staging_path: script.and_then(|p| p.staging_path),
         };
+        let origin = if let Some(snapshot) = task.script_snapshot.as_ref() {
+            tokio::select! {
+                result = self.script_origin(&task, snapshot) => result,
+                _ = self.shutdown.cancelled() => return Err("application_stopping"),
+            }
+        } else {
+            None
+        };
+        let executor = self.clone();
+        tokio::spawn(async move {
+            let _request = request_guard;
+            executor.register(task, slot, origin).await
+        })
+        .await
+        .map_err(|_| "agent_storage_unavailable")?
+    }
+    async fn register(
+        self: &Arc<Self>,
+        task: ExecutionTask,
+        slot: OwnedSemaphorePermit,
+        origin: Option<ScriptOrigin>,
+    ) -> AgentResult<ExecutionTask> {
+        let _admission = self.admissions.lock().await;
+        self.check_admission()?;
         let ExecutionDbReply::Registered { mut task, inserted } = self
             .db(ExecutionDbCommand::Register(Box::new(task)))
             .await?
@@ -228,7 +315,6 @@ impl LocalExecutor {
             return Ok(*task);
         }
         if let Some(snapshot) = task.script_snapshot.clone() {
-            let origin = self.script_origin(&task, &snapshot).await;
             let record = ActivityRecord {
                 session_id: task.context_id.clone(),
                 task_id: Some(task.id.clone()),
@@ -282,6 +368,7 @@ impl LocalExecutor {
             ActiveExecution {
                 identity: task.request.identity.clone(),
                 cancel: cancel.clone(),
+                _slot: slot,
             },
         );
         let returned = (*task).clone();
@@ -339,6 +426,7 @@ impl LocalExecutor {
         }
     }
     pub async fn cancel(&self, entry: &str, id: &str) -> AgentResult<()> {
+        let _admission = self.admissions.lock().await;
         self.get(entry, id).await?;
         if let Some(cancel) = self.active.lock().unwrap().get(id) {
             cancel.cancel.cancel();

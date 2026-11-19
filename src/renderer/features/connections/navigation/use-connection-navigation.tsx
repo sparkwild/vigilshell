@@ -14,7 +14,7 @@ import type { GroupLayout } from '@contracts';
 
 import { visibleConnections, connectionGroups, hasSearchOrFilters } from '../navigation';
 
-import type { ConnectionSummary } from '@contracts';
+import type { ConnectionSummary, UnavailableConnectionView } from '@contracts';
 
 import { useWorkspaceUi } from '../ui-context';
 
@@ -148,12 +148,24 @@ export function useConnectionNavigation({ onConnected }: { onConnected(): void }
     ]),
   );
 
-  const visible = useMemo(
+  const healthy = useMemo(
     () => visibleConnections(state.connections, state.sessions, state.navigation, locale),
     [state.connections, state.sessions, state.navigation, locale],
   );
+  const visible: (ConnectionSummary | UnavailableConnectionView)[] = hasSearchOrFilters(
+    state.navigation,
+  )
+    ? healthy
+    : [...healthy, ...state.unavailableConnections];
 
-  function connectionNode(c: ConnectionSummary): Node {
+  function connectionNode(c: ConnectionSummary | UnavailableConnectionView): Node {
+    if (!('name' in c))
+      return {
+        id: 'unavailable:' + c.id,
+        name: translate('ws_connection_record_unavailable', { id: c.id }),
+        kind: 'notice',
+        children: [],
+      };
     return {
       id: 'c:' + c.id,
       name: c.name,
